@@ -72,6 +72,7 @@
 #include "static_mem.h"
 //#include "peer_localization.h"
 #include "cfassert.h"
+#include "motors.h"
 
 #ifndef START_DISARMED
 #define ARM_INIT true
@@ -165,6 +166,22 @@ bool systemTest()
 
 /* Private functions implementation */
 
+// Monitoring PWM of the motors
+static void pwmMonitorTask(void *param)
+{
+    while (1)
+    {
+        printf("[PWM] ");
+        for (int i = 0; i < NBR_OF_MOTORS; i++)
+        {
+            int pwm = motorsGetRatio(i);
+            printf("M%d:%d\t", i + 1, pwm);
+        }
+        printf("\n");
+        vTaskDelay(pdMS_TO_TICKS(500)); 
+    }
+}
+
 void systemTask(void *arg)
 {
   bool pass = true;
@@ -240,6 +257,8 @@ void systemTask(void *arg)
     soundSetEffect(SND_STARTUP);
     ledseqRun(&seq_alive);
     ledseqRun(&seq_testPassed);
+    // Monitoring PWM of the motors
+    xTaskCreate(pwmMonitorTask, "PWM_MONITOR", 2048, NULL, 1, NULL);
   }
   else
   {

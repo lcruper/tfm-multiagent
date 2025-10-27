@@ -132,6 +132,11 @@ float pmGetBatteryVoltageMin(void);
 float pmGetBatteryVoltageMax(void);
 
 /**
+ * Returns the state of the battery
+ */
+PMStates pmUpdateState(void);
+
+/**
  * Updates and calculates battery values.
  * Should be called for every new adcValues sample.
  */

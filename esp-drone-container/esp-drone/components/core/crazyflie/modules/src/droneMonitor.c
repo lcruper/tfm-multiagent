@@ -21,7 +21,7 @@ static void droneMonitorTask(void *param)
             case charged:   stateStr = "CHARGED"; break;
             case charging:  stateStr = "CHARGING"; break;
             case lowPower:  stateStr = "LOW_POWER"; break;
-            case battery:   stateStr = "NORMAL"; break;
+            case battery:   stateStr = "BATTERY"; break;
             default:        stateStr = "UNKNOWN"; break;
         }
 

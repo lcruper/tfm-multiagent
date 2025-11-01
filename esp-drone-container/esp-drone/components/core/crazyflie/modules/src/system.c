@@ -77,6 +77,7 @@
 #include "position_monitor.h"
 #include "drone_camera.h"
 #include "drone_routines.h"
+#include "drone_uart.h"
 
 
 #ifndef START_DISARMED
@@ -157,6 +158,9 @@ void systemInit(void)
       DEBUG_PRINTE("Camera initialization failed!");
   }
   */
+
+  // Initialize the drone UART interface
+  droneUartInit();
 
 #ifdef APP_ENABLED
   appInit();
@@ -263,7 +267,8 @@ void systemTask(void *arg)
     // Capturing camera frames
     // startCapturingCamera();
 
-    // Routines
+    // Start UART to receive commands for routines
+    startUART();
 
     
   }

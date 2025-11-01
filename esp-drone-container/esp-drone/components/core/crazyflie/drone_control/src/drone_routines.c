@@ -17,6 +17,7 @@ static void takeOffRoutineTask(void *param)
 
 static void landingRoutineTask(void *param)
 {
+    printf("Landing routine started!\n");
     for (float t = 0.5f; t >= 0.0f; t -= 0.05f) {
         droneMoveVertical(t);
         vTaskDelay(pdMS_TO_TICKS(200));
@@ -26,6 +27,7 @@ static void landingRoutineTask(void *param)
 
 static void squareFlightRoutineTask(void *param)
 {
+    printf("Square flight routine started!\n");
     takeOffRoutineTask(NULL);
 
     float sideDuration = 2000; 
@@ -47,6 +49,7 @@ static void squareFlightRoutineTask(void *param)
 
 static void rotateRoutineTask(void *param)
 {
+    printf("Rotate routine started!\n");
     takeOffRoutineTask(NULL);
 
     for (int i = 0; i < 8; i++) {

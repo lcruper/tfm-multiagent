@@ -52,7 +52,8 @@ idf_component_register(SRCS "./hal/src/buzzer.c"
                 "./modules/src/system.c"
                 "./modules/src/trigger.c"
                 "./modules/src/worker.c"
-                "./modules/src/droneMonitor.c"
+                "./drone_monitor/src/battery_monitor.c"
+                "./drone_monitor/src/position_monitor.c"
                 "./utils/src/abort.c"
                 "./utils/src/cfassert.c"
                 "./utils/src/clockCorrectionEngine.c"
@@ -69,7 +70,7 @@ idf_component_register(SRCS "./hal/src/buzzer.c"
                 "./utils/src/statsCnt.c"
                 "./utils/src/version.c"
                 "./utils/src/rateSupervisor.c"
-                INCLUDE_DIRS "./hal/interface" "./modules/interface" "./utils/interface"
+                INCLUDE_DIRS "./hal/interface" "./modules/interface" "./utils/interface" "./drone_monitor/interface"
                 REQUIRES i2c_bus deck mpu6050 ms5611 hmc5883l pmw3901 vl53l1 vl53l0 platform config led eeprom dsp_lib motors wifi adc esp_timer)
 
 idf_component_get_property( FREERTOS_ORIG_INCLUDE_PATH freertos ORIG_INCLUDE_PATH)

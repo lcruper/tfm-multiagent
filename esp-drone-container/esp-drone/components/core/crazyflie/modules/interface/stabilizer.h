@@ -34,6 +34,14 @@
 #define EMERGENCY_STOP_TIMEOUT_DISABLED (-1)
 
 /**
+ * @brief Returns a pointer to the current drone state.
+ * 
+ * Provides access to the state variables like position, velocity, and attitude.
+ */
+const state_t* stabilizerGetState(void);
+
+
+/**
  * Initialize the stabilizer subsystem and launch the stabilizer loop task.
  * The stabilizer loop task will wait on systemWaitStart() before running.
  */

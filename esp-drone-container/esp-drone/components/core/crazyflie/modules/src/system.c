@@ -73,7 +73,8 @@
 //#include "peer_localization.h"
 #include "cfassert.h"
 
-#include "droneMonitor.h"
+#include "battery_monitor.h"
+#include "position_monitor.h"
 
 #ifndef START_DISARMED
 #define ARM_INIT true
@@ -244,7 +245,9 @@ void systemTask(void *arg)
     ledseqRun(&seq_testPassed);
 
     // Monitoring the drone
-    startDroneMonitor();
+    startBatteryMonitor();
+    startPositionMonitor();
+    
   }
   else
   {

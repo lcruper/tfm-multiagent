@@ -4,9 +4,9 @@
 #include "motors.h"
 #include "pm_esplane.h"
 
-#define MONITOR_DELAY_MS 500 
+#define BATTERY_MONITOR_DELAY_MS 500
 
-static void droneMonitorTask(void *param)
+static void batteryMonitorTask(void *param)
 {
     while (1)
     {
@@ -25,8 +25,9 @@ static void droneMonitorTask(void *param)
             default:        stateStr = "UNKNOWN"; break;
         }
 
-        printf("\n[DRONE MONITOR]-----------------------------\n");
-        printf("Battery: %.2fV (Min: %.2fV Max: %.2fV) | State: %s\n", vbatt, vbattMin, vbattMax, stateStr);
+        printf("\n[BATTERY MONITOR] ========================================================\n");
+        printf("Battery: %.2fV (Min: %.2fV Max: %.2fV) | State: %s\n",
+             vbatt, vbattMin, vbattMax, stateStr);
 
         // Motors
         printf("[Motors] ");
@@ -38,13 +39,13 @@ static void droneMonitorTask(void *param)
         }
         printf("\n");
 
-        printf("-------------------------------------------\n");
+        printf("==============================================================================\n");
 
-        vTaskDelay(pdMS_TO_TICKS(MONITOR_DELAY_MS));
+        vTaskDelay(pdMS_TO_TICKS(BATTERY_MONITOR_DELAY_MS));
     }
 }
 
-void startDroneMonitor(void)
+void startBatteryMonitor(void)
 {
-    xTaskCreate(droneMonitorTask, "DRONE_MONITOR", 4096, NULL, 1, NULL);
+    xTaskCreate(batteryMonitorTask, "BATTERY_MONITOR", 4096, NULL, 1, NULL);
 }

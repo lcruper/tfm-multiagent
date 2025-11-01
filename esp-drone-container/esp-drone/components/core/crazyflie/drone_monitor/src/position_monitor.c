@@ -14,7 +14,6 @@ static void positionMonitorTask(void *param)
     {
         const state_t* s = stabilizerGetState();
 
-
         // Position
         float x = s->position.x;
         float y = s->position.y;

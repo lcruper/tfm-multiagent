@@ -1,9 +1,4 @@
-#ifndef BATTERY_MONITOR_H
-#define BATTERY_MONITOR_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#pragma once
 
 /**
  * @brief Starts the battery and motors monitoring task.
@@ -12,9 +7,3 @@ extern "C" {
  * its state, and the PWM values and voltage of the motors.
  */
 void startBatteryMonitor(void);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif // BATTERY_MONITOR_H

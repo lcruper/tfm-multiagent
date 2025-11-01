@@ -1,9 +1,4 @@
-#ifndef DRONE_CAMERA_H
-#define DRONE_CAMERA_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#pragma once
 
 #include "esp_err.h"
 
@@ -24,9 +19,3 @@ esp_err_t camera_capture(void);
  * The task captures images every CAMERA_TASK_DELAY_MS.
  */
 void startCapturingCamera(void);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif // DRONE_CAMERA_H

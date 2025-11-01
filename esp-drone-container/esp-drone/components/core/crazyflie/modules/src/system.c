@@ -76,6 +76,7 @@
 #include "battery_monitor.h"
 #include "position_monitor.h"
 #include "drone_camera.h"
+#include "drone_routines.h"
 
 
 #ifndef START_DISARMED
@@ -261,6 +262,8 @@ void systemTask(void *arg)
 
     // Capturing camera frames
     // startCapturingCamera();
+
+    // Routines
 
     
   }

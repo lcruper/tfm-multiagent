@@ -7,6 +7,7 @@ ESP32_IP = "192.168.43.42"
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind(("0.0.0.0", UDP_PORT))
 sock.sendto(b'HELLO', (ESP32_IP, UDP_PORT))
+print(f"Listening on UDP port {UDP_PORT}")
 
 N_MOTORS = 4
 SIZE_BATTERY_PACKET = 4*3 + 1 + N_MOTORS*2 + N_MOTORS*4  

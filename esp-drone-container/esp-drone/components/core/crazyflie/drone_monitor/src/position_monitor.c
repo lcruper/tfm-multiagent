@@ -1,33 +1,52 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include <stdio.h>
+#include <string.h>
 #include "stabilizer.h"
 #include "position_monitor.h"
-#include "crtp.h"
+#include "wifi_esp32.h"
 
 #define POSITION_MONITOR_DELAY_MS 500
-#define PORT_POSITION 11
+#define PACKET_ID_POSITION 0x02
 
 extern state_t state;
 
-static void sendPositionCRTP(float x, float y, float z, float roll, float pitch, float yaw)
+typedef struct {
+    float x;
+    float y;
+    float z;
+    float vx;
+    float vy;
+    float vz;
+    float roll;
+    float pitch;
+    float yaw;
+} PositionPacket;
+
+static void sendPositionUDP(float x, float y, float z,
+                            float vx, float vy, float vz,
+                            float roll, float pitch, float yaw)
 {
-    CRTPPacket p;
-    p.port = PORT_POSITION;
+    PositionPacket packet;
+    packet.x = x;
+    packet.y = y;
+    packet.z = z;
+    packet.vx = vx;
+    packet.vy = vy;
+    packet.vz = vz;
+    packet.roll = roll;
+    packet.pitch = pitch;
+    packet.yaw = yaw;
 
-    int n = snprintf((char*)p.data, CRTP_MAX_DATA_SIZE,
-                     "X:%.2f Y:%.2f Z:%.2f R:%.2f P:%.2f Y:%.2f",
-                     x, y, z, roll, pitch, yaw);
+    uint8_t buf[sizeof(PositionPacket)+1];
+    buf[0] = PACKET_ID_POSITION;          
+    memcpy(buf+1, &packet, sizeof(PositionPacket));
 
-    p.size = (n > CRTP_MAX_DATA_SIZE) ? CRTP_MAX_DATA_SIZE : n;
-
-    crtpSendPacket(&p);
+    wifiSendData(sizeof(buf), buf);
 }
 
 static void positionMonitorTask(void *param)
 {
-    crtpInitTaskQueue(PORT_POSITION);
-
     while (1)
     {
         const state_t* s = stabilizerGetState();
@@ -54,7 +73,7 @@ static void positionMonitorTask(void *param)
                roll, pitch, yaw);
         printf("==============================================================================\n");
 
-        sendPositionCRTP(x, y, z, roll, pitch, yaw);
+        sendPositionUDP(x, y, z, vx, vy, vz, roll, pitch, yaw);
         
         vTaskDelay(pdMS_TO_TICKS(POSITION_MONITOR_DELAY_MS));
     }

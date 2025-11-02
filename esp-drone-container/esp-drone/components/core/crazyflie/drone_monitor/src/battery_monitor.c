@@ -1,43 +1,49 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include <stdio.h>
+#include <string.h>
 #include "motors.h"
 #include "pm_esplane.h"
-#include "crtp.h"
 #include "battery_monitor.h"
+#include "wifi_esp32.h"
 
 #define BATTERY_MONITOR_DELAY_MS 500
-#define PORT_BATTERY 10
+#define PACKET_ID_BATTERY  0x01
 
-static void sendBatteryMotorData(float vbatt, float vbattMin, float vbattMax, PMStates state)
+typedef struct {
+    float vbatt;
+    float vbattMin;
+    float vbattMax;
+    uint8_t state;
+    uint16_t pwm[NBR_OF_MOTORS];
+    float vmotor[NBR_OF_MOTORS];
+} BatteryMotorPacket;
+
+static void sendBatteryMotorUDP(float vbatt, float vbattMin, float vbattMax, PMStates state)
 {
-    CRTPPacket p;
-    p.port = PORT_BATTERY;
+    BatteryMotorPacket packet;
+    packet.vbatt = vbatt;
+    packet.vbattMin = vbattMin;
+    packet.vbattMax = vbattMax;
+    packet.state = (uint8_t)state;
 
-    int offset = snprintf((char*)p.data, CRTP_MAX_DATA_SIZE,
-                          "V:%.2f Min:%.2f Max:%.2f State:%d ",
-                          vbatt, vbattMin, vbattMax, (int)state);
-
-    for (int i = 0; i < NBR_OF_MOTORS && offset < CRTP_MAX_DATA_SIZE; i++)
+    for (int i = 0; i < NBR_OF_MOTORS; i++)
     {
-        int pwm = motorsGetRatio(i);
-        float vmotor = vbatt * ((float)pwm / 65535.0f);
-        offset += snprintf((char*)(p.data + offset), CRTP_MAX_DATA_SIZE - offset,
-                           "M%d:PWM=%d V=%.2f ", i+1, pwm, vmotor);
+        packet.pwm[i] = motorsGetRatio(i);
+        packet.vmotor[i] = vbatt * ((float)packet.pwm[i] / 65535.0f);
     }
 
-    p.size = (offset > CRTP_MAX_DATA_SIZE) ? CRTP_MAX_DATA_SIZE : offset;
+    uint8_t buf[sizeof(BatteryMotorPacket)+1];
+    buf[0] = PACKET_ID_BATTERY;            
+    memcpy(buf+1, &packet, sizeof(BatteryMotorPacket));
 
-    crtpSendPacket(&p);
+    wifiSendData(sizeof(buf), buf);
 }
 
 static void batteryMonitorTask(void *param)
 {
-    crtpInitTaskQueue(PORT_BATTERY);
-
     while (1)
     {
-        // Voltage
         float vbatt = pmGetBatteryVoltage();
         float vbattMin = pmGetBatteryVoltageMin();
         float vbattMax = pmGetBatteryVoltageMax();
@@ -60,15 +66,13 @@ static void batteryMonitorTask(void *param)
         printf("[Motors] ");
         for (int i = 0; i < NBR_OF_MOTORS; i++)
         {
-            int pwm = motorsGetRatio(i); 
-            float vmotor = vbatt * ((float)pwm / 65535.0f); 
-            printf("M%d: PWM=%d V=%.2fV\t", i+1, pwm, vmotor);
+            int pwm = motorsGetRatio(i);
+            float vmotor = vbatt * ((float)pwm / 65535.0f);
+            printf("M%d: V=%.2fV\t", i+1, vmotor);
         }
-        printf("\n");
+        printf("\n==============================================================================\n");
 
-        printf("==============================================================================\n");
-
-        sendBatteryMotorData(vbatt, vbattMin, vbattMax, state);
+        sendBatteryMotorUDP(vbatt, vbattMin, vbattMax, state);
 
         vTaskDelay(pdMS_TO_TICKS(BATTERY_MONITOR_DELAY_MS));
     }

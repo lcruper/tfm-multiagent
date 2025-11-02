@@ -3,11 +3,38 @@
 #include <stdio.h>
 #include "motors.h"
 #include "pm_esplane.h"
+#include "crtp.h"
+#include "battery_monitor.h"
 
 #define BATTERY_MONITOR_DELAY_MS 500
+#define PORT_BATTERY 10
+
+static void sendBatteryMotorData(float vbatt, float vbattMin, float vbattMax, PMStates state)
+{
+    CRTPPacket p;
+    p.port = PORT_BATTERY;
+
+    int offset = snprintf((char*)p.data, CRTP_MAX_DATA_SIZE,
+                          "V:%.2f Min:%.2f Max:%.2f State:%d ",
+                          vbatt, vbattMin, vbattMax, (int)state);
+
+    for (int i = 0; i < NBR_OF_MOTORS && offset < CRTP_MAX_DATA_SIZE; i++)
+    {
+        int pwm = motorsGetRatio(i);
+        float vmotor = vbatt * ((float)pwm / 65535.0f);
+        offset += snprintf((char*)(p.data + offset), CRTP_MAX_DATA_SIZE - offset,
+                           "M%d:PWM=%d V=%.2f ", i+1, pwm, vmotor);
+    }
+
+    p.size = (offset > CRTP_MAX_DATA_SIZE) ? CRTP_MAX_DATA_SIZE : offset;
+
+    crtpSendPacket(&p);
+}
 
 static void batteryMonitorTask(void *param)
 {
+    crtpInitTaskQueue(PORT_BATTERY);
+
     while (1)
     {
         // Voltage
@@ -40,6 +67,8 @@ static void batteryMonitorTask(void *param)
         printf("\n");
 
         printf("==============================================================================\n");
+
+        sendBatteryMotorData(vbatt, vbattMin, vbattMax, state);
 
         vTaskDelay(pdMS_TO_TICKS(BATTERY_MONITOR_DELAY_MS));
     }

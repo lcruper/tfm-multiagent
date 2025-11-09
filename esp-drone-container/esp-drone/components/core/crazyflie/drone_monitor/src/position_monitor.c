@@ -54,7 +54,7 @@ static void positionMonitorTask(void *param)
         // Position
         float x = s->position.x;
         float y = s->position.y;
-        float z = -s->position.z;
+        float z = s->position.z;
 
         // Velocity
         float vx = s->velocity.x;

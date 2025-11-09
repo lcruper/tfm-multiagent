@@ -7,7 +7,7 @@
 #include "battery_monitor.h"
 #include "wifi_esp32.h"
 
-#define BATTERY_MONITOR_DELAY_MS 500
+#define BATTERY_MONITOR_DELAY_MS 2000
 #define PACKET_ID_BATTERY  0x01
 
 typedef struct {

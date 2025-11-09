@@ -261,7 +261,7 @@ void systemTask(void *arg)
     ledseqRun(&seq_testPassed);
 
     // Monitoring the drone
-    startBatteryMonitor();
+    // startBatteryMonitor();
     startPositionMonitor();
 
     // Capturing camera frames

@@ -160,15 +160,15 @@ void positionEstimateSim(state_t* state, sensorData_t* sensors, tofMeasurement_t
 
     state->position.x = x;
     state->position.y = y;
-    state->position.z = -z;
+    state->position.z = z;
 
     state->velocity.x = (x - prevX) / dt;
     state->velocity.y = (y - prevY) / dt;
-    state->velocity.z = (-z - prevZ) / dt;
+    state->velocity.z = (z - prevZ) / dt;
 
     prevX = x;
     prevY = y;
-    prevZ = -z;
+    prevZ = z;
 
     if (tofMeasurement) {
         tofMeasurement->distance = z;

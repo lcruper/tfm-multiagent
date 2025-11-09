@@ -160,7 +160,7 @@ void systemInit(void)
   */
 
   // Initialize the drone UART interface
-  droneUartInit();
+  // droneUartInit();
 
 #ifdef APP_ENABLED
   appInit();

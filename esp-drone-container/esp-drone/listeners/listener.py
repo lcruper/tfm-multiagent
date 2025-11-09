@@ -1,39 +1,37 @@
 import socket
 import struct
 
+UDP_IP_ESP32 = "192.168.43.42"
 UDP_PORT = 2390
-ESP32_IP = "192.168.43.42"
+LOCAL_PORT = 2391  # puerto local para recibir
+BUFFER_SIZE = 64
+PACKET_ID_POSITION = 0x02
+
+def calculate_cksum(data: bytes) -> int:
+    return sum(data) & 0xFF
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-sock.bind(("0.0.0.0", UDP_PORT))
-sock.sendto(b'HELLO', (ESP32_IP, UDP_PORT))
-print(f"Listening on UDP port {UDP_PORT}")
+sock.bind(("0.0.0.0", LOCAL_PORT))
+print(f"Escuchando paquetes UDP en {LOCAL_PORT}...")
 
-N_MOTORS = 4
-SIZE_BATTERY_PACKET = 4*3 + 1 + N_MOTORS*2 + N_MOTORS*4  
-SIZE_POSITION_PACKET = 9*4  
+# Handshake para que ESP32 conozca nuestra IP
+sock.sendto(b'\x01' + bytes([0x01]), (UDP_IP_ESP32, UDP_PORT))
+print(f"Handshake enviado a {UDP_IP_ESP32}:{UDP_PORT}")
 
 while True:
-    data, addr = sock.recvfrom(1024)
-    packet_type = data[0]
-    payload = data[1:]
+    data, addr = sock.recvfrom(BUFFER_SIZE)
+    if len(data) < 2:
+        continue
 
-    if packet_type == 0x01 and len(payload) == SIZE_BATTERY_PACKET:
-        fmt = f'fffB{N_MOTORS}H{N_MOTORS}f'
-        unpacked = struct.unpack(fmt, payload)
-        vbatt, vbattMin, vbattMax, state = unpacked[:4]
-        pwm = unpacked[4:4+N_MOTORS]
-        vmotor = unpacked[4+N_MOTORS:]
-        print(f"[BATTERY] V:{vbatt:.2f} Estado:{state}")
-        for i in range(N_MOTORS):
-            print(f" M{i+1}: PWM={pwm[i]} V={vmotor[i]:.2f}")
-        print("--------------------------")
+    received_cksum = data[-1]
+    payload = data[:-1]
 
-    elif packet_type == 0x02 and len(payload) == SIZE_POSITION_PACKET:
-        fmt = 'fffffffff'
-        unpacked = struct.unpack(fmt, payload)
-        x, y, z, vx, vy, vz, roll, pitch, yaw = unpacked
-        print(f"[POSITION] Pos: x={x:.2f}, y={y:.2f}, z={z:.2f}")
-        print(f" Vel: vx={vx:.2f}, vy={vy:.2f}, vz={vz:.2f}")
-        print(f" Att: roll={roll:.2f}, pitch={pitch:.2f}, yaw={yaw:.2f}")
-        print("--------------------------")
+    if calculate_cksum(payload) != received_cksum:
+        print("Checksum inválido")
+        continue
+
+    packet_id = payload[0]
+    if packet_id == PACKET_ID_POSITION:
+        telemetry = struct.unpack('<9f', payload[1:37])
+        x, y, z, vx, vy, vz, roll, pitch, yaw = telemetry
+        print(f"Pos: ({x:.2f},{y:.2f},{z:.2f}) | Vel: ({vx:.2f},{vy:.2f},{vz:.2f}) | Att: ({roll:.2f},{pitch:.2f},{yaw:.2f})")

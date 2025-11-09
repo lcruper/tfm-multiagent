@@ -176,8 +176,6 @@ void positionEstimateSim(state_t* state, sensorData_t* sensors, tofMeasurement_t
     }
 }
 
-
-
 LOG_GROUP_START(posEstAlt)
 LOG_ADD(LOG_FLOAT, estimatedZ, &state.estimatedZ)
 LOG_ADD(LOG_FLOAT, estVZ, &state.estimatedVZ)

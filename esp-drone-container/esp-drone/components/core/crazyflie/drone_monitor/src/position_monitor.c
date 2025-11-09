@@ -11,7 +11,7 @@
 
 extern state_t state;
 
-typedef struct {
+typedef struct __attribute__((packed)){
     float x;
     float y;
     float z;

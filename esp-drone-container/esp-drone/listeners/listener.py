@@ -1,37 +1,76 @@
 import socket
 import struct
 
+# -----------------------------
+# UDP Configuration
+# -----------------------------
 UDP_IP_ESP32 = "192.168.43.42"
-UDP_PORT = 2390
-LOCAL_PORT = 2391  # puerto local para recibir
-BUFFER_SIZE = 64
-PACKET_ID_POSITION = 0x02
+UDP_PORT_ESP32 = 2390
+LOCAL_PORT = 2391
+BUFFER_SIZE = 128
 
+PACKET_ID_BATTERY = 0x01
+PACKET_ID_POSITION = 0x02
+NBR_OF_MOTORS = 4
+
+# -----------------------------
+# Checksum calculation
+# -----------------------------
 def calculate_cksum(data: bytes) -> int:
     return sum(data) & 0xFF
 
+# -----------------------------
+# UDP Socket Setup
+# -----------------------------
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind(("0.0.0.0", LOCAL_PORT))
-print(f"Escuchando paquetes UDP en {LOCAL_PORT}...")
+print(f"Listening UDP on port {LOCAL_PORT}...")
 
-# Handshake para que ESP32 conozca nuestra IP
-sock.sendto(b'\x01' + bytes([0x01]), (UDP_IP_ESP32, UDP_PORT))
-print(f"Handshake enviado a {UDP_IP_ESP32}:{UDP_PORT}")
+# Send handshake
+sock.sendto(b'\x01' + bytes([0x01]), (UDP_IP_ESP32, UDP_PORT_ESP32))
+print(f"Handshake sent to {UDP_IP_ESP32}:{UDP_PORT_ESP32}")
 
+# -----------------------------
+# Main Loop
+# -----------------------------
 while True:
-    data, addr = sock.recvfrom(BUFFER_SIZE)
-    if len(data) < 2:
-        continue
+    packet, addr = sock.recvfrom(BUFFER_SIZE)
 
-    received_cksum = data[-1]
-    payload = data[:-1]
+    packet_id = packet[0]
+    payload = packet[1:-1] 
 
-    if calculate_cksum(payload) != received_cksum:
-        print("Checksum inválido")
-        continue
+    # -----------------------------
+    # Battery Packet
+    # -----------------------------
+    if packet_id == PACKET_ID_BATTERY:
+        fmt = "<3fB4H4f"
+        unpacked = struct.unpack(fmt, payload[:struct.calcsize(fmt)])
+        vbatt, vbattMin, vbattMax, state = unpacked[:4]
+        pwm = unpacked[4:4 + NBR_OF_MOTORS]
+        vmotor = unpacked[4 + NBR_OF_MOTORS:]
 
-    packet_id = payload[0]
-    if packet_id == PACKET_ID_POSITION:
-        telemetry = struct.unpack('<9f', payload[1:37])
+        state_dict = {0: "CHARGED", 1: "CHARGING", 2: "LOW_POWER", 3: "BATTERY"}
+        state_str = state_dict.get(state, "UNKNOWN")
+
+        print(f"[BATTERY MONITOR] ========================================================")
+        print(f"Battery: {vbatt:.2f}V (Min: {vbattMin:.2f}V, Max: {vbattMax:.2f}V) | State: {state_str}")
+        print("[Motors] ", end="")
+        for i in range(NBR_OF_MOTORS):
+            print(f"M{i+1}: V={vmotor[i]:.2f}V", end=" ")
+        print("\n==============================================================================\n")
+
+
+    # -----------------------------
+    # Position Packet
+    # -----------------------------
+    elif packet_id == PACKET_ID_POSITION:
+        fmt = "<9f"
+        telemetry = struct.unpack(fmt, payload[:struct.calcsize(fmt)])
         x, y, z, vx, vy, vz, roll, pitch, yaw = telemetry
-        print(f"Pos: ({x:.2f},{y:.2f},{z:.2f}) | Vel: ({vx:.2f},{vy:.2f},{vz:.2f}) | Att: ({roll:.2f},{pitch:.2f},{yaw:.2f})")
+
+        print("[POSITION MONITOR] ========================================================")
+        print(f"Position -> x: {x:.2f}  y: {y:.2f}  z: {z:.2f} (m)")
+        print(f"Velocity -> x: {vx:.2f}  y: {vy:.2f}  z: {vz:.2f} (m/s)")
+        print(f"Attitude -> Roll: {roll:.2f}°  Pitch: {pitch:.2f}°  Yaw: {yaw:.2f}°")
+        print("==============================================================================\n")
+

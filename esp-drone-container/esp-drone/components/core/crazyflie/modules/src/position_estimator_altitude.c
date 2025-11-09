@@ -118,27 +118,65 @@ static void positionUpdateVelocityInternal(float accWZ, float dt, struct selfSta
   state->velocityZ *= state->velZAlpha;
 }
 
-void positionEstimateSim(state_t* estimate, const sensorData_t* sensorData, const tofMeasurement_t* tofMeasurement, float dt, uint32_t tick) {
+void positionEstimateSim(state_t* state, sensorData_t* sensors, tofMeasurement_t* tofMeasurement, float dt, uint32_t tick)
+{
+    static float prevX = 0.0f;
+    static float prevY = 0.0f;
+    static float prevZ = 0.0f;
+
     static float simTime = 0.0f;
-    const float R = 1.0f;         
-    const float zAmplitude = 0.5f; 
-
-
     simTime += dt;
 
-    estimate->position.x = R * cosf(simTime);
-    estimate->position.y = R * sinf(simTime);
-    estimate->position.z = zAmplitude * sinf(simTime / 2.0f) + 1.0f; 
+    float x = 0.0f;
+    float y = 0.0f;
+    float z = 0.0f;
 
-  
-    static float prevX = 0, prevY = 0, prevZ = 0;
-    estimate->velocity.x = (estimate->position.x - prevX) / dt;
-    estimate->velocity.y = (estimate->position.y - prevY) / dt;
-    estimate->velocity.z = (estimate->position.z - prevZ) / dt;
-    prevX = estimate->position.x;
-    prevY = estimate->position.y;
-    prevZ = estimate->position.z;
+    float cycleTime = 70.0f; 
+    float t = fmodf(simTime, cycleTime);
+
+    if (t < 5.0f) {
+        z =  0.32f * t;
+    }
+    else if (t < 30.0f) {
+        float tt = t - 5.0f;
+        float r = 0.2f * tt;
+        float theta = 0.25f * tt * 2 * M_PI;
+        x = r * cosf(theta);
+        y = r * sinf(theta);
+        z = 1.6f;
+    }
+    else if (t < 55.0f) {
+        float tt = t - 30.0f;
+        float r = 5.0f - 0.2f * tt;
+        float theta = 2*M_PI - 0.25f * tt * 2 * M_PI;
+        x = r * cosf(theta);
+        y = r * sinf(theta);
+        z = 1.6f;
+    }
+    else if (t < 60.0f) {
+        float tt = t - 55.0f;
+        z = 1.6f - 0.32f * tt;
+    }
+
+    state->position.x = x;
+    state->position.y = y;
+    state->position.z = -z;
+
+    state->velocity.x = (x - prevX) / dt;
+    state->velocity.y = (y - prevY) / dt;
+    state->velocity.z = (-z - prevZ) / dt;
+
+    prevX = x;
+    prevY = y;
+    prevZ = -z;
+
+    if (tofMeasurement) {
+        tofMeasurement->distance = z;
+        tofMeasurement->timestamp = tick;
+    }
 }
+
+
 
 LOG_GROUP_START(posEstAlt)
 LOG_ADD(LOG_FLOAT, estimatedZ, &state.estimatedZ)

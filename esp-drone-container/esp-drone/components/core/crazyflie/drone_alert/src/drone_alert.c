@@ -42,9 +42,12 @@ static void alertTask(void *param)
         {
             float x = s->position.x;
             float y = s->position.y;
+            float vz = s->velocity.z;
 
-            printf("[ALERT!] x=%.2f, y=%.2f\n", x, y);
-            sendAlertUDP(x, y);
+            if (vz == 0.0) {
+                printf("[ALERT!] x=%.2f, y=%.2f\n", x, y);
+                sendAlertUDP(x, y);
+            }
         }
 
         vTaskDelay(pdMS_TO_TICKS(ALERT_MONITOR_DELAY_MS));

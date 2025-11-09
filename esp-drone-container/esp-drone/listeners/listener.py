@@ -1,5 +1,13 @@
 import socket
 import struct
+import sys
+from collections import deque
+from PyQt5.QtWidgets import QApplication, QMainWindow
+from PyQt5.QtCore import QTimer
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+import numpy as np
+import threading
 
 # -----------------------------
 # UDP Configuration
@@ -24,53 +32,102 @@ def calculate_cksum(data: bytes) -> int:
 # -----------------------------
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind(("0.0.0.0", LOCAL_PORT))
+sock.setblocking(False)
 print(f"Listening UDP on port {LOCAL_PORT}...")
 
-# Send handshake
 sock.sendto(b'\x01' + bytes([0x01]), (UDP_IP_ESP32, UDP_PORT_ESP32))
 print(f"Handshake sent to {UDP_IP_ESP32}:{UDP_PORT_ESP32}")
 
 # -----------------------------
-# Main Loop
+# Store positions for plotting
 # -----------------------------
-while True:
-    packet, addr = sock.recvfrom(BUFFER_SIZE)
+x_data = deque(maxlen=200)
+y_data = deque(maxlen=200)
+z_data = deque(maxlen=200)
 
-    packet_id = packet[0]
-    payload = packet[1:-1] 
+# -----------------------------
+# PyQt5 + Matplotlib Plot
+# -----------------------------
+class DronePlot(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Drone Trajectory")
+        self.setGeometry(100, 100, 900, 700)
 
-    # -----------------------------
-    # Battery Packet
-    # -----------------------------
-    if packet_id == PACKET_ID_BATTERY:
-        fmt = "<3fB4H4f"
-        unpacked = struct.unpack(fmt, payload[:struct.calcsize(fmt)])
-        vbatt, vbattMin, vbattMax, state = unpacked[:4]
-        pwm = unpacked[4:4 + NBR_OF_MOTORS]
-        vmotor = unpacked[4 + NBR_OF_MOTORS:]
+        self.figure = Figure()
+        self.canvas = FigureCanvas(self.figure)
+        self.setCentralWidget(self.canvas)
+        self.ax = self.figure.add_subplot(111, projection='3d')
+        self.ax.set_xlabel('X (m)')
+        self.ax.set_ylabel('Y (m)')
+        self.ax.set_zlabel('Z (m)')
+        self.ax.set_title('Drone Trajectory')
 
-        state_dict = {0: "CHARGED", 1: "CHARGING", 2: "LOW_POWER", 3: "BATTERY"}
-        state_str = state_dict.get(state, "UNKNOWN")
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.update_plot)
+        self.timer.start(100)
 
-        print(f"[BATTERY MONITOR] ========================================================")
-        print(f"Battery: {vbatt:.2f}V (Min: {vbattMin:.2f}V, Max: {vbattMax:.2f}V) | State: {state_str}")
-        print("[Motors] ", end="")
-        for i in range(NBR_OF_MOTORS):
-            print(f"M{i+1}: V={vmotor[i]:.2f}V", end=" ")
-        print("\n==============================================================================\n")
+    def update_plot(self):
+        self.ax.cla()
+        self.ax.set_xlabel('X (m)')
+        self.ax.set_ylabel('Y (m)')
+        self.ax.set_zlabel('Z (m)')
+        self.ax.set_title('Drone Trajectory')
 
+        n = len(x_data)
+        if n > 1:
+            colors = np.linspace(0.1, 1.0, n)
+            for i in range(1, n):
+                self.ax.plot([x_data[i-1], x_data[i]],
+                             [y_data[i-1], y_data[i]],
+                             [z_data[i-1], z_data[i]],
+                             color=(0, 0, 1, colors[i]))
 
-    # -----------------------------
-    # Position Packet
-    # -----------------------------
-    elif packet_id == PACKET_ID_POSITION:
-        fmt = "<9f"
-        telemetry = struct.unpack(fmt, payload[:struct.calcsize(fmt)])
-        x, y, z, vx, vy, vz, roll, pitch, yaw = telemetry
+        self.canvas.draw()
 
-        print("[POSITION MONITOR] ========================================================")
-        print(f"Position -> x: {x:.2f}  y: {y:.2f}  z: {z:.2f} (m)")
-        print(f"Velocity -> x: {vx:.2f}  y: {vy:.2f}  z: {vz:.2f} (m/s)")
-        print(f"Attitude -> Roll: {roll:.2f}°  Pitch: {pitch:.2f}°  Yaw: {yaw:.2f}°")
-        print("==============================================================================\n")
+# -----------------------------
+# Thread for UDP listener
+# -----------------------------
+def udp_listener():
+    while True:
+        try:
+            packet, addr = sock.recvfrom(BUFFER_SIZE)
+            packet_id = packet[0]
+            payload = packet[1:-1]
 
+            if packet_id == PACKET_ID_BATTERY:
+                fmt = "<3fB4H4f"
+                unpacked = struct.unpack(fmt, payload[:struct.calcsize(fmt)])
+                vbatt, vbattMin, vbattMax, state = unpacked[:4]
+                pwm = unpacked[4:4 + NBR_OF_MOTORS]
+                vmotor = unpacked[4 + NBR_OF_MOTORS:]
+                state_dict = {0:"CHARGED",1:"CHARGING",2:"LOW_POWER",3:"BATTERY"}
+                state_str = state_dict.get(state,"UNKNOWN")
+                print(f"[BATTERY] V={vbatt:.2f} (Min={vbattMin:.2f} Max={vbattMax:2f}) | State={state_str} | " +
+                      " ".join([f"M{i+1}={vmotor[i]:.2f}" for i in range(NBR_OF_MOTORS)]))
+
+            elif packet_id == PACKET_ID_POSITION:
+                fmt = "<9f"
+                telemetry = struct.unpack(fmt, payload[:struct.calcsize(fmt)])
+                x, y, z, vx, vy, vz, roll, pitch, yaw = telemetry
+                print(f"[POSITION] x={x:.2f}, y={y:.2f}, z={z:.2f} | "
+                      f"vx={vx:.2f}, vy={vy:.2f}, vz={vz:.2f} | "
+                      f"roll={roll:.2f}, pitch={pitch:.2f}, yaw={yaw:.2f}")
+                x_data.append(x)
+                y_data.append(y)
+                z_data.append(z)
+
+        except BlockingIOError:
+            continue
+
+# -----------------------------
+# Run everything
+# -----------------------------
+if __name__ == "__main__":
+    listener_thread = threading.Thread(target=udp_listener, daemon=True)
+    listener_thread.start()
+
+    app = QApplication(sys.argv)
+    window = DronePlot()
+    window.show()
+    sys.exit(app.exec_())

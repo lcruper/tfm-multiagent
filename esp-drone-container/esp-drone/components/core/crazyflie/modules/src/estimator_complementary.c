@@ -97,7 +97,8 @@ void estimatorComplementary(state_t *state, sensorData_t *sensorData, control_t 
     tofMeasurement_t tofMeasurement;
 
     latestTofMeasurement(&tofMeasurement);
-    positionEstimate(state, sensorData, &tofMeasurement, POS_UPDATE_DT, tick);
+    //positionEstimate(state, sensorData, &tofMeasurement, POS_UPDATE_DT, tick);
+    positionEstimateSim(state, sensorData, &tofMeasurement, POS_UPDATE_DT, tick);
   }
 }
 

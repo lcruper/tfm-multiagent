@@ -33,6 +33,8 @@
 #include "num.h"
 #include "position_estimator.h"
 
+#include <math.h>
+
 #define G 9.81f;
 
 struct selfState_s {
@@ -114,6 +116,28 @@ static void positionEstimateInternal(state_t* estimate, const sensorData_t* sens
 static void positionUpdateVelocityInternal(float accWZ, float dt, struct selfState_s* state) {
   state->velocityZ += deadband(accWZ, state->vAccDeadband) * dt * G;
   state->velocityZ *= state->velZAlpha;
+}
+
+void positionEstimateSim(state_t* estimate, const sensorData_t* sensorData, const tofMeasurement_t* tofMeasurement, float dt, uint32_t tick) {
+    static float simTime = 0.0f;
+    const float R = 1.0f;         
+    const float zAmplitude = 0.5f; 
+
+
+    simTime += dt;
+
+    estimate->position.x = R * cosf(simTime);
+    estimate->position.y = R * sinf(simTime);
+    estimate->position.z = zAmplitude * sinf(simTime / 2.0f) + 1.0f; 
+
+  
+    static float prevX = 0, prevY = 0, prevZ = 0;
+    estimate->velocity.x = (estimate->position.x - prevX) / dt;
+    estimate->velocity.y = (estimate->position.y - prevY) / dt;
+    estimate->velocity.z = (estimate->position.z - prevZ) / dt;
+    prevX = estimate->position.x;
+    prevY = estimate->position.y;
+    prevZ = estimate->position.z;
 }
 
 LOG_GROUP_START(posEstAlt)

@@ -15,7 +15,6 @@ typedef struct {
     float vbattMin;
     float vbattMax;
     uint8_t state;
-    uint16_t pwm[NBR_OF_MOTORS];
     float vmotor[NBR_OF_MOTORS];
 } BatteryMotorPacket;
 
@@ -29,8 +28,7 @@ static void sendBatteryMotorUDP(float vbatt, float vbattMin, float vbattMax, PMS
 
     for (int i = 0; i < NBR_OF_MOTORS; i++)
     {
-        packet.pwm[i] = motorsGetRatio(i);
-        packet.vmotor[i] = vbatt * ((float)packet.pwm[i] / 65535.0f);
+        packet.vmotor[i] = vbatt * ((float)motorsGetRatio(i) / 65535.0f);
     }
 
     uint8_t buf[sizeof(BatteryMotorPacket)+1];
@@ -66,8 +64,7 @@ static void batteryMonitorTask(void *param)
         printf("[Motors] ");
         for (int i = 0; i < NBR_OF_MOTORS; i++)
         {
-            int pwm = motorsGetRatio(i);
-            float vmotor = vbatt * ((float)pwm / 65535.0f);
+            float vmotor = vbatt * ((float)motorsGetRatio(i) / 65535.0f);
             printf("M%d: V=%.2fV\t", i+1, vmotor);
         }
         printf("\n==============================================================================\n");

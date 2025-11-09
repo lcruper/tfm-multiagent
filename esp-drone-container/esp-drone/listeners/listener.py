@@ -124,7 +124,7 @@ def udp_listener():
                 state_str = state_dict.get(state,"UNKNOWN")
                 battery_info["vbatt"] = vbatt
                 battery_info["state"] = state_str
-                print(f"[BATTERY] V={vbatt:.2f} (Min={vbattMin:.2f} Max={vbattMax:2f}) | State={state_str} | " +
+                print(f"[BATTERY]  V={vbatt:.2f} (Min={vbattMin:.2f} Max={vbattMax:.2f}) | State={state_str} | " +
                       " ".join([f"M{i+1}={vmotor[i]:.2f}" for i in range(NBR_OF_MOTORS)]))
 
             # Trajectory
@@ -135,9 +135,9 @@ def udp_listener():
                 x_data.append(x)
                 y_data.append(y)
                 z_data.append(z)
-                print(f"[POSITION] x={x:.2f}, y={y:.2f}, z={z:.2f} | "
-                      f"vx={vx:.2f}, vy={vy:.2f}, vz={vz:.2f} | "
-                      f"roll={roll:.2f}, pitch={pitch:.2f}, yaw={yaw:.2f}")
+                print(f"[POSITION] x={x:.2f}, y={y:.2f}, z={z:.2f} (m) | "
+                      f"vx={vx:.2f}, vy={vy:.2f}, vz={vz:.2f} (m/s) | "
+                      f"roll={roll:.2f}, pitch={pitch:.2f}, yaw={yaw:.2f} (°)")
 
         except BlockingIOError:
             continue

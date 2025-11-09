@@ -56,19 +56,14 @@ static void batteryMonitorTask(void *param)
             default:        stateStr = "UNKNOWN"; break;
         }
 
-        printf("\n[BATTERY MONITOR] ========================================================\n");
-        printf("Battery: %.2fV (Min: %.2fV Max: %.2fV) | State: %s\n",
-             vbatt, vbattMin, vbattMax, stateStr);
-
-        // Motors
-        printf("[Motors] ");
+        printf("[BATTERY]  V=%.2f (Min=%.2f Max=%.2f) | State=%s |\t",
+               vbatt, vbattMin, vbattMax, stateStr);
         for (int i = 0; i < NBR_OF_MOTORS; i++)
         {
             float vmotor = vbatt * ((float)motorsGetRatio(i) / 65535.0f);
-            printf("M%d: V=%.2fV\t", i+1, vmotor);
+            printf("M%d=%.2f\t", i+1, vmotor);
         }
-        printf("\n==============================================================================\n");
-
+        printf("\n");
         sendBatteryMotorUDP(vbatt, vbattMin, vbattMax, state);
 
         vTaskDelay(pdMS_TO_TICKS(BATTERY_MONITOR_DELAY_MS));

@@ -20,6 +20,7 @@ BUFFER_SIZE = 128
 
 PACKET_ID_BATTERY = 0x01
 PACKET_ID_POSITION = 0x02
+PACKET_ID_ALERT = 0x03
 NBR_OF_MOTORS = 4
 
 # -----------------------------
@@ -40,6 +41,7 @@ x_data = deque(maxlen=200)
 y_data = deque(maxlen=200)
 z_data = deque(maxlen=200)
 battery_info = {"vbatt": 0.0, "state": "UNKNOWN"}
+alert_info = {"x": 0.0, "y": 0.0}
 
 # -----------------------------
 # PyQt5 + Matplotlib Plot
@@ -101,7 +103,10 @@ class DroneMonitor(QMainWindow):
                              [y_data[i-1], y_data[i]],
                              [z_data[i-1], z_data[i]],
                              color=(0, 0, 1, colors[i]))
-
+        # Alert
+        self.ax.scatter(alert_info["x"], alert_info["y"], 0.0,
+                    color='red', marker='x', s=50, label="Alerta")
+        
         self.canvas.draw()
 
 # -----------------------------
@@ -138,6 +143,15 @@ def udp_listener():
                 print(f"[POSITION] x={x:.2f}, y={y:.2f}, z={z:.2f} (m) | "
                       f"vx={vx:.2f}, vy={vy:.2f}, vz={vz:.2f} (m/s) | "
                       f"roll={roll:.2f}, pitch={pitch:.2f}, yaw={yaw:.2f} (°)")
+                
+            # Alert
+            elif packet_id == PACKET_ID_ALERT:
+                fmt = "<2f"
+                x_alert, y_alert = struct.unpack(fmt, payload[:struct.calcsize(fmt)])
+                alert_info["x"] = x_alert
+                alert_info["y"] = y_alert
+                print(f"[ALERT!] x={x_alert:.2f}, y={y_alert:.2f}")
+
 
         except BlockingIOError:
             continue

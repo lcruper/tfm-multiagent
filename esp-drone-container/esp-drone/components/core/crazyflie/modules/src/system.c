@@ -75,6 +75,7 @@
 
 #include "battery_monitor.h"
 #include "position_monitor.h"
+#include "drone_alert.h"
 #include "drone_camera.h"
 #include "drone_routines.h"
 #include "drone_uart.h"
@@ -263,6 +264,9 @@ void systemTask(void *arg)
     // Monitoring the drone
     startBatteryMonitor();
     startPositionMonitor();
+
+    // Monitoring the alerts
+    startAlert();
 
     // Capturing camera frames
     // startCapturingCamera();

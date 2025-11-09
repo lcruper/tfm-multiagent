@@ -10,7 +10,7 @@
 #define BATTERY_MONITOR_DELAY_MS 2000
 #define PACKET_ID_BATTERY  0x01
 
-typedef struct {
+typedef struct __attribute__((packed)){
     float vbatt;
     float vbattMin;
     float vbattMax;

@@ -9,8 +9,8 @@
 // ===========================
 // Enter your WiFi credentials
 // ===========================
-const char *ssid = "MOVISTAR_D080";
-const char *password = "sSQG7uDNcjLng3UaeY7c";
+const char *ssid = "DIGIFIBRA-5P2G";
+const char *password = "4XUuEN4u99";
 
 void startCameraServer();
 void setupLedFlash();
@@ -121,6 +121,7 @@ void setup() {
 
   Serial.print("Camera Ready! Use 'http://");
   Serial.print(WiFi.localIP());
+  Serial.print(":81/stream");
   Serial.println("' to connect");
 }
 

@@ -818,11 +818,11 @@ void startCameraServer() {
 
   log_i("Starting web server on port: '%d'", config.server_port);
   if (httpd_start(&camera_httpd, &config) == ESP_OK) {
-    httpd_register_uri_handler(camera_httpd, &index_uri);
+    // httpd_register_uri_handler(camera_httpd, &index_uri);
     httpd_register_uri_handler(camera_httpd, &cmd_uri);
     httpd_register_uri_handler(camera_httpd, &status_uri);
-    httpd_register_uri_handler(camera_httpd, &capture_uri);
-    httpd_register_uri_handler(camera_httpd, &bmp_uri);
+    // httpd_register_uri_handler(camera_httpd, &capture_uri);
+    // httpd_register_uri_handler(camera_httpd, &bmp_uri);
 
     httpd_register_uri_handler(camera_httpd, &xclk_uri);
     httpd_register_uri_handler(camera_httpd, &reg_uri);

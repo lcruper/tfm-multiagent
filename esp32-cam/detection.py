@@ -23,8 +23,8 @@ def turn_off_flash():
         pass
 
 
-STREAM_URL = "http://192.168.1.40:81/stream"
-ESP32_URL = "http://192.168.1.40/control"
+STREAM_URL = "http://192.168.1.137:81/stream"
+ESP32_URL = "http://192.168.1.137/control"
 
 IMG_SIZE = 256
 CONF_THRESH = 0.35

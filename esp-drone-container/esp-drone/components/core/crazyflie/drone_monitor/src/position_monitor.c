@@ -66,10 +66,10 @@ static void positionMonitorTask(void *param)
         float pitch = s->attitude.pitch;
         float yaw   = s->attitude.yaw;
 
-        printf("[POSITION] x=%.2f, y=%.2f, z=%.2f (m) | "
-               "vx=%.2f, vy=%.2f, vz=%.2f (m/s) | "
-               "roll=%.2f, pitch=%.2f, yaw=%.2f (°)\n",
-               x, y, z, vx, vy, vz, roll, pitch, yaw);
+        // printf("[POSITION] x=%.2f, y=%.2f, z=%.2f (m) | "
+        //       "vx=%.2f, vy=%.2f, vz=%.2f (m/s) | "
+        //       "roll=%.2f, pitch=%.2f, yaw=%.2f (°)\n",
+        //       x, y, z, vx, vy, vz, roll, pitch, yaw);
 
         sendPositionUDP(x, y, z, vx, vy, vz, roll, pitch, yaw);
         

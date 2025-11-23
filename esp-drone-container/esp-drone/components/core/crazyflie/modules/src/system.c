@@ -73,12 +73,12 @@
 //#include "peer_localization.h"
 #include "cfassert.h"
 
-#include "battery_monitor.h"
+// #include "battery_monitor.h"
 #include "position_monitor.h"
-#include "drone_alert.h"
-#include "drone_camera.h"
-#include "drone_routines.h"
-#include "drone_uart.h"
+// #include "drone_alert.h"
+// #include "drone_camera.h"
+// #include "drone_routines.h"
+// #include "drone_uart.h"
 
 
 #ifndef START_DISARMED
@@ -262,11 +262,11 @@ void systemTask(void *arg)
     ledseqRun(&seq_testPassed);
 
     // Monitoring the drone
-    startBatteryMonitor();
+    // startBatteryMonitor();
     startPositionMonitor();
 
     // Monitoring the alerts
-    startAlert();
+    // startAlert();
 
     // Capturing camera frames
     // startCapturingCamera();

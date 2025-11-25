@@ -75,11 +75,6 @@
 
 // #include "battery_monitor.h"
 #include "position_monitor.h"
-// #include "drone_alert.h"
-// #include "drone_camera.h"
-// #include "drone_routines.h"
-// #include "drone_uart.h"
-
 
 #ifndef START_DISARMED
 #define ARM_INIT true
@@ -159,9 +154,6 @@ void systemInit(void)
       DEBUG_PRINTE("Camera initialization failed!");
   }
   */
-
-  // Initialize the drone UART interface
-  // droneUartInit();
 
 #ifdef APP_ENABLED
   appInit();
@@ -264,16 +256,6 @@ void systemTask(void *arg)
     // Monitoring the drone
     // startBatteryMonitor();
     startPositionMonitor();
-
-    // Monitoring the alerts
-    // startAlert();
-
-    // Capturing camera frames
-    // startCapturingCamera();
-
-    // Start UART to receive commands for routines
-    // startUART();
-
     
   }
   else

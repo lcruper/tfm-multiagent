@@ -61,15 +61,21 @@ static void positionMonitorTask(void *param)
         float vy = s->velocity.y;
         float vz = s->velocity.z;
 
+        // Acceleration
+        float ax = s->acc.x;
+        float ay = s->acc.y;
+        float az = s->acc.z;
+
         // Orientation
         float roll  = s->attitude.roll;
         float pitch = s->attitude.pitch;
         float yaw   = s->attitude.yaw;
 
-        // printf("[POSITION] x=%.2f, y=%.2f, z=%.2f (m) | "
-        //       "vx=%.2f, vy=%.2f, vz=%.2f (m/s) | "
-        //       "roll=%.2f, pitch=%.2f, yaw=%.2f (°)\n",
-        //       x, y, z, vx, vy, vz, roll, pitch, yaw);
+        printf("[POSITION] x=%.2f, y=%.2f, z=%.2f (m) | "
+              "vx=%.2f, vy=%.2f, vz=%.2f (m/s) | "
+              "ax=%.2f, ay=%.2f, az=%.2f (m/s²) | "
+              "roll=%.2f, pitch=%.2f, yaw=%.2f (°)\n",
+              x, y, z, vx, vy, vz, ax, ay, az, roll, pitch, yaw);
 
         sendPositionUDP(x, y, z, vx, vy, vz, roll, pitch, yaw);
         

@@ -15,25 +15,18 @@ typedef struct __attribute__((packed)){
     float x;
     float y;
     float z;
-    float vx;
-    float vy;
-    float vz;
     float roll;
     float pitch;
     float yaw;
 } PositionPacket;
 
 static void sendPositionUDP(float x, float y, float z,
-                            float vx, float vy, float vz,
                             float roll, float pitch, float yaw)
 {
     PositionPacket packet;
     packet.x = x;
     packet.y = y;
     packet.z = z;
-    packet.vx = vx;
-    packet.vy = vy;
-    packet.vz = vz;
     packet.roll = roll;
     packet.pitch = pitch;
     packet.yaw = yaw;
@@ -77,7 +70,7 @@ static void positionMonitorTask(void *param)
               "roll=%.2f, pitch=%.2f, yaw=%.2f (°)\n",
               x, y, z, vx, vy, vz, ax, ay, az, roll, pitch, yaw);
 
-        sendPositionUDP(x, y, z, vx, vy, vz, roll, pitch, yaw);
+        sendPositionUDP(x, y, z, roll, pitch, yaw);
         
         vTaskDelay(pdMS_TO_TICKS(POSITION_MONITOR_DELAY_MS));
     }

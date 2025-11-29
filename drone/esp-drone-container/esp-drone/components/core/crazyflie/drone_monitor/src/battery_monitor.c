@@ -7,7 +7,7 @@
 #include "battery_monitor.h"
 #include "wifi_esp32.h"
 
-#define BATTERY_MONITOR_DELAY_MS 2000
+#define BATTERY_MONITOR_DELAY_MS 5000
 #define PACKET_ID_BATTERY  0x01
 
 typedef struct __attribute__((packed)){
@@ -56,14 +56,14 @@ static void batteryMonitorTask(void *param)
             default:        stateStr = "UNKNOWN"; break;
         }
 
-        // printf("[BATTERY]  V=%.2f (Min=%.2f Max=%.2f) | State=%s |\t",
-        //        vbatt, vbattMin, vbattMax, stateStr);
-        // for (int i = 0; i < NBR_OF_MOTORS; i++)
-        // {
-        //     float vmotor = vbatt * ((float)motorsGetRatio(i) / 65535.0f);
-        //     printf("M%d=%.2f\t", i+1, vmotor);
-        // }
-        // printf("\n");
+        printf("[BATTERY]  V=%.2f (Min=%.2f Max=%.2f) | State=%s |\t",
+               vbatt, vbattMin, vbattMax, stateStr);
+        for (int i = 0; i < NBR_OF_MOTORS; i++)
+        {
+            float vmotor = vbatt * ((float)motorsGetRatio(i) / 65535.0f);
+            printf("M%d=%.2f\t", i+1, vmotor);
+        }
+        printf("\n");
         
         sendBatteryMotorUDP(vbatt, vbattMin, vbattMax, state);
 

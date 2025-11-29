@@ -73,7 +73,7 @@
 //#include "peer_localization.h"
 #include "cfassert.h"
 
-// #include "battery_monitor.h"
+#include "battery_monitor.h"
 #include "position_monitor.h"
 #include "drone_camera.h"
 

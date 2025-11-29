@@ -5,6 +5,10 @@ import numpy as np
 class Position:
     x: float
     y: float
+    z: float
+    roll: float
+    pitch: float
+    yaw: float
 
 @dataclass
 class FrameWithPosition:

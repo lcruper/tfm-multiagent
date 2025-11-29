@@ -24,6 +24,7 @@ class DronePositionUDP:
             self._running = True
             self._listen_thread = threading.Thread(target=self._listen_udp, daemon=True)
             self._listen_thread.start()
+            print("[DronePositionUDP] Started listening thread.")
 
     def stop(self):
         self._running = False
@@ -33,6 +34,7 @@ class DronePositionUDP:
         if self._listen_thread:
             self._listen_thread.join()
             self._listen_thread = None
+            print("[DronePositionUDP] Stopped.")
 
     def get_position(self):
         with self._lock:

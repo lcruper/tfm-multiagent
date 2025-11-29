@@ -4,16 +4,16 @@ import requests
 from ultralytics import YOLO
 import threading
 import time
-from queue import Queue
+from queue import Empty, Queue, Full
 from structures import FrameWithPosition
 
 class CameraRedDetector:
     IMG_SIZE = 256
     CONF_THRESH = 0.35
     IOU_THRESH = 0.45
-    RED_RATIO_THRESH=0.3 
-    MIN_BOX_AREA=100
-    QUEUE_SIZE=100
+    RED_RATIO_THRESH = 0.3 
+    MIN_BOX_AREA = 100
+    QUEUE_SIZE = 100
 
     def __init__(self, drone, camera_url, callback):
         self.drone = drone
@@ -31,20 +31,29 @@ class CameraRedDetector:
         self.model = YOLO("yolov8n.pt")
 
     def start(self):
-        if not self._running:
-            self._running = True
-            self._capture_thread = threading.Thread(target=self._capture, daemon=True)
-            self._process_thread = threading.Thread(target=self._process, daemon=True)
-            self._capture_thread.start()
-            self._process_thread.start()
-            print("[CameraRedDetector] Capturing and processing frames.")
+        if self._running:
+            print("[CameraRedDetector] Already running.")
+            return
+        
+        self._running = True
+        self._capture_thread = threading.Thread(target=self._capture, daemon=True)
+        self._process_thread = threading.Thread(target=self._process, daemon=True)
+        self._capture_thread.start()
+        self._process_thread.start()
+        print("[CameraRedDetector] Started capture + processing threads.")
 
     def stop(self):
         self._running = False
+
         if self._capture_thread:
             self._capture_thread.join()
+            self._capture_thread = None
+
         if self._process_thread:
             self._process_thread.join()
+            self._process_thread = None
+
+        print("[CameraRedDetector] Stopped.")
 
     def _turn_on_flash(self):
         try:
@@ -62,6 +71,7 @@ class CameraRedDetector:
         cap = cv2.VideoCapture(self.stream_url)
         if not cap.isOpened():
             print(f"[CameraRedDetector] Cannot open stream: {self.stream_url}")
+            self._running = False
             return
 
         print("[CameraRedDetector] Stream opened. Capturing frames...")
@@ -73,7 +83,14 @@ class CameraRedDetector:
                 continue
 
             pos = self.drone.get_position()
-            self._queue.put(FrameWithPosition(frame, pos))
+            try:
+                self._queue.put(FrameWithPosition(frame, pos), timeout=0.01)
+            except Full:
+                try:
+                    self._queue.get_nowait()
+                except Empty:
+                    pass
+                self._queue.put_nowait(FrameWithPosition(frame, pos))
 
         cap.release()
 
@@ -81,14 +98,20 @@ class CameraRedDetector:
         while self._running:
             try:
                 fwp = self._queue.get(timeout=0.1)
-                frame = fwp.frame
-                pos = fwp.position
-            except:
+            except Empty:
                 continue
 
-            results = self.model.predict(frame, device="cpu", imgsz=self.IMG_SIZE,
-                                         conf=self.CONF_THRESH, iou=self.IOU_THRESH,
-                                         half=False, verbose=False)
+            frame = fwp.frame
+            pos = fwp.position   
+
+            try:
+                results = self.model.predict(frame, device="cpu", imgsz=self.IMG_SIZE,
+                                            conf=self.CONF_THRESH, iou=self.IOU_THRESH,
+                                            half=False, verbose=False)
+            except Exception as e:
+                print(f"[CameraRedDetector] YOLO error: {e}")
+                continue
+
             dets = results[0].boxes if len(results) else []
 
             red_detected = False

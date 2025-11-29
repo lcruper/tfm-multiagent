@@ -9,8 +9,8 @@
 // ===========================
 // Enter your WiFi credentials
 // ===========================
-const char *ssid = "DIGIFIBRA-5P2G";
-const char *password = "4XUuEN4u99";
+const char *ssid = "ESP-DRONE-LIDIA_ECDA3BE30A83";
+const char *password = "12345678";
 
 void startCameraServer();
 void setupLedFlash();

@@ -75,6 +75,7 @@
 
 // #include "battery_monitor.h"
 #include "position_monitor.h"
+#include "drone_camera.h"
 
 #ifndef START_DISARMED
 #define ARM_INIT true
@@ -145,15 +146,6 @@ void systemInit(void)
   pmInit();
   buzzerInit();
 //  peerLocalizationInit();
-
-  // Initialize the camera
-  /** 
-  if(camera_init() == ESP_OK) {
-      DEBUG_PRINTI("Camera initialized successfully");
-  } else {
-      DEBUG_PRINTE("Camera initialization failed!");
-  }
-  */
 
 #ifdef APP_ENABLED
   appInit();
@@ -256,6 +248,9 @@ void systemTask(void *arg)
     // Monitoring the drone
     // startBatteryMonitor();
     startPositionMonitor();
+
+    // Capturing camera frames
+    // startCapturingCamera();
     
   }
   else

@@ -126,8 +126,8 @@ static void assertStateNotNaN(const kalmanCoreData_t* this)
 #define MIN_COVARIANCE (1e-6f)
 
 // Initial variances, uncertain of position, but know we're stationary and roughly flat
-static const float stdDevInitialPosition_xy = 100;
-static const float stdDevInitialPosition_z = 1;
+static const float stdDevInitialPosition_xy = 0.01;
+static const float stdDevInitialPosition_z = 0.01;
 static const float stdDevInitialVelocity = 0.01;
 static const float stdDevInitialAttitude_rollpitch = 0.01;
 static const float stdDevInitialAttitude_yaw = 0.01;
@@ -866,6 +866,13 @@ void kalmanCorePredict(kalmanCoreData_t* this, float cmdThrust, Axis3f *acc, Axi
   float norm = xtensa_sqrt(tmpq0*tmpq0 + tmpq1*tmpq1 + tmpq2*tmpq2 + tmpq3*tmpq3);
   this->q[0] = tmpq0/norm; this->q[1] = tmpq1/norm; this->q[2] = tmpq2/norm; this->q[3] = tmpq3/norm;
   assertStateNotNaN(this);
+
+  // Deadzone to ignore small noise
+  if (fabsf(this->S[KC_STATE_PX]) < 0.05f) this->S[KC_STATE_PX] = 0;
+  if (fabsf(this->S[KC_STATE_PY]) < 0.05f) this->S[KC_STATE_PY] = 0;
+  if (fabsf(this->S[KC_STATE_X])  < 0.05f) this->S[KC_STATE_X]  = 0;
+  if (fabsf(this->S[KC_STATE_Y])  < 0.05f) this->S[KC_STATE_Y]  = 0;
+
 }
 
 

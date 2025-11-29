@@ -7,7 +7,7 @@ class System:
     def __init__(self, drone_ip, drone_port, local_port, camera_url):
         self.drone = DronePositionUDP(drone_ip, drone_port, local_port)
         self.detector = CameraRedDetector(self.drone, camera_url, self._red_detected_callback)
-        self.preview = CameraPreviewWindow(self.detector._queue, self.drone)
+        self.preview = CameraPreviewWindow(self.detector._queue)
         self.red_positions = []
 
     def start(self):

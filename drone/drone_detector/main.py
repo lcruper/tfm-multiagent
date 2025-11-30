@@ -1,5 +1,15 @@
+from colored_logs import ColoredFormatter
 from system import System
 import time
+import logging
+
+handler = logging.StreamHandler()
+handler.setFormatter(ColoredFormatter("[%(levelname)s] %(name)s: %(message)s"))
+
+logging.basicConfig(
+    level=logging.DEBUG,  
+    handlers=[handler]
+)
 
 def main():
     system = System(

@@ -76,6 +76,16 @@ class TelemetryData:
 
 
 @dataclass
+class Frame:
+    """
+    @brief Represents a captured camera frame.
+
+    @var data
+        The image data as a NumPy array (H x W x 3).
+    """
+    data: np.ndarray
+
+@dataclass
 class FrameWithPosition:
     """
     @brief Associates a camera frame with a drone position.
@@ -85,5 +95,5 @@ class FrameWithPosition:
     @var position
         The position of the drone when the frame was captured.
     """
-    frame: np.ndarray
+    frame: Frame
     position: Position

@@ -3,6 +3,7 @@ import socket
 import struct
 import threading
 import logging
+
 from copy import deepcopy
 from structures import Battery, Position, Orientation, Pose, TelemetryData
 
@@ -20,7 +21,7 @@ class DroneTelemetryListener:
     PACKET_ID_POSE = 0x02                        # Packet ID for pose packets
     HANDSHAKE_PACKET = b'\x01' + bytes([0x01])   # Handshake packet to initiate communication
 
-    def __init__(self, drone_ip: str, drone_port: int, local_port: int):
+    def __init__(self, drone_ip: str, drone_port: int, local_port: int) -> None:
         """
         @brief Constructor.
 
@@ -42,16 +43,19 @@ class DroneTelemetryListener:
                 voltage=0
             )
         )
-        self._lock = threading.Lock()                   # Lock for thread-safe access to telemetry data
         
-        self._running = False                           # Flag to control the background listener thread
-        self._listen_thread = None                      # Listener thread
-        self._sock = None                               # UDP socket
+        # UDP socket
+        self._sock = None                              
 
         # Structs for unpacking data
-        self._struct_pose = struct.Struct("<6f")    # x,y,z,roll,pitch,yaw
+        self._struct_pose = struct.Struct("<6f")        # x,y,z,roll,pitch,yaw
         self._struct_battery = struct.Struct("<f")      # battery voltage
 
+        # Threading
+        self._lock = threading.Lock()                   # Lock for thread-safe access to telemetry data
+        self._running = False                           # Flag to control the background listener thread
+        self._thread = None                             # Listener thread
+        
         # Logger
         self._logger = logging.getLogger("DroneTelemetryListener")
 
@@ -71,8 +75,8 @@ class DroneTelemetryListener:
         
         self._logger.info("Starting listener...")
         self._running = True
-        self._listen_thread = threading.Thread(target=self._listen, daemon=True)
-        self._listen_thread.start()
+        self._thread = threading.Thread(target=self._listen, daemon=True)
+        self._thread.start()
         self._logger.info("Listener started.")
 
     def stop(self) -> None:
@@ -94,9 +98,9 @@ class DroneTelemetryListener:
             except Exception:
                 pass
             self._sock = None
-        if self._listen_thread:
-            self._listen_thread.join(timeout=1.0)
-            self._listen_thread = None
+        if self._thread:
+            self._thread.join(timeout=1.0)
+            self._thread = None
         self._logger.info("Listener stopped.")
 
     # ----------------------------------------------------------------------
@@ -182,6 +186,8 @@ class DroneTelemetryListener:
     def _process_battery_packet(self, payload: bytes) -> None:
         """
         @brief Processes a battery packet and updates internal state.
+
+        @param payload The payload of the battery packet.
         """
         # Validate expected battery payload size
         if len(payload) < self._struct_battery.size:
@@ -200,6 +206,8 @@ class DroneTelemetryListener:
     def _process_pose_packet(self, payload: bytes) -> None:
         """
         @brief Processes a pose packet and updates internal state.
+
+        @param payload The payload of the pose packet.
         """
         # Validate expected pose payload size
         if len(payload) < self._struct_pose.size:

@@ -1,4 +1,4 @@
-from drone_position_udp import DronePositionUDP
+from old.drone_position_udp import DronePositionUDP
 from camera_red_detector import CameraRedDetector
 from camera_preview_window import CameraPreviewWindow
 from structures import Position

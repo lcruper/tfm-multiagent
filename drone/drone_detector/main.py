@@ -6,7 +6,7 @@ def main():
         drone_ip="192.168.43.42",
         drone_port=2390,
         local_port=2391,
-        camera_url="http://192.168.43.44"
+        camera_url="http://192.168.43.43"
     )
     system.start()
 

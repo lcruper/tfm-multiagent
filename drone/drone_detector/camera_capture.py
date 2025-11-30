@@ -8,7 +8,6 @@ from copy import deepcopy
 from numpy import ndarray
 from structures import Frame
 
-from colored_logs import ColoredFormatter
 class CameraCapture:
     """
     @brief Captures frames from a stream URL.
@@ -16,15 +15,15 @@ class CameraCapture:
     Maintains the camera open, updates the last captured frame thread-safe, 
     and can recover if the stream temporarily fails.
     """
-    def __init__(self, stream_url: str, retry_delay: float = 1.0) -> None:
+    RETRY_DELAY = 1.0  # Seconds to wait before retrying to open the stream if it fails.
+    
+    def __init__(self, stream_url: str) -> None:
         """
         @brief Constructor.
 
         @param stream_url URL of the stream.
-        @param retry_delay Seconds to wait before retrying to open the stream if it fails.
         """
         self.stream_url = stream_url
-        self.retry_delay = retry_delay
 
         self._cap = None        # cv2.VideoCapture object
         self._frame = None      # Last captured frame
@@ -125,14 +124,14 @@ class CameraCapture:
         while self._running:
             if not self._cap or not self._cap.isOpened():
                 if not self._open_stream():
-                    sleep(self.retry_delay)
+                    sleep(self.RETRY_DELAY)
                     continue
 
             # Capture frame
             ret, frame = self._cap.read()
             if not ret:
                 self._logger.warning("Failed to read frame. Retrying...")
-                sleep(self.retry_delay)
+                sleep(self.RETRY_DELAY)
                 continue
 
             self._logger.debug(f"Frame captured of size {frame.shape}")

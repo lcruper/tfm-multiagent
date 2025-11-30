@@ -7,7 +7,7 @@ handler = logging.StreamHandler()
 handler.setFormatter(ColoredFormatter("[%(levelname)s] %(name)s: %(message)s"))
 
 logging.basicConfig(
-    level=logging.DEBUG,  
+    level=logging.INFO,  
     handlers=[handler]
 )
 

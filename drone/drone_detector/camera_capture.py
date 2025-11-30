@@ -144,19 +144,3 @@ class CameraCapture:
         # Release capture on exit
         self._cap.release()
         self._cap = None
-
-if __name__ == "__main__":
-    handler = logging.StreamHandler()
-    handler.setFormatter(ColoredFormatter("[%(levelname)s] %(name)s: %(message)s"))
-
-    logging.basicConfig(
-        level=logging.DEBUG,  
-        handlers=[handler]
-    )
-    camera = CameraCapture("http://192.168.43.43:81/stream")
-    camera.start()
-    try:
-        while True:
-            sleep(1) 
-    except KeyboardInterrupt:
-        camera.stop()

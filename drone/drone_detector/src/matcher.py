@@ -10,13 +10,9 @@ class Matcher:
     """
     @brief Associates frames from a camera with the drone's position.
 
-    Captures frames and drone positions, combines them into FrameWithPosition objects,
+    Captures camera frames and drone positions, combines them into FrameWithPosition objects,
     and distributes them to multiple registered consumer queues.
     """
-    DEFAULT_PORT = 81       # Default port for stream capture
-    MAX_IP_TRIES = 5        # Maximum number of tries to get stream URL
-    REQUEST_TIMEOUT = 0.5   # Timeout for HTTP requests in seconds
-
     def __init__(self, drone_telemetry, camera_capture) -> None:
         """
         @brief Constructor.
@@ -89,13 +85,15 @@ class Matcher:
         """
         while self._running:
             # Get camera frame
-            frame= self.camera.get_frame()
+            frame = self.camera.get_frame()
             if frame is None:
                 sleep(0.01)
                 continue
+            self._logger.debug(f"Retrieved frame of shape {frame.data.shape}")
 
             # Get drone position
             position = self.drone.get_position()
+            self._logger.debug(f"Retrieved position {position}")
 
             # Create FrameWithPosition object
             fwp = FrameWithPosition(frame, position)

@@ -2,6 +2,7 @@
 import cv2
 import threading
 import logging
+import requests
 
 from time import sleep
 from copy import deepcopy
@@ -24,6 +25,7 @@ class CameraCapture:
         @param stream_url URL of the stream.
         """
         self.stream_url = stream_url
+        self._flash_url = stream_url.replace(":81/stream", ":80/control")
 
         self._cap = None        # cv2.VideoCapture object
         self._frame = None      # Last captured frame
@@ -82,6 +84,26 @@ class CameraCapture:
         """
         with self._lock:
             return deepcopy(self._frame)
+        
+    def turn_on_flash(self):
+        """
+        @brief Turns on the camera flash if supported.
+        """
+        try:
+            requests.get(self._flash_url, params={"var": "led_intensity", "val": 255}, timeout=0.1)
+            self._logger.debug("Flash turned on.")
+        except:
+            pass
+
+    def turn_off_flash(self):
+        """
+        @brief Turns off the camera flash if supported. 
+        """
+        try:
+            requests.get(self._flash_url, params={"var": "led_intensity", "val": 0}, timeout=0.1)
+            self._logger.debug("Flash turned off.")
+        except:
+            pass
 
     # ----------------------------------------------------------------------
     # Internal methods

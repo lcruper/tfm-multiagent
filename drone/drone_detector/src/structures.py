@@ -86,14 +86,14 @@ class Frame:
     data: np.ndarray
 
 @dataclass
-class FrameWithPosition:
+class FrameWithTelemetry:
     """
-    @brief Associates a camera frame with a drone position.
+    @brief Associates a camera frame with a drone telemetry data.
 
     @var frame
         The captured image as a NumPy array (H x W x 3).
-    @var position
-        The position of the drone when the frame was captured.
+    @var telemetry
+        The telemetry data of the drone when the frame was captured.
     """
     frame: Frame
-    position: Position
+    telemetry: TelemetryData

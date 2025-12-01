@@ -20,7 +20,7 @@ class System:
     """
     DEFAULT_PORT = 81       # Default stream port
     MAX_IP_TRIES = 5        # Max IPs to try for stream URL
-    REQUEST_TIMEOUT = 5   # Timeout for HTTP requests in seconds
+    REQUEST_TIMEOUT = 5     # Timeout for HTTP requests in seconds
 
     def __init__(self, drone_ip: str, drone_port: int, local_port: int, yolo_model_path: str) -> None:
         """
@@ -45,7 +45,6 @@ class System:
         stream_url = self._find_stream_url(drone_ip)
         if stream_url is None:
             raise RuntimeError("No working camera stream found. System cannot start without a camera.")
-        # stream_url = "http://192.168.43.44:81/stream"
         self.camera = CameraCapture(stream_url)
         
         # --- Matcher ---
@@ -79,7 +78,7 @@ class System:
         self._json_filename = os.path.join(
             self._detections_folder, f"red_detections_{session_timestamp}.json"
         )
-        self._logger.info(f"Red detections will be saved in {self._json_filename}")
+        self._logger.info("Red detections will be saved in %s", self._json_filename)
 
         with self._lock:
             self.drone.start()
@@ -125,7 +124,7 @@ class System:
             try:
                 r = requests.head(url, timeout=self.REQUEST_TIMEOUT)
                 if r.status_code == 405:
-                    self._logger.info(f"Found working stream URL: {url}")
+                    self._logger.info("Found working stream URL: %s", url)
                     return url
             except requests.RequestException:
                 continue
@@ -137,7 +136,7 @@ class System:
         timestamp_folder = datetime.now().strftime("%Y%m%d_%H%M%S")
         detections_folder = os.path.join(base_folder, timestamp_folder)
         os.makedirs(detections_folder, exist_ok=True)
-        self._logger.info(f"Detections will be saved in folder: {detections_folder}")
+        self._logger.info("Detections will be saved in folder: %s", detections_folder)
         return detections_folder
 
 
@@ -151,7 +150,7 @@ class System:
 
         with open(self._json_filename, "w") as f:
             json.dump(self.red_positions, f, indent=4)
-        self._logger.debug(f"Saved {len(self.red_positions)} red detections to {self._json_filename}")
+        self._logger.debug("Saved %d red detections to %s", len(self.red_positions), self._json_filename)
 
     # ----------------------------------------------------------------------
     # Red Detection Callback
@@ -162,14 +161,14 @@ class System:
 
         Saves the detection and flashes the drone.
         """
-        self._logger.debug(f"Red detected at position x={position.x:.2f}, y={position.y:.2f}, z={position.z:.2f}")
+        self._logger.debug("Red detected at position x=%.2f, y=%.2f, z=%.2f", position.x, position.y, position.z)
         
         # Turn on flash
         try:
             self.camera.turn_on_flash() 
             self.camera.turn_off_flash()
         except Exception as e:
-            self._logger.error(f"Failed to turn on flash: {e}")
+            self._logger.error("Failed to turn on flash: %s", e)
 
         # Store detection
         self.red_positions.append({

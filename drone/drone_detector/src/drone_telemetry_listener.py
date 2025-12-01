@@ -16,10 +16,10 @@ class DroneTelemetryListener:
     
     @note All get_* methods are thread-safe.
     """
-    BUFFER_SIZE = 128                            # Maximum UDP packet size
-    PACKET_ID_BATTERY = 0x01                     # Packet ID for battery packets
-    PACKET_ID_POSE = 0x02                        # Packet ID for pose packets
-    HANDSHAKE_PACKET = b'\x01' + bytes([0x01])   # Handshake packet to initiate communication
+    BUFFER_SIZE: int = 128                              # Maximum UDP packet size
+    PACKET_ID_BATTERY: int = 0x01                       # Packet ID for battery packets
+    PACKET_ID_POSE: int = 0x02                          # Packet ID for pose packets
+    HANDSHAKE_PACKET: bytes = b'\x01' + bytes([0x01])   # Handshake packet to initiate communication
 
     def __init__(self, drone_ip: str, drone_port: int, local_port: int) -> None:
         """
@@ -29,12 +29,12 @@ class DroneTelemetryListener:
         @param drone_port   UDP port on the drone to which handshake messages will be sent.
         @param local_port   Local UDP port where this object will listen for incoming packets.
         """
-        self.drone_ip = drone_ip
-        self.drone_port = drone_port
-        self.local_port = local_port
+        self.drone_ip: str = drone_ip
+        self.drone_port: int = drone_port
+        self.local_port: int = local_port
         
         # Last known drone telemetry data
-        self._telemetry = TelemetryData(
+        self._telemetry: TelemetryData = TelemetryData(
             pose=Pose(
                 position=Position(0,0,0), 
                 orientation=Orientation(0,0,0)
@@ -45,19 +45,19 @@ class DroneTelemetryListener:
         )
         
         # UDP socket
-        self._sock = None                              
+        self._sock: socket.socket = None                              
 
         # Structs for unpacking data
-        self._struct_pose = struct.Struct("<6f")        # x,y,z,roll,pitch,yaw
-        self._struct_battery = struct.Struct("<f")      # battery voltage
+        self._struct_pose: struct.Struct = struct.Struct("<6f")        # x,y,z,roll,pitch,yaw
+        self._struct_battery: struct.Struct = struct.Struct("<f")      # battery voltage
 
         # Threading
-        self._lock = threading.Lock()                   # Lock for thread-safe access to telemetry data
-        self._running = False                           # Flag to control the background listener thread
-        self._thread = None                             # Listener thread
+        self._lock: threading.Lock = threading.Lock()       # Lock for thread-safe access to telemetry data
+        self._running: bool = False                         # Flag to control the background listener thread
+        self._thread: threading.Thread = None               # Listener thread
         
         # Logger
-        self._logger = logging.getLogger("DroneTelemetryListener")
+        self._logger: logging.Logger = logging.getLogger("DroneTelemetryListener")
 
     # ----------------------------------------------------------------------
     # Control
@@ -164,11 +164,11 @@ class DroneTelemetryListener:
             return
         
         try:
-            self._logger.info(f"Sending handshake to {self.drone_ip}:{self.drone_port}")
+            self._logger.info("Sending handshake to %s:%d", self.drone_ip, self.drone_port)
             self._sock.sendto(self.HANDSHAKE_PACKET, (self.drone_ip, self.drone_port))
             self._logger.info(f"Handshake sent.")
         except Exception as e:
-            self._logger.error(f"Error sending handshake: {e}")
+            self._logger.error("Error sending handshake: %s", e)
     
     def _start_communication(self) -> None:
             """
@@ -179,7 +179,7 @@ class DroneTelemetryListener:
             self._sock.bind(("0.0.0.0", self.local_port))
             self._sock.settimeout(0.5)
             self._logger.info("UDP socket initialized.")
-            self._logger.info(f"Listening UDP on port {self.local_port}...")
+            self._logger.info("Listening UDP on port %d...", self.local_port)
             
             self._send_handshake()
 
@@ -191,7 +191,7 @@ class DroneTelemetryListener:
         """
         # Validate expected battery payload size
         if len(payload) < self._struct_battery.size:
-            self._logger.warning(f"Battery payload too short ({len(payload)} bytes)")
+            self._logger.warning("Battery payload too short (%d bytes, expected %d)", len(payload), self._struct_battery.size)
             return 
         
         # Unpack battery data: 1 float
@@ -201,7 +201,7 @@ class DroneTelemetryListener:
         with self._lock:
             self._telemetry.battery.voltage = vbatt
         
-        self._logger.debug(f"Updated battery: {self._telemetry.battery.voltage:.2f} V")
+        self._logger.debug("Updated battery: %.2f V", self._telemetry.battery.voltage)
 
     def _process_pose_packet(self, payload: bytes) -> None:
         """
@@ -211,7 +211,7 @@ class DroneTelemetryListener:
         """
         # Validate expected pose payload size
         if len(payload) < self._struct_pose.size:
-            self._logger.warning(f"Pose payload too short ({len(payload)} bytes, expected {self._struct_pose.size})")
+            self._logger.warning("Pose payload too short (%d bytes, expected %d)", len(payload), self._struct_pose.size)
             return 
         
         # Unpack pose data: 6 floats
@@ -226,7 +226,7 @@ class DroneTelemetryListener:
             self._telemetry.pose.orientation.pitch = pitch
             self._telemetry.pose.orientation.yaw = yaw
         
-        self._logger.debug(f"Updated pose: {self._telemetry.pose}")
+        self._logger.debug("Updated pose: %s", self._telemetry.pose)
 
     def _listen(self) -> None:
         """
@@ -245,7 +245,7 @@ class DroneTelemetryListener:
                     if not packet:
                         continue
 
-                    self._logger.debug(f"Received packet from {addr} of size {len(packet)}")
+                    self._logger.debug("Received packet from %s of size %d", addr, len(packet))
                 
                     packet_id = packet[0]
                     payload = packet[1:]
@@ -262,14 +262,14 @@ class DroneTelemetryListener:
                 except socket.timeout:
                     continue  
                 except struct.error as e:
-                    self._logger.error(f"Unpack error: {e}")
+                    self._logger.error("Unpack error: %s", e)
                 except OSError as e:
                     if self._running:
-                        self._logger.error(f"Socket error: {e}")
+                        self._logger.error("Socket error: %s", e)
                     break
 
         except Exception as e:
-            self._logger.critical(f"Fatal socket error: {e}")
+            self._logger.critical("Fatal socket error: %s", e)
         
         finally:
             if self._sock:

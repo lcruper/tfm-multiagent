@@ -16,7 +16,7 @@ class CameraCapture:
     Maintains the camera open, updates the last captured frame thread-safe, 
     and can recover if the stream temporarily fails.
     """
-    RETRY_DELAY = 1.0  # Seconds to wait before retrying to open the stream if it fails.
+    RETRY_DELAY: float = 1.0  # Seconds to wait before retrying to open the stream if it fails.
     
     def __init__(self, stream_url: str) -> None:
         """
@@ -24,20 +24,19 @@ class CameraCapture:
 
         @param stream_url URL of the stream.
         """
-        self.stream_url = stream_url
-        self._flash_url = stream_url.replace(":81/stream", ":80/control")
+        self.stream_url: str = stream_url
+        self._flash_url: str = stream_url.replace(":81/stream", ":80/control")
 
-        self._cap = None        # cv2.VideoCapture object
-        self._frame = None      # Last captured frame
+        self._cap: cv2.VideoCapture = None      # cv2.VideoCapture object
+        self._frame: Frame = None               # Last captured frame
 
         # Threading
-        self._lock = threading.Lock()   # Lock for thread-safe access to latest frame
-        self._running = False           # Flag to control the background frames capture thread
-        self._thread = None             # Frames capture thread
+        self._lock: threading.Lock = threading.Lock()   # Lock for thread-safe access to latest frame
+        self._running: bool = False                     # Flag to control the background frames capture thread
+        self._thread: threading.Thread = None           # Frames capture thread
 
         # Logger
-        self._logger = logging.getLogger("CameraCapture")
-
+        self._logger: logging.Logger = logging.getLogger("CameraCapture")
     # ----------------------------------------------------------------------
     # Control
     # ----------------------------------------------------------------------
@@ -108,14 +107,14 @@ class CameraCapture:
     # ----------------------------------------------------------------------
     # Internal methods
     # ----------------------------------------------------------------------
-    def _process_frame(self, frame: ndarray) -> None:
+    def _process_frame(self, data: ndarray) -> None:
         """
         @brief Processes a frame and updates the latest frame.
 
-        @param frame A frame
+        @param data A frame
         """
         with self._lock:
-            self._frame = Frame(data=frame)
+            self._frame = Frame(data=data)
         self._logger.debug(f"Updated frame")
 
     def _open_stream(self) -> bool:
@@ -128,7 +127,7 @@ class CameraCapture:
             self._cap.release()
             self._cap = None
 
-        self._logger.info(f"Opening stream URL: {self.stream_url}")
+        self._logger.info("Opening stream URL %s", self.stream_url)
         cap = cv2.VideoCapture(self.stream_url)
         if cap.isOpened():
             self._cap = cap
@@ -150,16 +149,16 @@ class CameraCapture:
                     continue
 
             # Capture frame
-            ret, frame = self._cap.read()
+            ret, data = self._cap.read()
             if not ret:
                 self._logger.warning("Failed to read frame. Retrying...")
                 sleep(self.RETRY_DELAY)
                 continue
 
-            self._logger.debug(f"Frame captured of size {frame.shape}")
+            self._logger.debug("Frame captured of size %s", data.shape)
 
             # Process frame
-            self._process_frame(frame)
+            self._process_frame(data)
             sleep(0.01)
 
         # Release capture on exit

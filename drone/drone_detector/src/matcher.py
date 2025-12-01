@@ -3,14 +3,16 @@ import threading
 import logging
 
 from queue import Queue, Empty, Full
-from structures import FrameWithPosition
 from time import sleep
+from structures import FrameWithTelemetry
+from drone_telemetry_listener import DroneTelemetryListener
+from camera_capture import CameraCapture
 
 class Matcher:
     """
-    @brief Associates frames from a camera with the drone's position.
+    @brief Associates frames from a camera with the drone's telemetry data.
 
-    Captures camera frames and drone positions, combines them into FrameWithPosition objects,
+    Captures camera frames and drone telemetry data, combines them into FrameWithTelemetry objects,
     and distributes them to multiple registered consumer queues.
     """
     def __init__(self, drone_telemetry, camera_capture) -> None:
@@ -20,19 +22,18 @@ class Matcher:
         @param drone_telemetry DroneTelemetryListener object
         @param camera_capture CameraCapture object
         """
-        self.drone = drone_telemetry
-        self.camera = camera_capture
+        self.drone: DroneTelemetryListener = drone_telemetry
+        self.camera: CameraCapture = camera_capture
 
-        # Queues for distributing FrameWithPosition objects to consumers
-        self._queues = []     
+        # Queues for distributing FrameWithTelemetry objects to consumers
+        self._queues: list[Queue] = []     
 
         # Threading
-        self._running = False   # Flag to control the background matcher thread
-        self._thread = None     # Matcher thread
+        self._running: bool = False             # Flag to control the background matcher thread
+        self._thread: threading.Thread = None   # Matcher thread
         
         # Logger
-        self._logger = logging.getLogger("Matcher")
-
+        self._logger: logging.Logger = logging.getLogger("Matcher")
     # ----------------------------------------------------------------------
     # Control
     # ----------------------------------------------------------------------
@@ -70,7 +71,7 @@ class Matcher:
     # ----------------------------------------------------------------------
     def register_consumer(self, queue: Queue):
         """
-        @brief Registers a consumer queue to receive FrameWithPosition objects.
+        @brief Registers a consumer queue to receive FrameWithTelemetry objects.
 
         @param queue Queue object where matched frames will be sent
         """
@@ -89,25 +90,24 @@ class Matcher:
             if frame is None:
                 sleep(0.01)
                 continue
-            self._logger.debug(f"Retrieved frame of shape {frame.data.shape}")
+            self._logger.debug("Retrieved frame of shape %s", frame.data.shape)
 
-            # Get drone position
-            position = self.drone.get_position()
-            self._logger.debug(f"Retrieved position {position}")
-
-            # Create FrameWithPosition object
-            fwp = FrameWithPosition(frame, position)
-            self._logger.debug(f"Matched frame of shape {frame.data.shape} with position {position}")
+            # Get drone telemetry
+            telemetry = self.drone.get_telemetry()
+            self._logger.debug("Retrieved telemetry %s", telemetry)
+            # Create FrameWithTelemetry object
+            fwt = FrameWithTelemetry(frame, telemetry)
+            self._logger.debug("Matched frame of shape %s with telemetry %s", frame.data.shape, telemetry)
 
             # Distribute to all consumer queues
             for q in self._queues:
                 try:
-                    q.put_nowait(fwp)
+                    q.put_nowait(fwt)
                 except Full:
                     try:
                         q.get_nowait()
                     except Empty:
                         pass
-                    q.put_nowait(fwp)
+                    q.put_nowait(fwt)
 
             sleep(0.01)  

@@ -15,7 +15,7 @@ class Matcher:
     Captures camera frames and drone telemetry data, combines them into FrameWithTelemetry objects,
     and distributes them to multiple registered consumer queues.
     """
-    def __init__(self, drone_telemetry, camera_capture) -> None:
+    def __init__(self, drone_telemetry: DroneTelemetryListener, camera_capture: CameraCapture) -> None:
         """
         @brief Constructor.
 

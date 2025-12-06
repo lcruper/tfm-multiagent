@@ -7,6 +7,7 @@ import logging
 from copy import deepcopy
 from time import sleep, time
 from typing import Optional
+from movement_simulator import MovementSimulator
 from structures import Battery, Position, Orientation, Pose, TelemetryData
 
 class DroneTelemetryListener:
@@ -23,19 +24,19 @@ class DroneTelemetryListener:
     PACKET_ID_POSE: int = 0x02                          # Packet ID for pose packets
     HANDSHAKE_PACKET: bytes = b'\x01\x01'               # Handshake packet to initiate communication
 
-    def __init__(self, drone_ip: str, drone_port: int, local_port: int) -> None:
+    def __init__(self, drone_ip: str, drone_port: int, local_port: int, simulator: MovementSimulator = None) -> None:
         """
         @brief Constructor.
 
         @param drone_ip     IP address of the drone sending UDP packets.
         @param drone_port   UDP port on the drone to which handshake messages will be sent.
         @param local_port   Local UDP port where this object will listen for incoming packets.
+        @param simulator    Optional movement simulator for generating simulated (x,y) data.
         """
         self.drone_ip: str = drone_ip
         self.drone_port: int = drone_port
         self.local_port: int = local_port
-
-        self._started_time: float = 0.0
+        self.simulator: MovementSimulator = simulator
         
         # Last known drone telemetry data
         self._telemetry: TelemetryData = TelemetryData(
@@ -78,7 +79,6 @@ class DroneTelemetryListener:
             return
         
         self._logger.info("Starting listener...")
-        self._started_time = time()
         self._running = True
         self._thread = threading.Thread(target=self._listen, daemon=True)
         self._thread.start()
@@ -126,47 +126,21 @@ class DroneTelemetryListener:
         """
         @brief Retrieves a deep copy of the latest telemetry data.
 
-        @return TelemetryData A new TelemetryData object with the last received telemetry data.
+        If a MovementSimulator is attached and active, overrides x/y coordinates
+        with simulated spiral values.
         """
         with self._lock:
-            return deepcopy(self._telemetry)
-        
-    def get_battery(self) -> Battery:
-        """
-        @brief Retrieves a deep copy of the latest battery data.
+            telemetry_copy = deepcopy(self._telemetry)
 
-        @return Battery A new Battery object with the last received battery data.
-        """
-        with self._lock:
-            return deepcopy(self._telemetry.battery)
+        # Override x/y with simulated values if active
+        if self.simulator and self.simulator.active:
+            sim_x, sim_y = self.simulator.get_xy()
+            if sim_x is not None and sim_y is not None:
+                telemetry_copy.pose.position.x = sim_x
+                telemetry_copy.pose.position.y = sim_y
 
-    def get_pose(self) -> Pose:
-        """
-        @brief Retrieves a deep copy of the latest pose data.
-
-        @return Pose A new Pose object with the last received pose data.
-        """
-        with self._lock:
-            return deepcopy(self._telemetry.pose)
-        
-    def get_position(self) -> Position:
-        """
-        @brief Retrieves a deep copy of the latest position data.
-
-        @return Position A new Position object with the last received position data.
-        """
-        with self._lock:
-            return deepcopy(self._telemetry.pose.position)
-        
-    def get_orientation(self) -> Orientation:
-        """
-        @brief Retrieves a deep copy of the latest orientation data.
-
-        @return Orientation A new Orientation object with the last received orientation data.
-        """
-        with self._lock:
-            return deepcopy(self._telemetry.pose.orientation)
-        
+        return telemetry_copy
+    
     # ----------------------------------------------------------------------
     # Internal methods
     # ----------------------------------------------------------------------

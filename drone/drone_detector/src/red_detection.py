@@ -23,7 +23,7 @@ class RedDetection:
     RED_RATIO_THRESH: float = 0.3   # Minimum ratio of red pixels in a detected box to consider it red
     MIN_BOX_AREA: int = 100         # Minimum area of detected box to consider
 
-    def __init__(self, input_queue: Queue, yolo_model_path: str, callback=None) -> None:
+    def __init__(self, input_queue: Queue, yolo_model_path: str, callback: callable = None) -> None:
         """
         @brief Constructor.
 
@@ -151,7 +151,7 @@ class RedDetection:
                 fwt = self.input_queue.get(timeout=0.1)
             except Empty:
                 # Queue is empty
-                self._logger.warning("Queue empty, waiting for frames...")
+                self._logger.debug("Queue empty, waiting for frames...")
                 continue
 
             try:

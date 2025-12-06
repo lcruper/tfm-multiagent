@@ -6,6 +6,7 @@ from queue import Empty, Queue
 
 from numpy import ndarray
 from structures import FrameWithTelemetry
+from time import sleep
 
 class Viewer:
     """
@@ -114,7 +115,7 @@ class Viewer:
                 fwt = self.input_queue.get(timeout=0.05)
             except Empty:
                 # Queue is empty
-                self._logger.warning("Queue empty, waiting for frames...")
+                self._logger.debug("Queue empty, waiting for frames...")
                 continue
 
             try:

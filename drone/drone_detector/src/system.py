@@ -11,6 +11,7 @@ from datetime import datetime
 from drone_telemetry_listener import DroneTelemetryListener
 from camera_capture import CameraCapture
 from matcher import Matcher
+from movement_simulator import MovementSimulator
 from red_detection import RedDetection
 from viewer import Viewer
 
@@ -22,7 +23,7 @@ class System:
     MAX_IP_TRIES = 5        # Max IPs to try for stream URL
     REQUEST_TIMEOUT = 5     # Timeout for HTTP requests in seconds
 
-    def __init__(self, drone_ip: str, drone_port: int, local_port: int, yolo_model_path: str) -> None:
+    def __init__(self, drone_ip: str, drone_port: int, local_port: int, yolo_model_path: str, simulator: MovementSimulator = None) -> None:
         """
         @brief Constructor.
 
@@ -30,6 +31,7 @@ class System:
         @param drone_port   UDP port on the drone to which handshake messages will be sent.
         @param local_port   Local UDP port where this object will listen for incoming packets.
         @param yolo_model_path Path to the YOLO model for red detection.
+        @param simulator    Optional MovementSimulator for simulating drone movement.
         """     
         # Logger
         self._logger = logging.getLogger("System")
@@ -39,7 +41,8 @@ class System:
         self._json_filename = None
 
         # --- Drone ---
-        self.drone = DroneTelemetryListener(drone_ip, drone_port, local_port)
+        self.simulator = simulator
+        self.drone = DroneTelemetryListener(drone_ip, drone_port, local_port, simulator=simulator)
         
         # --- Camera ---
         stream_url = self._find_stream_url(drone_ip)
@@ -151,6 +154,29 @@ class System:
         with open(self._json_filename, "w") as f:
             json.dump(self.red_positions, f, indent=4)
         self._logger.debug("Saved %d red detections to %s", len(self.red_positions), self._json_filename)
+
+    # ----------------------------------------------------------------------
+    # Drone simulation control
+    # ----------------------------------------------------------------------
+    def start_drone_simulation(self) -> None:
+        """
+        @brief Starts the simulated drone movement.
+        """
+        if self.simulator.active:
+            self._logger.warning("Drone simulator is already active.")
+            return
+        self.simulator.start()
+        self._logger.info("Drone simulation started.")
+
+    def stop_drone_simulation(self) -> None:
+        """
+        @brief Stops the simulated drone movement.
+        """
+        if not self.simulator.active:
+            self._logger.warning("Drone simulator is already stopped.")
+            return
+        self.simulator.stop()
+        self._logger.info("Drone simulation stopped.")
 
     # ----------------------------------------------------------------------
     # Red Detection Callback

@@ -71,6 +71,8 @@ class RedDetection:
         self._running = False
         if self._thread:
             self._thread.join(timeout=1.0)
+            if self._thread.is_alive():
+                self._logger.warning("Frame processing thread didn't stop in time")
             self._thread = None
         self._logger.info("Frame processing stopped.")
 

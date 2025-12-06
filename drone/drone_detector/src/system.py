@@ -175,5 +175,5 @@ class System:
             "x": position.x,
             "y": position.y,
             "z": position.z,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().strftime("%Y%m%d_%H%M%S")
         })

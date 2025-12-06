@@ -66,10 +66,16 @@ class CameraCapture:
         self._running = False
         if self._thread:
             self._thread.join(timeout=1.0)
+            if self._thread.is_alive():
+                self._logger.warning("Frame capture thread didn't stop in time")
             self._thread = None
         if self._cap:
-            self._cap.release()
-            self._cap = None
+            try:
+                self._cap.release()
+            except Exception:
+                self._logger.exception("Error releasing VideoCapture")
+            finally:
+                self._cap = None
         self._logger.info("Camera capture stopped.")
 
     # ----------------------------------------------------------------------
@@ -89,7 +95,7 @@ class CameraCapture:
         @brief Turns on the camera flash if supported.
         """
         try:
-            requests.get(self._flash_url, params={"var": "led_intensity", "val": 255}, timeout=0.1)
+            requests.get(self._flash_url, params={"var": "led_intensity", "val": 255}, timeout=1)
             self._logger.debug("Flash turned on.")
         except:
             pass
@@ -99,7 +105,7 @@ class CameraCapture:
         @brief Turns off the camera flash if supported. 
         """
         try:
-            requests.get(self._flash_url, params={"var": "led_intensity", "val": 0}, timeout=0.1)
+            requests.get(self._flash_url, params={"var": "led_intensity", "val": 0}, timeout=1)
             self._logger.debug("Flash turned off.")
         except:
             pass

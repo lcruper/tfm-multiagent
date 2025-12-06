@@ -59,6 +59,9 @@ class Viewer:
         self._running = False
         if self._thread:
             self._thread.join()
+            if self._thread.is_alive():
+                self._logger.warning("Viewer thread didn't stop in time")
+            self._thread = None
         cv2.destroyAllWindows()
         self._logger.info("Viewer stopped.")
 

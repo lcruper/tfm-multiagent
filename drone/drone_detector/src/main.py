@@ -1,6 +1,6 @@
-from colored_logs import ColoredFormatter
-from movement_simulator import MovementSimulator
-from system import System
+from utils.colored_logs import ColoredFormatter
+from drone.movement_drone_simulator import MovementDroneSimulator
+from core.system import System
 import time
 import logging
 
@@ -18,7 +18,7 @@ def main():
         drone_port=2390,
         local_port=2391,
         yolo_model_path="yoloModels/yolov8n.pt",
-        simulator=MovementSimulator(b=0.08, w=0.6)
+        simulator=MovementDroneSimulator(rg=0.08, w=0.6)
     )
     system.start()
     system.start_drone_simulation()

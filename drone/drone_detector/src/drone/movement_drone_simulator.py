@@ -1,10 +1,12 @@
-# movement_simulator.py
+# movement_drone_simulator.py
+import config
+import logging
 from math import cos, exp, pi, sin
 from random import uniform
 from time import time
-from typing import Tuple
+from typing import Optional, Tuple
 
-class MovementSimulator:
+class MovementDroneSimulator:
     """
     @brief Simulates 2D spiral movement for a drone.
 
@@ -12,18 +14,20 @@ class MovementSimulator:
     allowing simulation of drone movement.
     """
 
-    def __init__(self, b: float, w: float) -> None:
+    def __init__(self, rg: float, w: float) -> None:
         """
         @brief Constructor.
         
-        @param b Radial growth per second (meters/second)
+        @param rg Radial growth per second (meters/second)
         @param w Angular speed (radians/second)
         """
-        self.b = b
+        self.rg = rg
         self.w = w
 
-        self.active: bool = False   # Flag indicating if simulation is active
-        self.t0: float = None       # Simulation start time
+        self.active: bool = False               # Flag indicating if simulation is active
+        self.t0: Optional[float] = None         # Simulation start time
+
+        self._logger = logging.getLogger("MovementSimulator")
 
     # ----------------------------------------------------------------------
     # Simulation control
@@ -34,8 +38,12 @@ class MovementSimulator:
 
         Initializes the reference time for the spiral.
         """
+        if self.active:
+            self._logger.warning("Movement simulator already started.")
+            return
         self.active = True
         self.t0 = time()
+        self._logger.info("Movement simulator started.")
 
     def stop(self) -> None:
         """
@@ -43,9 +51,12 @@ class MovementSimulator:
 
         Clears the start time and stops coordinate calculations.
         """
+        if not self.active:
+            self._logger.warning("Movement simulator already stopped.")
+            return
         self.active = False
         self.t0 = None
-
+        self._logger.info("Movement simulator stopped.")
     # ----------------------------------------------------------------------
     # Coordinate retrieval
     # ----------------------------------------------------------------------
@@ -65,12 +76,12 @@ class MovementSimulator:
         t = time() - self.t0
         
          # Smooth radius growth
-        r = self.b * (1 - exp(-0.1 * t))
+        r = self.rg * (1 - exp(-config.SIMULATOR_EXP_SMOOTH * t))
         theta = self.w * t * 2 * pi
 
         # Convert polar to Cartesian with small jitter
-        x = r * cos(theta) + uniform(-0.02, 0.02)
-        y = r * sin(theta) + uniform(-0.02, 0.02)
+        x = r * cos(theta) + uniform(-config.SIMULATOR_JITTER, config.SIMULATOR_JITTER)
+        y = r * sin(theta) + uniform(-config.SIMULATOR_JITTER, config.SIMULATOR_JITTER)
 
         x = 10
         y = 10

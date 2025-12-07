@@ -1,12 +1,14 @@
 # matcher.py
+import config
 import threading
 import logging
-
 from queue import Queue, Empty, Full
 from time import sleep
-from structures import FrameWithTelemetry
-from drone_telemetry_listener import DroneTelemetryListener
-from camera_capture import CameraCapture
+from typing import List, Optional
+
+from structures.structures import FrameWithTelemetry
+from drone.drone_telemetry_listener import DroneTelemetryListener
+from drone.camera_capture import CameraCapture
 
 class Matcher:
     """
@@ -15,7 +17,8 @@ class Matcher:
     Captures camera frames and drone telemetry data, combines them into FrameWithTelemetry objects,
     and distributes them to multiple registered consumer queues.
     """
-    def __init__(self, drone_telemetry: DroneTelemetryListener, camera_capture: CameraCapture) -> None:
+    def __init__(self, drone_telemetry: DroneTelemetryListener, 
+                 camera_capture: CameraCapture) -> None:
         """
         @brief Constructor.
 
@@ -26,11 +29,11 @@ class Matcher:
         self.camera: CameraCapture = camera_capture
 
         # Queues for distributing FrameWithTelemetry objects to consumers
-        self._queues: list[Queue] = []     
+        self._queues: List[Queue] = []     
 
         # Threading
-        self._running: bool = False             # Flag to control the background matcher thread
-        self._thread: threading.Thread = None   # Matcher thread
+        self._running: bool = False                                 # Flag to control the background matcher thread
+        self._thread: Optional[threading.Thread] = None             # Matcher thread
         
         # Logger
         self._logger: logging.Logger = logging.getLogger("Matcher")
@@ -90,7 +93,7 @@ class Matcher:
             # Get camera frame
             frame = self.camera.get_frame()
             if frame is None:
-                sleep(0.01)
+                sleep(config.MATCHER_SLEEP_TIME)
                 continue
             self._logger.debug("Retrieved frame of shape %s", frame.data.shape)
 
@@ -106,10 +109,13 @@ class Matcher:
                 try:
                     q.put_nowait(fwt)
                 except Full:
-                    try:
-                        q.get_nowait()
-                    except Empty:
-                        pass
-                    q.put_nowait(fwt)
+                    if config.MATCHER_QUEUE_DROP_ON_FULL:
+                        try:
+                            q.get_nowait()
+                        except Empty:
+                            pass
+                        q.put_nowait(fwt)
+                    else:
+                        self._logger.warning("Consumer queue full, dropping frame with telemetry")
 
-            sleep(0.01)  
+            sleep(config.MATCHER_SLEEP_TIME)  

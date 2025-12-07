@@ -1,14 +1,16 @@
 # drone_telemetry_listener.py
+import config 
+
 import socket
 import struct
 import threading
 import logging
-
 from copy import deepcopy
-from time import sleep, time
-from typing import Optional
-from movement_simulator import MovementSimulator
-from structures import Battery, Position, Orientation, Pose, TelemetryData
+from time import sleep
+from typing import Optional, Final
+
+from drone.movement_drone_simulator import MovementDroneSimulator
+from structures.structures import Battery, Position, Orientation, Pose, TelemetryData
 
 class DroneTelemetryListener:
     """
@@ -19,12 +21,14 @@ class DroneTelemetryListener:
     
     @note All get_* methods are thread-safe.
     """
-    BUFFER_SIZE: int = 128                              # Maximum UDP packet size
-    PACKET_ID_BATTERY: int = 0x01                       # Packet ID for battery packets
-    PACKET_ID_POSE: int = 0x02                          # Packet ID for pose packets
-    HANDSHAKE_PACKET: bytes = b'\x01\x01'               # Handshake packet to initiate communication
+    PACKET_ID_BATTERY: Final[int] = 0x01                       # Packet ID for battery packets
+    PACKET_ID_POSE: Final[int] = 0x02                          # Packet ID for pose packets
+    HANDSHAKE_PACKET: Final[bytes] = b'\x01\x01'               # Handshake packet to initiate communication
 
-    def __init__(self, drone_ip: str, drone_port: int, local_port: int, simulator: MovementSimulator = None) -> None:
+    def __init__(self, drone_ip: str, 
+                 drone_port: int, 
+                 local_port: int, 
+                 simulator: MovementDroneSimulator = None) -> None:
         """
         @brief Constructor.
 
@@ -36,7 +40,7 @@ class DroneTelemetryListener:
         self.drone_ip: str = drone_ip
         self.drone_port: int = drone_port
         self.local_port: int = local_port
-        self.simulator: MovementSimulator = simulator
+        self.simulator: MovementDroneSimulator = simulator
         
         # Last known drone telemetry data
         self._telemetry: TelemetryData = TelemetryData(
@@ -57,9 +61,9 @@ class DroneTelemetryListener:
         self._struct_battery: struct.Struct = struct.Struct("<f")      # battery voltage
 
         # Threading
-        self._lock: threading.Lock = threading.Lock()       # Lock for thread-safe access to telemetry data
-        self._running: bool = False                         # Flag to control the background listener thread
-        self._thread: threading.Thread = None               # Listener thread
+        self._lock: threading.Lock = threading.Lock()               # Lock for thread-safe access to telemetry data
+        self._running: bool = False                                 # Flag to control the background listener thread
+        self._thread: Optional[threading.Thread] = None             # Listener thread
         
         # Logger
         self._logger: logging.Logger = logging.getLogger("DroneTelemetryListener")
@@ -167,14 +171,14 @@ class DroneTelemetryListener:
             self._logger.info("Initializing UDP socket...")
             self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self._sock.bind(("0.0.0.0", self.local_port))
-            self._sock.settimeout(0.5)
+            self._sock.settimeout(config.DRONE_UDP_TIMEOUT)
             self._logger.info("UDP socket initialized.")
             self._logger.info("Listening UDP on port %d...", self.local_port)
             
-            for _ in range(3):
+            for _ in range(config.DRONE_UDP_HANDSHAKE_RETRIES):
                 try:
                     self._send_handshake()
-                    sleep(0.1)
+                    sleep(config.DRONE_UDP_HANDSHAKE_RETRY_DELAY)
                 except Exception:
                     pass
 
@@ -234,7 +238,7 @@ class DroneTelemetryListener:
             self._start_communication()
             while self._running:
                 try:
-                    packet, addr = self._sock.recvfrom(self.BUFFER_SIZE)
+                    packet, addr = self._sock.recvfrom(config.DRONE_UDP_BUFFER_SIZE)
 
                     # Validate packet
                     if not packet:
@@ -275,68 +279,3 @@ class DroneTelemetryListener:
                 self._sock = None
 
             self._logger.info("Socket closed")
-
-
-
-
-"""
-{
-    static float prevX = 0.0f;
-    static float prevY = 0.0f;
-    static float prevZ = 0.0f;
-
-    static float simTime = 0.0f;
-    simTime += dt;
-
-    float x = 0.0f;
-    float y = 0.0f;
-    float z = 0.0f;
-
-    float cycleTime = 70.0f; 
-    float t = fmodf(simTime, cycleTime);
-
-    if (t < 5.0f) {
-        z =  0.32f * t;
-    }
-    else if (t < 30.0f) {
-        float tt = t - 5.0f;
-        float r = 0.2f * tt;
-        float theta = 0.25f * tt * 2 * M_PI;
-        x = r * cosf(theta);
-        y = r * sinf(theta);
-        z = 1.6f;
-    }
-    else if (t < 55.0f) {
-        float tt = t - 30.0f;
-        float r = 5.0f - 0.2f * tt;
-        float theta = 2*M_PI - 0.25f * tt * 2 * M_PI;
-        x = r * cosf(theta);
-        y = r * sinf(theta);
-        z = 1.6f;
-    }
-    else if (t < 60.0f) {
-        float tt = t - 55.0f;
-        z = 1.6f - 0.32f * tt;
-    }
-
-    state->position.x = x;
-    state->position.y = y;
-    state->position.z = z;
-
-    state->velocity.x = (x - prevX) / dt;
-    state->velocity.y = (y - prevY) / dt;
-    state->velocity.z = (z - prevZ) / dt;
-
-    prevX = x;
-    prevY = y;
-    prevZ = z;
-
-    if (tofMeasurement) {
-        tofMeasurement->distance = z;
-        tofMeasurement->timestamp = tick;
-    }
-}
-
-
-
-"""

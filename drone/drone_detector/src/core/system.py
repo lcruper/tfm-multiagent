@@ -1,19 +1,23 @@
 # system.py
+import config
 import logging
 from queue import Queue
 import threading
+import winsound
 import requests
-
 import os
 import json
 from datetime import datetime
+from typing import List, Tuple
 
-from drone_telemetry_listener import DroneTelemetryListener
-from camera_capture import CameraCapture
-from matcher import Matcher
-from movement_simulator import MovementSimulator
-from red_detection import RedDetection
-from viewer import Viewer
+from drone.drone_telemetry_listener import DroneTelemetryListener
+from drone.camera_capture import CameraCapture
+from drone.matcher import Matcher
+from drone.movement_drone_simulator import MovementDroneSimulator
+from detection.color_detection import ColorDetection
+from robot.robot_dog import RobotDog
+from structures.structures import Position
+from ui.viewer import Viewer
 
 class System:
     """
@@ -23,7 +27,9 @@ class System:
     MAX_IP_TRIES = 5        # Max IPs to try for stream URL
     REQUEST_TIMEOUT = 5     # Timeout for HTTP requests in seconds
 
-    def __init__(self, drone_ip: str, drone_port: int, local_port: int, yolo_model_path: str, simulator: MovementSimulator = None) -> None:
+    def __init__(self, drone_ip: str, drone_port: int, local_port: int, 
+                 yolo_model_path: str, 
+                 simulator: MovementDroneSimulator = None) -> None:
         """
         @brief Constructor.
 
@@ -42,24 +48,36 @@ class System:
 
         # --- Drone ---
         self.simulator = simulator
-        self.drone = DroneTelemetryListener(drone_ip, drone_port, local_port, simulator=simulator)
+        self.drone = DroneTelemetryListener(drone_ip=drone_ip, 
+                                            drone_port=drone_port, 
+                                            local_port=local_port, 
+                                            simulator=simulator)
         
         # --- Camera ---
         stream_url = self._find_stream_url(drone_ip)
         if stream_url is None:
             raise RuntimeError("No working camera stream found. System cannot start without a camera.")
-        self.camera = CameraCapture(stream_url)
+        self.camera = CameraCapture(stream_url=stream_url)
         
         # --- Matcher ---
         self.matcher_queue = Queue(maxsize=100)
-        self.matcher = Matcher(self.drone, self.camera)
+        self.matcher = Matcher(drone_telemetry=self.drone, 
+                               camera_capture=self.camera)
         self.matcher.register_consumer(self.matcher_queue)
         
         # --- Red Detection ---
-        self.red_detector = RedDetection(self.matcher_queue, yolo_model_path, callback=self._on_red_detected)
-        
+        self.color_detector = ColorDetection(queue=self.matcher_queue,
+                                             callback=self._on_red_detected,
+                                             yolo_model_path=yolo_model_path,
+                                             color="red")
         # --- Viewer ---
-        self.viewer = Viewer(self.matcher_queue)
+        self.viewer = Viewer(queue=self.matcher_queue)
+
+        # --- Robot Dog ---
+        self.dog = RobotDog(
+            callbackOnPoint=self._on_dog_reached_point,
+            callbackOnFinish=self._on_dog_finished_path
+        )
 
         # Threading
         self._lock = threading.Lock()  # Lock for start/stop thread-safe
@@ -87,7 +105,7 @@ class System:
             self.drone.start()
             self.camera.start()
             self.matcher.start()
-            self.red_detector.start()
+            self.color_detector.start()
             self.viewer.start()
             self._logger.info("System started.")
 
@@ -98,7 +116,7 @@ class System:
         with self._lock:
             self._logger.info("Stopping system...")
             self.viewer.stop()
-            self.red_detector.stop()
+            self.color_detector.stop()
             self.matcher.stop()
             self.camera.stop()
             self.drone.stop()
@@ -181,7 +199,7 @@ class System:
     # ----------------------------------------------------------------------
     # Red Detection Callback
     # ----------------------------------------------------------------------
-    def _on_red_detected(self, position):
+    def _on_red_detected(self, position: Position) -> None:
         """
         @brief Called by RedDetection when a red object is detected.
 
@@ -203,3 +221,44 @@ class System:
             "z": position.z,
             "timestamp": datetime.now().strftime("%Y%m%d_%H%M%S")
         })
+
+    # ----------------------------------------------------------------------
+    # Robot Dog Control
+    # ----------------------------------------------------------------------
+    def load_dog_path(self, points: List[Tuple[float, float]]) -> None:
+        """
+        @brief Load a list of (x, y) coordinates for the robot dog to follow.
+        """
+        self._logger.debug("Loading dog path with %d points...", len(points))
+        self.dog.load_path(points)
+
+    def start_dog(self) -> None:
+        """
+        @brief Start robot dog movement.
+        """
+        self._logger.info("Starting robot dog...")
+        self.dog.start()
+
+    def stop_dog(self) -> None:
+        """
+        @brief Stop robot dog movement.
+        """
+        self._logger.info("Stopping robot dog...")
+        self.dog.stop()
+
+    # ----------------------------------------------------------------------
+    # Robot Dog Callbacks
+    # ----------------------------------------------------------------------
+    def _on_dog_reached_point(self, x, y) -> None:
+        """
+        @brief Called every time the dog reaches a waypoint.
+        """
+        winsound.Beep(1000, 200)
+        self._logger.info(f"Dog reached point: ({x:.2f}, {y:.2f})")
+
+    def _on_dog_finished_path(self) -> None:
+        """
+        @brief Called when the dog finishes the entire planned path.
+        """
+        self._logger.info("Dog finished all target positions.")
+

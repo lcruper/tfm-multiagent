@@ -1,13 +1,15 @@
 # camera_capture.py
+from typing import Optional
+import config
 import cv2
 import threading
 import logging
 import requests
-
 from time import sleep
 from copy import deepcopy
 from numpy import ndarray
-from structures import Frame
+
+from structures.structures import Frame
 
 class CameraCapture:
     """
@@ -16,8 +18,7 @@ class CameraCapture:
     Maintains the camera open, updates the last captured frame thread-safe, 
     and can recover if the stream temporarily fails.
     """
-    RETRY_DELAY: float = 1.0  # Seconds to wait before retrying to open the stream if it fails.
-    
+
     def __init__(self, stream_url: str) -> None:
         """
         @brief Constructor.
@@ -27,16 +28,17 @@ class CameraCapture:
         self.stream_url: str = stream_url
         self._flash_url: str = stream_url.replace(":81/stream", ":80/control")
 
-        self._cap: cv2.VideoCapture = None      # cv2.VideoCapture object
-        self._frame: Frame = None               # Last captured frame
+        self._cap: Optional[cv2.VideoCapture] = None      # cv2.VideoCapture object
+        self._frame: Optional[Frame] = None               # Last captured frame
 
         # Threading
-        self._lock: threading.Lock = threading.Lock()   # Lock for thread-safe access to latest frame
-        self._running: bool = False                     # Flag to control the background frames capture thread
-        self._thread: threading.Thread = None           # Frames capture thread
+        self._lock: threading.Lock = threading.Lock()           # Lock for thread-safe access to latest frame
+        self._running: bool = False                             # Flag to control the background frames capture thread
+        self._thread: Optional[threading.Thread] = None         # Frames capture thread
 
         # Logger
         self._logger: logging.Logger = logging.getLogger("CameraCapture")
+    
     # ----------------------------------------------------------------------
     # Control
     # ----------------------------------------------------------------------
@@ -90,22 +92,30 @@ class CameraCapture:
         with self._lock:
             return deepcopy(self._frame)
         
-    def turn_on_flash(self):
+    def turn_on_flash(self) -> None:
         """
         @brief Turns on the camera flash if supported.
         """
         try:
-            requests.get(self._flash_url, params={"var": "led_intensity", "val": 255}, timeout=1)
+            requests.get(
+                self._flash_url, 
+                params={"var": "led_intensity", "val": config.CAMERA_FLASH_INTENSITY_ON}, 
+                timeout=config.CAMERA_STREAM_OPEN_TIMEOUT
+                )
             self._logger.debug("Flash turned on.")
         except:
             pass
 
-    def turn_off_flash(self):
+    def turn_off_flash(self) -> None:
         """
         @brief Turns off the camera flash if supported. 
         """
         try:
-            requests.get(self._flash_url, params={"var": "led_intensity", "val": 0}, timeout=1)
+            requests.get(
+                self._flash_url, 
+                params={"var": "led_intensity", "val": config.CAMERA_FLASH_INTENSITY_OFF}, 
+                timeout=config.CAMERA_STREAM_OPEN_TIMEOUT
+                )
             self._logger.debug("Flash turned off.")
         except:
             pass
@@ -151,21 +161,21 @@ class CameraCapture:
         while self._running:
             if not self._cap or not self._cap.isOpened():
                 if not self._open_stream():
-                    sleep(self.RETRY_DELAY)
+                    sleep(config.CAMERA_STREAM_RETRY_DELAY)
                     continue
 
             # Capture frame
             ret, data = self._cap.read()
             if not ret:
                 self._logger.warning("Failed to read frame. Retrying...")
-                sleep(self.RETRY_DELAY)
+                sleep(config.CAMERA_STREAM_RETRY_DELAY)
                 continue
 
             self._logger.debug("Frame captured of size %s", data.shape)
 
             # Process frame
             self._process_frame(data)
-            sleep(0.01)
+            sleep(config.CAMERA_SLEEP_TIME)
 
         # Release capture on exit
         self._cap.release()

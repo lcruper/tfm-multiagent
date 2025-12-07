@@ -1,12 +1,14 @@
 # viewer.py
+from typing import Optional
+import config
 import cv2
 import threading
 import logging
 from queue import Empty, Queue
-
 from numpy import ndarray
-from structures import FrameWithTelemetry
 from time import sleep
+
+from structures.structures import FrameWithTelemetry
 
 class Viewer:
     """
@@ -16,17 +18,17 @@ class Viewer:
     draws drone telemetry overlay on the frames,
     and displays them in a live video window.
     """
-    def __init__(self, input_queue: Queue) -> None:
+    def __init__(self, queue: Queue) -> None:
         """
         @brief Constructor.
 
-        @param input_queue Queue with FrameWithTelemetry objects
+        @param queue Queue with FrameWithTelemetry objects
         """
-        self.input_queue: Queue = input_queue
+        self.queue: Queue = queue
 
         # Threading
-        self._running: bool = False             # Flag to control the background viewer thread
-        self._thread: threading.Thread = None   # Viewer thread
+        self._running: bool = False                         # Flag to control the background viewer thread
+        self._thread: Optional[threading.Thread] = None     # Viewer thread
 
         # Logger
         self._logger: logging.Logger = logging.getLogger("Viewer")
@@ -82,10 +84,8 @@ class Viewer:
         overlay = data.copy()
 
         # Semi-transparent black bar at top
-        bar_height = 75
-        cv2.rectangle(overlay, (0, 0), (data.shape[1], bar_height), (0, 0, 0), -1)
-        alpha = 0.45
-        frame = cv2.addWeighted(overlay, alpha, data, 1 - alpha, 0)
+        cv2.rectangle(overlay, (0, 0), (data.shape[1], config.VIEWER_BAR_HEIGHT), (0, 0, 0), -1)
+        frame = cv2.addWeighted(overlay, config.VIEWER_OVERLAY_ALPHA, data, 1 - config.VIEWER_OVERLAY_ALPHA, 0)
 
         # Text lines
         line1 = f"x:{telemetry.pose.position.x:.2f}  y:{telemetry.pose.position.y:.2f}  z:{telemetry.pose.position.z:.2f}"
@@ -94,11 +94,10 @@ class Viewer:
         
         def draw_text(text, y):
             font = cv2.FONT_HERSHEY_SIMPLEX
-            scale = 0.45
             # Light shadow
-            cv2.putText(frame, text, (11, y+2), font, scale, (0,0,0), 1, cv2.LINE_AA)
+            cv2.putText(frame, text, (11, y+2), font, config.VIEWER_FONT_SIZE, (0,0,0), 1, cv2.LINE_AA)
             # Main white text
-            cv2.putText(frame, text, (10, y),   font, scale, (255,255,255), 1, cv2.LINE_AA)
+            cv2.putText(frame, text, (10, y), font, config.VIEWER_FONT_SIZE, (255,255,255), 1, cv2.LINE_AA)
 
         draw_text(line1, 22)
         draw_text(line2, 44)
@@ -112,10 +111,11 @@ class Viewer:
         while self._running:
             try:
                 # Get FrameWithTelemetry from the queue
-                fwt = self.input_queue.get(timeout=0.05)
+                fwt = self.queue.get(timeout=0.05)
             except Empty:
                 # Queue is empty
                 self._logger.debug("Queue empty, waiting for frames...")
+                sleep(config.VIEWER_SLEEP_TIME)
                 continue
 
             try:

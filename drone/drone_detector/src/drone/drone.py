@@ -4,8 +4,7 @@
 @brief Aggregates drone components: telemetry, camera, matcher, color detector, and viewer.
 """
 import logging
-from typing import Dict, List, Optional, Tuple
-from datetime import datetime
+from typing import  List, Optional, Tuple
 
 from interfaces.interfaces import ICamera, ITelemetry, IRobot
 from drone.matcher import Matcher
@@ -39,14 +38,17 @@ class Drone(IRobot):
         self.color_detector: ColorDetection = color_detector
         self.viewer: Viewer = viewer
 
-        self.color_detector.callback = self._on_red_detected
+        self.color_detector.callback = self._on_color_detected
+
+        self._callbackOnPoint: Optional[callable] = None
+        self._callbackOnFinish: Optional[callable] = None
 
         # Register consumers
         self.matcher.register_consumer(self.color_detector)  
         self.matcher.register_consumer(self.viewer)        
 
         # Storage for detected points
-        self._detected_points: List[Dict[str, float]] = []
+        self._detected_points: List[Tuple[float, float]] = []
 
         # Flag to indicate if inspection is running
         self._running: bool = False                      
@@ -78,7 +80,7 @@ class Drone(IRobot):
 
         self._logger.info("Drone inspection started.")
 
-    def stop_inspection(self) -> List[Dict[str, float]]:
+    def stop_inspection(self) -> List[Tuple[float, float]]:
         """
         @brief Stop color detector, matcher, camera and telemetry.
 
@@ -97,6 +99,12 @@ class Drone(IRobot):
         if hasattr(self.telemetry, "simulator") and self.telemetry.simulator:
             self.telemetry.simulator.stop()
         self.telemetry.stop()
+
+        if self._callbackOnFinish:
+            try:
+                self._callbackOnFinish()
+            except Exception as e:
+                self._logger.error("Callback onFinish failed: %s", e)
 
         self._logger.info("Drone inspection stopped.")
 
@@ -132,7 +140,7 @@ class Drone(IRobot):
     # Internal Callbacks
     # ---------------------------------------------------------
 
-    def _on_red_detected(self, position: Position) -> None:
+    def _on_color_detected(self, position: Position) -> None:
         """
         @brief Called by ColorDetection when a colored object is detected.
 
@@ -148,9 +156,11 @@ class Drone(IRobot):
             self._logger.error("Failed to turn on flash: %s", e)
 
         # Store detection
-        self._detected_points.append({
-            "x": position.x,
-            "y": position.y,
-            "z": position.z,
-            "timestamp": datetime.now().strftime("%Y%m%d_%H%M%S")
-        })
+        self._detected_points.append((position.x, position.y))
+
+        # Call point callback
+        if self._callbackOnPoint:
+            try:
+                self._callbackOnPoint(position.x, position.y)
+            except Exception as e:
+                self._logger.error("Callback onPoint failed: %s", e)

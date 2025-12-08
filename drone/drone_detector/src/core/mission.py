@@ -3,17 +3,16 @@
 @file mission.py
 @brief Mission module orchestrating inspector and executor robots.
 """
+from numpy import array
+from time import time, sleep
 import logging
 import threading
-import time
-from typing import Tuple, Optional
+from typing import Dict, Tuple, Optional
 import winsound
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-import numpy as np
 
 from interfaces.interfaces import IRobot
-
 
 class Mission:
     """
@@ -40,9 +39,11 @@ class Mission:
         self.base_position: Tuple[float, float] = base_position
         self.inspection_duration: float = inspection_duration
 
+        self._absolute_points: Dict[Tuple[float,float], bool] = {}  # Detected points with reached status
         # Synchronization
         self._mission_thread: Optional[threading.Thread] = None
         self._finished: bool = False
+        self._status: str = "Not started"   # Status of the mission
 
         # Logger
         self._logger: logging.Logger = logging.getLogger("Mission")
@@ -50,12 +51,24 @@ class Mission:
     # ---------------------------------------------------------
     # Internal Callbacks
     # ---------------------------------------------------------
-    def _on_executor_finished(self):
+    def _on_inspector_point_detected(self, x: float, y: float):
         """
-        @brief Callback executed when the executor completes the assigned path.
+        @brief Callback executed when the inspector detects a new point.
+
+        @param x X coordinate of the detected point
+        @param y Y coordinate of the detected point
         """
-        self._finished = True
-        self._stop_visualizer = True 
+        abs_x = self.base_position[0] + x
+        abs_y = self.base_position[1] + y
+        self._absolute_points[(abs_x, abs_y)] = False
+        self._logger.info("Inspector detected point at (%.2f, %.2f). Beeping...", abs_x, abs_y)
+        winsound.Beep(1000, 200)  # Beep on detecting point
+        
+    def _on_inspector_finished(self):
+        """
+        @brief Callback executed when the inspector finishes its inspection.
+        """
+        self._logger.info("Inspector has finished inspection.")
 
     def _on_executor_point_reached(self, x: float, y: float):
         """
@@ -64,8 +77,16 @@ class Mission:
         @param x X coordinate of the reached waypoint
         @param y Y coordinate of the reached waypoint
         """
+        self._absolute_points[(x, y)] = True
         self._logger.info("Executor reached waypoint at (%.2f, %.2f). Beeping...", x, y)
         winsound.Beep(1000, 200)  # Beep on reaching point
+
+    def _on_executor_finished(self):
+        """
+        @brief Callback executed when the executor completes the assigned path.
+        """
+        self._finished = True
+        self._status = "Finished"
 
     # ---------------------------------------------------------
     # Mission lifecycle
@@ -93,44 +114,40 @@ class Mission:
         """
         @brief Orchestrates the full mission workflow.
         """
-        # Step 1 — Start inspector
+        # Inspection phase
         self._logger.info("Mission: Starting inspector for %.2f seconds at %s...",
                           self.inspection_duration, self.base_position)
+        self._status = "Inspector"
 
-        self.inspector.start_inspection()  # Inspector starts collecting points
+        self.inspector.set_callback_onPoint(self._on_inspector_point_detected)
+        self.inspector.set_callback_onFinish(self._on_inspector_finished)
 
-        # Inspection time window
-        time.sleep(self.inspection_duration)
+        self.inspector.start_inspection() 
 
-        # Step 2 — Stop inspector
+        sleep(self.inspection_duration)
+
         self._logger.info("Mission: Stopping inspector.")
-        points = self.inspector.stop_inspection()
-        points = [
-            {
-                "x": self.base_position[0] + p["x"],
-                "y": self.base_position[1] + p["y"]
-            }
-            for p in points
-        ]
+        self.inspector.stop_inspection()
 
-        # Step 3 — Send detected points to executor
-        if not points:
+        # Execution phase
+        if not self._absolute_points:
             self._logger.warning("Mission completed. No points detected by inspector.")
             self._finished = True
+            self._status = "Finished"
             return
 
         self._logger.info("Mission: %d points detected. Sending path to executor.",
-                          len(points))
+                          len(self._absolute_points))
+        self._status = "Executor"
 
         self.executor.set_callback_onPoint(self._on_executor_point_reached)
         self.executor.set_callback_onFinish(self._on_executor_finished)
 
-        self.executor.start_inspection(points)
+        self.executor.start_inspection([(x,y) for x,y in self._absolute_points.keys()])
 
-        # Step 4 — Wait for executor to finish
         self._logger.info("Mission: Waiting for executor to complete path.")
         while not self._finished:
-            time.sleep(0.1)
+            sleep(0.1)
 
         self.executor.stop_inspection()
         self._logger.info("Mission completed successfully.")
@@ -139,79 +156,107 @@ class Mission:
     # Visualization
     # ---------------------------------------------------------
     def visualizer(self) -> None:
-        """
-        @brief Launch a real-time visualizer showing inspector and executor paths.
-        """
-        fig, ax = plt.subplots()
-        ax.set_aspect('equal')
-        ax.set_xlabel("X")
-        ax.set_ylabel("Y")
-        ax.set_title("Mission Visualizer")
-        ax.set_xlim(self.base_position[0] - 10, self.base_position[0] + 10)
-        ax.set_ylim(self.base_position[1] - 10, self.base_position[1] + 10)
+        fig = plt.figure(figsize=(10, 6))
 
-        # Base station
+        # Map subplot
+        ax_map = fig.add_subplot(1, 2, 1)
+        ax_map.set_aspect('equal')
+        ax_map.set_xlabel("X")
+        ax_map.set_ylabel("Y")
+        ax_map.set_title("Mission Map")
+        ax_map.set_xlim(self.base_position[0] - 5, self.base_position[0] + 5)
+        ax_map.set_ylim(self.base_position[1] - 5, self.base_position[1] + 5)
+
+        # Info subplot
+        ax_info = fig.add_subplot(1, 2, 2)
+        ax_info.axis("off")
+        text_info = ax_info.text(0.02, 0.98, "", va="top", fontsize=12)
+
+        # Plot base station
         base_x, base_y = self.base_position
-        ax.plot(base_x, base_y, 'ks', markersize=10, label="Base Station")
+        ax_map.plot(base_x, base_y, 'ks', markersize=10, label="Base station")
 
-        # Paths and points
         inspector_positions = []
         executor_positions = []
-        detected_points_history = []
 
-        inspector_point, = ax.plot([], [], 'bo', markersize=8, label="Inspector")
-        executor_point, = ax.plot([], [], 'go', markersize=8, label="Executor")
-        inspector_path, = ax.plot([], [], 'b--', linewidth=1)
-        executor_path, = ax.plot([], [], 'g--', linewidth=1)
-        detected_points_scatter = ax.scatter([], [], c="red", s=60, label="Detected Points")
+        inspector_point, = ax_map.plot([], [], 'bo', markersize=8, label="Inspector")
+        executor_point, = ax_map.plot([], [], 'go', markersize=8, label="Executor")
+        inspector_path, = ax_map.plot([], [], 'b--', linewidth=1)
+        executor_path, = ax_map.plot([], [], 'g--', linewidth=1)
 
-        last_detected_count = 0
-        blink_counter = 0
+        detected_scatter = ax_map.scatter([], [], s=50)
+
+        start_time = time()
+
+        def distance_traveled(path):
+            if len(path) < 2:
+                return 0.0
+            d = 0.0
+            for i in range(1, len(path)):
+                dx = path[i][0] - path[i-1][0]
+                dy = path[i][1] - path[i-1][1]
+                d += (dx**2 + dy**2)**0.5
+            return d
 
         def update(frame):
-            nonlocal blink_counter, last_detected_count
-            
-            # Relative position of inspector
-            inspector_rel_x, inspector_rel_y = self.inspector.get_current_position()
-            # Absolute position of inspector
-            inspector_x = base_x + inspector_rel_x
-            inspector_y = base_y + inspector_rel_y
+            # Current positions
+            ins_rel_x, ins_rel_y = self.inspector.get_current_position()
+            ins_abs = (base_x + ins_rel_x, base_y + ins_rel_y)
+            inspector_positions.append(ins_abs)
 
-            inspector_positions.append((inspector_x, inspector_y))
+            exe_abs = self.executor.get_current_position()
+            executor_positions.append(exe_abs)
 
-            # Absolute position of executor
-            executor_x, executor_y = self.executor.get_current_position()
-            executor_positions.append((executor_x, executor_y))
-
+            # Update inspector path
             if inspector_positions:
-                dx, dy = zip(*inspector_positions)
-                inspector_point.set_data(dx[-1], dy[-1])
-                inspector_path.set_data(dx, dy)
+                xs, ys = zip(*inspector_positions)
+                inspector_point.set_data(xs[-1], ys[-1])
+                inspector_path.set_data(xs, ys)
+
+            # Update executor path
             if executor_positions:
                 ex, ey = zip(*executor_positions)
                 executor_point.set_data(ex[-1], ey[-1])
                 executor_path.set_data(ex, ey)
 
-            # Update detected points
-            detected = getattr(self.inspector, "_detected_points", [])
-            if detected:
-                if len(detected) > last_detected_count:
-                    new_points = detected[last_detected_count:]
-                    for p in new_points:
-                        detected_points_history.append((p['x'] + base_x, p['y'] + base_y))
-                    last_detected_count = len(detected)
+            # Detected points
+            points = list(self._absolute_points.keys())
+            if points:
+                coords = array(points)
+                colors = ['green' if self._absolute_points[p] else 'red' for p in points]
+                detected_scatter.set_offsets(coords)
+                detected_scatter.set_color(colors)
 
-            if detected_points_history:
-                detected_points_scatter.set_offsets(detected_points_history)
-                detected_points_scatter.set_color('red')
-            else:
-                detected_points_scatter.set_offsets(np.empty((0, 2)))
+            # Time of mission
+            elapsed = time() - start_time
 
-            if blink_counter > 0:
-                blink_counter -= 1
+            # Distance traveled
+            ins_distance = distance_traveled(inspector_positions)
+            exe_distance = distance_traveled(executor_positions)
 
-            return inspector_point, executor_point, inspector_path, executor_path, detected_points_scatter
+            # Points
+            points_text = "\n".join([f"• ({x:.2f}, {y:.2f})" for x, y in points])
+
+            # Info
+            info_text = f"""
+
+            Base Position: x={base_x:.2f}, y={base_y:.2f}
+            Mission Status: {self._status}
+            Elapsed Time: {elapsed:.1f} s
+
+            Inspector Position: x={ins_abs[0]:.2f}, y={ins_abs[1]:.2f}
+            Inspector Distance Traveled: {ins_distance:.2f}
+
+            Executor Position: x={exe_abs[0]:.2f}, y={exe_abs[1]:.2f}
+            Executor Distance Traveled: {exe_distance:.2f}
+
+            Points Detected: {len(points)}
+            {points_text}
+            """
+            text_info.set_text(info_text)
+
+            return inspector_point, executor_point, detected_scatter
 
         ani = animation.FuncAnimation(fig, update, interval=100, cache_frame_data=False)
-        ax.legend()
+        fig.tight_layout()
         plt.show()

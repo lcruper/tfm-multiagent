@@ -74,7 +74,7 @@ CAMERA_STREAM_RETRY_DELAY: Final[float] = 1.0
 CAMERA_REQUEST_TIMEOUT: Final[float] = 1.0
 
 #: @brief Flash intensity value used to turn ON the camera flash.
-CAMERA_FLASH_INTENSITY_ON: Final[int] = 100
+CAMERA_FLASH_INTENSITY_ON: Final[int] = 25
 
 #: @brief Flash intensity value used to turn OFF the camera flash.
 CAMERA_FLASH_INTENSITY_OFF: Final[int] = 0

@@ -43,7 +43,7 @@ class RobotDog(IRobot):
     # ---------------------------------------------------------
     # Control
     # ---------------------------------------------------------
-    def start_inspection(self, positions: List[Dict[str, float]]) -> None:
+    def start_inspection(self, positions: List[Tuple[float, float]]) -> None:
         """
         @brief Start the robot dog movement along a list of (x, y) coordinates.
 
@@ -57,7 +57,7 @@ class RobotDog(IRobot):
             self._logger.warning("Received empty path. Robot dog will not move.")
             return
 
-        self._waypoints = [(p["x"], p["y"]) for p in positions]
+        self._waypoints = positions
         self._running = True
         self._thread = threading.Thread(target=self._move, daemon=True)
         self._thread.start()
@@ -125,7 +125,10 @@ class RobotDog(IRobot):
                     self._current_position = (tx, ty)
                     self._logger.info("Reached (%.2f, %.2f)", tx, ty)
                     if self._callbackOnPoint:
-                        self._callbackOnPoint(tx, ty)   
+                        try:
+                            self._callbackOnPoint(tx, ty)   
+                        except Exception as e:
+                            self._logger.error("Callback onPoint failed: %s", e)
                     break
                 # Move step toward the target
                 step = min(dist, self.speed * config.ROBOT_DOG_STEP_DELAY) 
@@ -137,7 +140,10 @@ class RobotDog(IRobot):
                 time.sleep(config.ROBOT_DOG_STEP_DELAY) 
 
         if self._callbackOnFinish:
-            self._callbackOnFinish()
+            try:
+                self._callbackOnFinish()
+            except Exception as e:
+                self._logger.error("Callback onFinish failed: %s", e)
 
         self._logger.info("Robot dog finished all target positions.")
         self._running = False

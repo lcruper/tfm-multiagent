@@ -129,7 +129,7 @@ class IRobot(ABC):
     @brief Interface for robot classes.
     """
     @abstractmethod
-    def start_inspection(self, positions: Optional[List[Dict[str, float]]]) -> None:
+    def start_inspection(self, positions: Optional[List[Tuple[float, float]]]) -> None:
         """
         @brief Starts the robot inspection.
 
@@ -138,7 +138,7 @@ class IRobot(ABC):
         pass
 
     @abstractmethod
-    def stop_inspection(self) -> Optional[List[Dict[str, float]]]:
+    def stop_inspection(self) -> Optional[List[Tuple[float, float]]]:
         """
         @brief Stops the robot inspection.
 

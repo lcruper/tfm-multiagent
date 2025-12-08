@@ -39,10 +39,10 @@ DRONE_UDP_HANDSHAKE_RETRY_DELAY: Final[float] = 0.1
 # ============================================================
 
 #: @brief Radial growth per second for the spiral movement simulator.
-SPIRAL_SIMULATOR_RADIAL_GROWTH: Final[float] = 0.3
+SPIRAL_SIMULATOR_RADIAL_GROWTH: Final[float] = 0.16
 
 #: @brief Angular velocity for the spiral movement simulation.
-SPIRAL_SIMULATOR_ANGULAR_SPEED: Final[float] = 0.1
+SPIRAL_SIMULATOR_ANGULAR_SPEED: Final[float] = 0.25
 
 
 #: @brief Random jitter factor applied to the spiral movement simulation.
@@ -74,7 +74,7 @@ CAMERA_STREAM_RETRY_DELAY: Final[float] = 1.0
 CAMERA_REQUEST_TIMEOUT: Final[float] = 1.0
 
 #: @brief Flash intensity value used to turn ON the camera flash.
-CAMERA_FLASH_INTENSITY_ON: Final[int] = 255
+CAMERA_FLASH_INTENSITY_ON: Final[int] = 100
 
 #: @brief Flash intensity value used to turn OFF the camera flash.
 CAMERA_FLASH_INTENSITY_OFF: Final[int] = 0
@@ -159,7 +159,7 @@ VIEWER_SLEEP_TIME: Final[float] = 0.005
 # ============================================================
 
 #: @brief Walking speed of the robot dog.
-ROBOT_DOG_SPEED: Final[float] = 0.3
+ROBOT_DOG_SPEED: Final[float] = 0.5
 
 
 #: @brief Maximum distance to a target point considered as "reached".

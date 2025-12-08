@@ -38,8 +38,9 @@ executor = RobotDog(config.ROBOT_DOG_SPEED)
 
 mission = Mission(inspector=inspector,
                   executor=executor,
-                  base_position=(0.0, 0.0),
+                  base_position=(5.0, 5.0),
                   inspection_duration=60.0) 
 
 mission.start()
+mission.visualizer()
 mission.wait_until_finished()

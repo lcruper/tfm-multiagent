@@ -4,7 +4,7 @@
 @brief Aggregates drone components: telemetry, camera, matcher, color detector, and viewer.
 """
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from datetime import datetime
 
 from interfaces.interfaces import ICamera, ITelemetry, IRobot
@@ -117,6 +117,16 @@ class Drone(IRobot):
         @param callback Function to call when reaching each point: fn(x: float, y: float)
         """
         self._callbackOnPoint = callback
+
+    def get_current_position(self) -> Tuple[Optional[float], Optional[float]]:
+        """
+        @brief Retrieves the current (x, y) position of the drone.
+
+        @return Tuple of (x, y) coordinates.
+        """
+        x = self.telemetry.get_telemetry().pose.position.x
+        y = self.telemetry.get_telemetry().pose.position.y
+        return (x, y)
 
     # ---------------------------------------------------------
     # Internal Callbacks

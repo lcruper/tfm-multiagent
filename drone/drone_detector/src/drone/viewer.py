@@ -110,7 +110,8 @@ class Viewer(IFrameConsumer):
         frame = cv2.addWeighted(overlay, config.VIEWER_OVERLAY_ALPHA, data, 1 - config.VIEWER_OVERLAY_ALPHA, 0)
 
         # Text lines
-        line1 = f"x:{telemetry.pose.position.x:.2f}  y:{telemetry.pose.position.y:.2f}  z:{telemetry.pose.position.z:.2f}"
+        #line1 = f"x:{telemetry.pose.position.x:.1f}  y:{telemetry.pose.position.y:.1f}  z:{telemetry.pose.position.z:.1f}"
+        line1 = f"z:{telemetry.pose.position.z:.1f}"
         line2 = f"pitch:{telemetry.pose.orientation.pitch:.2f}  roll:{telemetry.pose.orientation.roll:.2f}  yaw:{telemetry.pose.orientation.yaw:.2f}"
         line3 = f"voltage: {telemetry.battery.voltage:.2f}"
         

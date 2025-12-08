@@ -81,13 +81,12 @@ class SpiralMovementSimulator(IMovementSimulator):
             return None, None
 
         t = time() - self.t0
-        
-         # Smooth radius growth
-        r = self.rg * (1 - exp(-config.SPIRAL_SIMULATOR_EXP_SMOOTH * t))
-        theta = self.w * t * 2 * pi
 
-        # Convert polar to Cartesian with small jitter
+        theta = self.w * t 
+        r = self.rg * theta  
+
+        # Convertir a coordenadas cartesianas con jitter
         x = r * cos(theta) + uniform(-config.SPIRAL_SIMULATOR_JITTER, config.SPIRAL_SIMULATOR_JITTER)
         y = r * sin(theta) + uniform(-config.SPIRAL_SIMULATOR_JITTER, config.SPIRAL_SIMULATOR_JITTER)
-        
+
         return x, y

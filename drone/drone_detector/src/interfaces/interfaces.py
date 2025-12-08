@@ -163,3 +163,12 @@ class IRobot(ABC):
         @param callback Function to call when inspection finishes: fn()
         """
         pass
+
+    @abstractmethod
+    def get_current_position(self) -> Tuple[Optional[float], Optional[float]]:
+        """
+        @brief Retrieves the current (x, y) position of the robot.
+
+        @return Tuple of (x, y) coordinates or (None, None) if unavailable.
+        """
+        pass

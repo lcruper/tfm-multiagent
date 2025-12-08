@@ -96,6 +96,14 @@ class RobotDog(IRobot):
         """
         self._callbackOnPoint = callback
 
+    def get_current_position(self) -> Tuple[Optional[float], Optional[float]]:
+        """
+        @brief Retrieves the current (x, y) position of the robot dog.
+
+        @return Tuple of (x, y) coordinates.
+        """
+        return self._current_position
+
     # ---------------------------------------------------------
     # Internal methods
     # ---------------------------------------------------------

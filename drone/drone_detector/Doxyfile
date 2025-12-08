@@ -1,0 +1,50 @@
+#---------------------------------------------------------------------------
+# Project
+#---------------------------------------------------------------------------
+PROJECT_NAME           = "Drone+RobotDog System"
+PROJECT_BRIEF          = "Control and documentation of Drone and RobotDog integration for exploration and object detection."
+OUTPUT_DIRECTORY       = docs
+CREATE_SUBDIRS         = YES
+
+#---------------------------------------------------------------------------
+# Input source code
+#---------------------------------------------------------------------------
+INPUT                  = ./src
+FILE_PATTERNS          = *.py
+RECURSIVE              = YES
+EXCLUDE                = __pycache__
+
+#---------------------------------------------------------------------------
+# Extract documentation
+#---------------------------------------------------------------------------
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+
+#---------------------------------------------------------------------------
+# HTML output
+#---------------------------------------------------------------------------
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+HTML_COLORSTYLE_HUE    = 220
+HTML_COLORSTYLE_SAT    = 100
+HTML_COLORSTYLE_GAMMA  = 80
+GENERATE_TREEVIEW      = YES
+
+#---------------------------------------------------------------------------
+# Class diagrams 
+#---------------------------------------------------------------------------
+HAVE_DOT               = YES
+DOT_IMAGE_FORMAT       = svg
+CLASS_DIAGRAMS         = YES
+COLLABORATION_GRAPH    = YES
+CALL_GRAPH             = YES
+CALLER_GRAPH           = YES
+
+#---------------------------------------------------------------------------
+# Others
+#---------------------------------------------------------------------------
+GENERATE_LATEX         = NO
+QUIET                  = NO
+WARNINGS               = YES

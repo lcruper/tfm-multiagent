@@ -1,0 +1,6 @@
+var searchData=
+[
+  ['get_5fframe_0',['get_frame',['../df/df2/classsrc_1_1drone_1_1camera__capture_1_1_camera_capture.html#a9400b4e7cdb011d3e3109bbe9500a27f',1,'src.drone.camera_capture.CameraCapture.get_frame()'],['../d1/d38/classsrc_1_1interfaces_1_1interfaces_1_1_i_camera.html#adfc186fc5a13823a5cc4d737a65536b1',1,'src.interfaces.interfaces.ICamera.get_frame()']]],
+  ['get_5ftelemetry_1',['get_telemetry',['../db/dc7/classsrc_1_1drone_1_1drone__telemetry_1_1_drone_telemetry.html#ae44bfbce186cfcdb03a02e006ebbc91c',1,'src.drone.drone_telemetry.DroneTelemetry.get_telemetry()'],['../d8/d6c/classsrc_1_1interfaces_1_1interfaces_1_1_i_telemetry.html#a515ca438fc74eaf23e073e4359148eae',1,'src.interfaces.interfaces.ITelemetry.get_telemetry()']]],
+  ['get_5fxy_2',['get_xy',['../d2/d58/classsrc_1_1drone_1_1constant__movement__simulator_1_1_constant_movement_simulator.html#a43f717ac431c39808f122d230218389a',1,'src.drone.constant_movement_simulator.ConstantMovementSimulator.get_xy()'],['../db/dd6/classsrc_1_1drone_1_1spiral__movement__simulator_1_1_spiral_movement_simulator.html#af6149ee4cfe2a6f8c4dc40028c5c5d50',1,'src.drone.spiral_movement_simulator.SpiralMovementSimulator.get_xy()'],['../db/db8/classsrc_1_1interfaces_1_1interfaces_1_1_i_movement_simulator.html#a8be3af093a7f71be925a7ebc1a6b4912',1,'src.interfaces.interfaces.IMovementSimulator.get_xy()']]]
+];

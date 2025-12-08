@@ -1,30 +1,35 @@
 # viewer.py
+"""
+@file viewer.py
+@brief Displays camera frames with telemetry overlay from a queue of FrameWithTelemetry.
+"""
 from typing import Optional
 import config
 import cv2
 import threading
 import logging
-from queue import Empty, Queue
+from queue import Empty, Full, Queue
 from numpy import ndarray
 from time import sleep
 
+from interfaces.interfaces import IFrameConsumer
 from structures.structures import FrameWithTelemetry
 
-class Viewer:
+class Viewer(IFrameConsumer):
     """
-    @brief Displays camera frames with drone telemetry overlay from FrameWithTelemetry in a queue.
+    @brief Displays camera frames with telemetry overlay from FrameWithTelemetry in a queue.
 
     Reads FrameWithTelemetry objects from the input queue,
-    draws drone telemetry overlay on the frames,
+    draws telemetry overlay on the frames,
     and displays them in a live video window.
     """
-    def __init__(self, queue: Queue) -> None:
+    def __init__(self) -> None:
         """
         @brief Constructor.
 
         @param queue Queue with FrameWithTelemetry objects
         """
-        self.queue: Queue = queue
+        self._queue: Queue = Queue(maxsize=config.VIEWER_MAX_QUEUE_SIZE)    # Queue for FrameWithTelemetry objects
 
         # Threading
         self._running: bool = False                         # Flag to control the background viewer thread
@@ -44,7 +49,6 @@ class Viewer:
             self._logger.warning("Viewer already running.")
             return
 
-        self._logger.info("Starting viewer...")
         self._running = True
         self._thread = threading.Thread(target=self._loop, daemon=True)
         self._thread.start()
@@ -58,7 +62,6 @@ class Viewer:
             self._logger.warning("Viewer already stopped.")
             return
         
-        self._logger.info("Stopping viewer...")
         self._running = False
         if self._thread:
             self._thread.join()
@@ -67,6 +70,25 @@ class Viewer:
             self._thread = None
         cv2.destroyAllWindows()
         self._logger.info("Viewer stopped.")
+
+    # ----------------------------------------------------------------------
+    # Public API
+    # ----------------------------------------------------------------------
+    def enqueue(self, fwt: FrameWithTelemetry) -> None:
+        """
+        @brief Enqueues a FrameWithTelemetry for display.
+
+        @param fwt FrameWithTelemetry object
+        """
+        while True:
+            try:
+                self._queue.put_nowait(fwt)
+                break
+            except Full:
+                try:
+                    self._queue.get_nowait()
+                except Empty:
+                    break
 
     # ----------------------------------------------------------------------
     # Internal methods
@@ -111,7 +133,7 @@ class Viewer:
         while self._running:
             try:
                 # Get FrameWithTelemetry from the queue
-                fwt = self.queue.get(timeout=0.05)
+                fwt = self._queue.get(timeout=0.05)
             except Empty:
                 # Queue is empty
                 self._logger.debug("Queue empty, waiting for frames...")

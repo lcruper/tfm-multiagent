@@ -10,14 +10,14 @@ import json
 from datetime import datetime
 from typing import List, Tuple
 
-from drone.drone_telemetry_listener import DroneTelemetryListener
+from drone.drone_telemetry import DroneTelemetry
 from drone.camera_capture import CameraCapture
 from drone.matcher import Matcher
-from drone.movement_drone_simulator import MovementDroneSimulator
-from detection.color_detection import ColorDetection
-from robot.robot_dog import RobotDog
+from drone.spiral_movement_simulator import SpiralMovementSimulator
+from drone.color_detection import ColorDetection
+from src.robotDog.robot_dog import RobotDog
 from structures.structures import Position
-from ui.viewer import Viewer
+from drone.viewer import Viewer
 
 class System:
     """
@@ -29,7 +29,7 @@ class System:
 
     def __init__(self, drone_ip: str, drone_port: int, local_port: int, 
                  yolo_model_path: str, 
-                 simulator: MovementDroneSimulator = None) -> None:
+                 simulator: SpiralMovementSimulator = None) -> None:
         """
         @brief Constructor.
 
@@ -48,7 +48,7 @@ class System:
 
         # --- Drone ---
         self.simulator = simulator
-        self.drone = DroneTelemetryListener(drone_ip=drone_ip, 
+        self.drone = DroneTelemetry(drone_ip=drone_ip, 
                                             drone_port=drone_port, 
                                             local_port=local_port, 
                                             simulator=simulator)

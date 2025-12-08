@@ -1,22 +1,34 @@
 # structures.py
+"""
+@file structures.py
+@brief Core data structures for the drone + robot dog system.
+"""
+
 from dataclasses import dataclass
-import numpy as np
+from numpy import ndarray
+
+# ============================================================
+# Battery
+# ============================================================
 
 @dataclass
 class Battery:
     """
-    @brief Represents the current battery status of the drone.
+    @brief Stores battery information.
 
     @var voltage
         Battery voltage in volts.
     """
     voltage: float
 
+# ============================================================
+# Position
+# ============================================================
 
 @dataclass
 class Position:
     """
-    @brief Represents a 3D position in space.
+    @brief Represents a 3D coordinate in space.
 
     @var x
         X coordinate in meters.
@@ -29,71 +41,87 @@ class Position:
     y: float
     z: float
 
+# ============================================================
+# Orientation
+# ============================================================
 
 @dataclass
 class Orientation:
     """
-    @brief Represents the orientation of the drone in Euler angles.
+    @brief Represents an orientation using Euler angles.
 
     @var roll
-        Rotation around X-axis in degrees.
+        Rotation around the X-axis in degrees.
     @var pitch
-        Rotation around Y-axis in degrees.
+        Rotation around the Y-axis in degrees.
     @var yaw
-        Rotation around Z-axis in degrees.
+        Rotation around the Z-axis in degrees.
     """
     roll: float
     pitch: float
     yaw: float
 
+# ============================================================
+# Pose
+# ============================================================
 
 @dataclass
 class Pose:
     """
-    @brief Represents a full pose of the drone, combining position and orientation.
+    @brief Combines a 3D position with Euler orientation.
 
     @var position
-        Position of the drone (x, y, z).
+        3D position of the system.
     @var orientation
-        Orientation of the drone (roll, pitch, yaw).
+        Euler rotation angles (roll, pitch, yaw).
     """
     position: Position
     orientation: Orientation
 
+# ============================================================
+# Telemetry Data
+# ============================================================
 
 @dataclass
 class TelemetryData:
     """
-    @brief Aggregates all telemetry information of the drone.
+    @brief Aggregated telemetry information.
 
     @var pose
-        Current pose (position + orientation) of the drone.
+        Current system pose (position + orientation).
     @var battery
-        Current battery status of the drone.
+        Current battery status.
     """
     pose: Pose
     battery: Battery
 
+# ============================================================
+# Frame
+# ============================================================
 
 @dataclass
 class Frame:
     """
-    @brief Represents a captured camera frame.
+    @brief Represents a single captured camera frame.
 
     @var data
-        The image data as a NumPy array (H x W x 3).
+        Image matrix as a NumPy array (H x W x 3), typically RGB.
     """
-    data: np.ndarray
+    data: ndarray
+
+# ============================================================
+# Frame With Telemetry
+# ============================================================
 
 @dataclass
 class FrameWithTelemetry:
     """
-    @brief Associates a camera frame with a drone telemetry data.
+    @brief Associates a camera frame with telemetry data.
 
     @var frame
-        The captured image as a NumPy array (H x W x 3).
+        Captured camera frame.
     @var telemetry
-        The telemetry data of the drone when the frame was captured.
+        Telemetry information at the exact moment the frame was captured.
     """
     frame: Frame
     telemetry: TelemetryData

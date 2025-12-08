@@ -1,35 +1,38 @@
 # matcher.py
+"""
+@file matcher.py
+@brief Combines camera frames and telemetry into FrameWithTelemetry objects.
+"""
 import config
 import threading
 import logging
-from queue import Queue, Empty, Full
 from time import sleep
 from typing import List, Optional
 
+from interfaces.interfaces import ICamera, IFrameConsumer, ITelemetry
 from structures.structures import FrameWithTelemetry
-from drone.drone_telemetry_listener import DroneTelemetryListener
-from drone.camera_capture import CameraCapture
 
 class Matcher:
     """
-    @brief Associates frames from a camera with the drone's telemetry data.
+    @brief Associates frames from a camera with telemetry data.
 
-    Captures camera frames and drone telemetry data, combines them into FrameWithTelemetry objects,
+    Captures camera frames and telemetry data, combines them into FrameWithTelemetry objects,
     and distributes them to multiple registered consumer queues.
     """
-    def __init__(self, drone_telemetry: DroneTelemetryListener, 
-                 camera_capture: CameraCapture) -> None:
+    def __init__(self, 
+                 telemetry: ITelemetry, 
+                 camera: ICamera) -> None:
         """
         @brief Constructor.
 
-        @param drone_telemetry DroneTelemetryListener object
-        @param camera_capture CameraCapture object
+        @param telemetry ITelemetry object
+        @param camera ICamera object
         """
-        self.drone: DroneTelemetryListener = drone_telemetry
-        self.camera: CameraCapture = camera_capture
+        self.telemetry: ITelemetry = telemetry
+        self.camera: ICamera = camera
 
-        # Queues for distributing FrameWithTelemetry objects to consumers
-        self._queues: List[Queue] = []     
+        # Consumers for distributing FrameWithTelemetry objects
+        self._consumers: List[IFrameConsumer] = []
 
         # Threading
         self._running: bool = False                                 # Flag to control the background matcher thread
@@ -37,6 +40,7 @@ class Matcher:
         
         # Logger
         self._logger: logging.Logger = logging.getLogger("Matcher")
+
     # ----------------------------------------------------------------------
     # Control
     # ----------------------------------------------------------------------
@@ -48,7 +52,6 @@ class Matcher:
             self._logger.warning("Matcher already running.")
             return
         
-        self._logger.info(f"Starting matcher...")
         self._running = True
         self._thread = threading.Thread(target=self._match, daemon=True)
         self._thread.start()
@@ -62,7 +65,6 @@ class Matcher:
             self._logger.warning("Matcher already stopped.")
             return
         
-        self._logger.info("Stopping matcher...")
         self._running = False
         if self._thread:
             self._thread.join(timeout=1.0)
@@ -74,14 +76,15 @@ class Matcher:
     # ----------------------------------------------------------------------
     # Public API
     # ----------------------------------------------------------------------
-    def register_consumer(self, queue: Queue):
+    def register_consumer(self, consumer: IFrameConsumer):
         """
-        @brief Registers a consumer queue to receive FrameWithTelemetry objects.
+        @brief Registers a consumer to receive FrameWithTelemetry objects.
 
-        @param queue Queue object where matched frames will be sent
+        @param consumer IFrameConsumer object to receive matched frames
         """
-        self._queues.append(queue)
-
+        self._consumers.append(consumer)
+        self._logger.info("Registered consumer: %s", type(consumer).__name__)
+    
     # ----------------------------------------------------------------------
     # Internal methods
     # ----------------------------------------------------------------------    
@@ -97,25 +100,18 @@ class Matcher:
                 continue
             self._logger.debug("Retrieved frame of shape %s", frame.data.shape)
 
-            # Get drone telemetry
-            telemetry = self.drone.get_telemetry()
+            # Get telemetry
+            telemetry = self.telemetry.get_telemetry()
             self._logger.debug("Retrieved telemetry %s", telemetry)
             # Create FrameWithTelemetry object
             fwt = FrameWithTelemetry(frame, telemetry)
             self._logger.debug("Matched frame of shape %s with telemetry %s", frame.data.shape, telemetry)
 
-            # Distribute to all consumer queues
-            for q in self._queues:
+            # Distribute to all consumers
+            for consumer in self._consumers:
                 try:
-                    q.put_nowait(fwt)
-                except Full:
-                    if config.MATCHER_QUEUE_DROP_ON_FULL:
-                        try:
-                            q.get_nowait()
-                        except Empty:
-                            pass
-                        q.put_nowait(fwt)
-                    else:
-                        self._logger.warning("Consumer queue full, dropping frame with telemetry")
+                    consumer.enqueue(fwt)
+                except Exception as e:
+                    self._logger.error("Error sending to consumer %s: %s", type(consumer).__name__, e)
 
             sleep(config.MATCHER_SLEEP_TIME)  

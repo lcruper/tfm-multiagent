@@ -1,16 +1,22 @@
 # color_detection.py
+"""
+@file color_detection.py
+@brief Implements the ColorDetection class for detecting specific colors inside YOLO-detected objects.
+"""
 from typing import Optional
 import config
 import threading
 import logging
 import cv2
 import numpy as np
-from queue import Queue, Empty
+from queue import Full, Queue, Empty
 from ultralytics import YOLO
+from time import sleep
 
+from interfaces.interfaces import IFrameConsumer
 from structures.structures import FrameWithTelemetry
 
-class ColorDetection:
+class ColorDetection(IFrameConsumer):
     """
     @brief Detects configurable colors in framesWithPosition coming from a queue.
 
@@ -19,26 +25,26 @@ class ColorDetection:
     It also triggers a callback with the position if colors are detected.
     """
 
-    def __init__(self, queue: Queue, 
-                 callback: callable,
+    def __init__(self,
+                 color: str,
                  yolo_model_path: str,
-                 color: str) -> None:
+                 callback: Optional[callable] = None) -> None:
         """
         @brief Constructor.
 
-        @param queue Queue with FrameWithPosition objects
-        @param callback Function(Position) called when color object is detected
-        @param yolo_model_path Path to the YOLO model file
         @param color Color name to detect
+        @param yolo_model_path Path to the YOLO model file
+        @param callback Function(Position) called when color object is detected
         """
-        self.queue: Queue = queue
-        self.callback: callable = callback
         self.color: str = color
         self.model: YOLO = YOLO(yolo_model_path)     # YOLO model for object detection
+        self.callback: Optional[callable] = callback
 
         self._colorLowerUpper = config.COLOR_DETECTION_COLORS.get(color, None)      # Color HSV ranges
         if self._colorLowerUpper is None:
             raise ValueError(f"Color '{color}' not defined in configuration.")
+        
+        self._queue: Queue = Queue(maxsize=config.COLOR_DETECTION_MAX_QUEUE_SIZE)  # Queue for FrameWithTelemetry
         
         # Threading
         self._running: bool = False                         # Flag to control the background frame processing thread
@@ -58,7 +64,6 @@ class ColorDetection:
             self._logger.warning("Frame processing already running.")
             return
 
-        self._logger.info(f"Starting frame processing...")
         self._running = True
         self._thread = threading.Thread(target=self._process, daemon=True)
         self._thread.start()
@@ -72,7 +77,6 @@ class ColorDetection:
             self._logger.warning("Frame processing already stopped.")
             return
 
-        self._logger.info("Stopping frame processing...")
         self._running = False
         if self._thread:
             self._thread.join(timeout=1.0)
@@ -81,6 +85,26 @@ class ColorDetection:
             self._thread = None
         self._logger.info("Frame processing stopped.")
 
+    # --------------------------------------------------------------------
+    # Public API
+    # ---------------------------------------------------------------------
+    def enqueue(self, fwt: FrameWithTelemetry) -> None:
+        """
+        @brief Enqueues a FrameWithTelemetry for color detection.
+
+        @param fwt FrameWithTelemetry object
+        """
+        while True:
+            try:
+                self._queue.put_nowait(fwt)
+                self._logger.debug("Enqueued frame of shape %s", fwt.frame.data.shape)
+                break
+            except Full:
+                try:
+                    self._queue.get_nowait()
+                    self._logger.debug("Queue full, dropped oldest frame.")  
+                except Empty:
+                    break
     # ----------------------------------------------------------------------
     # Internal methods
     # ----------------------------------------------------------------------
@@ -128,12 +152,11 @@ class ColorDetection:
             mask2 = cv2.inRange(hsv, np.array(self._colorLowerUpper["lower2"]), np.array(self._colorLowerUpper["upper2"]))
             mask = cv2.bitwise_or(mask1, mask2)
             red_ratio = cv2.countNonZero(mask) / (roi.shape[0]*roi.shape[1]+1e-6)
-
-            self._logger.debug("Red ratio in box: %.3f", red_ratio)
             
             if red_ratio >= config.COLOR_DETECTION_THRESH:
                 # Call the callback with the position
-                self.callback(position)
+                if self.callback:
+                    self.callback(position)
                 
                 self._logger.info("%s object detected at position %s", self.color.capitalize(), position)
 
@@ -149,10 +172,11 @@ class ColorDetection:
         while self._running:
             try:
                 # Get a FrameWithTelemetry from the queue
-                fwt = self.queue.get(timeout=0.1)
+                fwt = self._queue.get(timeout=0.1)
             except Empty:
                 # Queue is empty
                 self._logger.debug("Queue empty, waiting for frames...")
+                sleep(config.COLOR_DETECTION_SLEEP_TIME)
                 continue
 
             try:
@@ -160,3 +184,4 @@ class ColorDetection:
                 self._detect_color(fwt)
             except Exception as e:
                 self._logger.error("Error processing frame: %s", e)
+        sleep(config.COLOR_DETECTION_SLEEP_TIME)

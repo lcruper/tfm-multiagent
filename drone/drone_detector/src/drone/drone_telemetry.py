@@ -1,4 +1,8 @@
-# drone_telemetry_listener.py
+# drone_telemetry.py
+"""
+@file drone_telemetry.py
+@brief UDP telemetry listener for the drone.
+"""
 import config 
 
 import socket
@@ -9,17 +13,18 @@ from copy import deepcopy
 from time import sleep
 from typing import Optional, Final
 
-from drone.movement_drone_simulator import MovementDroneSimulator
+from interfaces.interfaces import ITelemetry
+from drone.spiral_movement_simulator import SpiralMovementSimulator
 from structures.structures import Battery, Position, Orientation, Pose, TelemetryData
 
-class DroneTelemetryListener:
+class DroneTelemetry(ITelemetry):
     """
     @brief UDP listener for drone telemetry.
 
-    Listens for pose battery and pose packets from the drone and keeps
-    internally the latest telemetry data thread-safe. 
-    
-    @note All get_* methods are thread-safe.
+    The listener receives two packet types:
+      - battery packets containing a single float: voltage
+      - pose packets containing six floats: x, y, z, roll, pitch, yaw
+
     """
     PACKET_ID_BATTERY: Final[int] = 0x01                       # Packet ID for battery packets
     PACKET_ID_POSE: Final[int] = 0x02                          # Packet ID for pose packets
@@ -28,7 +33,7 @@ class DroneTelemetryListener:
     def __init__(self, drone_ip: str, 
                  drone_port: int, 
                  local_port: int, 
-                 simulator: MovementDroneSimulator = None) -> None:
+                 simulator: Optional[SpiralMovementSimulator] = None) -> None:
         """
         @brief Constructor.
 
@@ -40,7 +45,7 @@ class DroneTelemetryListener:
         self.drone_ip: str = drone_ip
         self.drone_port: int = drone_port
         self.local_port: int = local_port
-        self.simulator: MovementDroneSimulator = simulator
+        self.simulator: SpiralMovementSimulator = simulator
         
         # Last known drone telemetry data
         self._telemetry: TelemetryData = TelemetryData(
@@ -66,7 +71,7 @@ class DroneTelemetryListener:
         self._thread: Optional[threading.Thread] = None             # Listener thread
         
         # Logger
-        self._logger: logging.Logger = logging.getLogger("DroneTelemetryListener")
+        self._logger: logging.Logger = logging.getLogger("DroneTelemetry")
 
     # ----------------------------------------------------------------------
     # Control
@@ -81,8 +86,7 @@ class DroneTelemetryListener:
         if self._running:
             self._logger.warning("Listener already running.")
             return
-        
-        self._logger.info("Starting listener...")
+    
         self._running = True
         self._thread = threading.Thread(target=self._listen, daemon=True)
         self._thread.start()
@@ -99,7 +103,6 @@ class DroneTelemetryListener:
             self._logger.warning("Listener already stopped.")
             return
         
-        self._logger.info("Stopping listener...")
         self._telemetry = TelemetryData(
             pose=Pose(
                 position=Position(0,0,0), 
@@ -160,7 +163,6 @@ class DroneTelemetryListener:
         try:
             self._logger.info("Sending handshake to %s:%d", self.drone_ip, self.drone_port)
             self._sock.sendto(self.HANDSHAKE_PACKET, (self.drone_ip, self.drone_port))
-            self._logger.info(f"Handshake sent.")
         except Exception as e:
             self._logger.error("Error sending handshake: %s", e)
     
@@ -168,11 +170,9 @@ class DroneTelemetryListener:
             """
             @brief Initializes the UDP socket and sends handshake.
             """
-            self._logger.info("Initializing UDP socket...")
             self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self._sock.bind(("0.0.0.0", self.local_port))
             self._sock.settimeout(config.DRONE_UDP_TIMEOUT)
-            self._logger.info("UDP socket initialized.")
             self._logger.info("Listening UDP on port %d...", self.local_port)
             
             for _ in range(config.DRONE_UDP_HANDSHAKE_RETRIES):
@@ -255,8 +255,6 @@ class DroneTelemetryListener:
                     # Pose packet
                     elif packet_id == self.PACKET_ID_POSE:
                         self._process_pose_packet(payload)
-                    else:
-                        self._logger.debug("Ignoring unknown packet")
 
                 except socket.timeout:
                     continue  
@@ -277,5 +275,3 @@ class DroneTelemetryListener:
                 except:
                     pass
                 self._sock = None
-
-            self._logger.info("Socket closed")

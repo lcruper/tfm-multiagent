@@ -9,9 +9,10 @@ from time import sleep
 from copy import deepcopy
 from numpy import ndarray
 
+from interfaces.interfaces import ICamera
 from structures.structures import Frame
 
-class CameraCapture:
+class CameraCapture(ICamera):
     """
     @brief Captures frames from a stream URL.
 
@@ -100,7 +101,7 @@ class CameraCapture:
             requests.get(
                 self._flash_url, 
                 params={"var": "led_intensity", "val": config.CAMERA_FLASH_INTENSITY_ON}, 
-                timeout=config.CAMERA_STREAM_OPEN_TIMEOUT
+                timeout=config.CAMERA_REQUEST_TIMEOUT
                 )
             self._logger.debug("Flash turned on.")
         except:
@@ -114,7 +115,7 @@ class CameraCapture:
             requests.get(
                 self._flash_url, 
                 params={"var": "led_intensity", "val": config.CAMERA_FLASH_INTENSITY_OFF}, 
-                timeout=config.CAMERA_STREAM_OPEN_TIMEOUT
+                timeout=config.CAMERA_REQUEST_TIMEOUT
                 )
             self._logger.debug("Flash turned off.")
         except:

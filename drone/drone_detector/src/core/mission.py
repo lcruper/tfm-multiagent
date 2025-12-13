@@ -3,6 +3,7 @@
 @file mission.py
 @brief Mission module orchestrating inspector and executor robots.
 """
+
 from numpy import array
 from time import time, sleep
 import logging
@@ -11,37 +12,41 @@ from typing import Dict, Tuple, Optional
 import winsound
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+from matplotlib.widgets import Button
 
-from interfaces.interfaces import IRobot
+import config 
+from interfaces.interfaces import IPathPlanner, IRobot
 
 class Mission:
     """
     @brief Represents a mission where:
-           1. The inspector robot inspects for a time window.
+           1. The inspector robot inspects an area.
            2. Collects detected points.
-           3. The executor robot executes the path.
+           3. The executor robot navigates to those points.
     """
     def __init__(self,
                  inspector: IRobot,
                  executor: IRobot,
                  base_position: Tuple[float, float],
-                 inspection_duration: float) -> None:
+                 planner: IPathPlanner) -> None:
         """
         @brief Constructor.
 
         @param inspector Robot interface for performing inspection
         @param executor Robot interface for executing the detected path
         @param base_position (x, y) coordinates of the mission base position
-        @param inspection_duration Duration in seconds for the inspector to run
+        @param planner Path planner to optimize the executor's path
         """
         self.inspector: IRobot = inspector
         self.executor: IRobot = executor
         self.base_position: Tuple[float, float] = base_position
-        self.inspection_duration: float = inspection_duration
+        self.planner: IPathPlanner = planner
 
         self._absolute_points: Dict[Tuple[float,float], bool] = {}  # Detected points with reached status
+
         # Synchronization
         self._mission_thread: Optional[threading.Thread] = None
+        self._stop_inspection_flag: Optional[threading.Event] = None              # Flag to stop inspection
         self._finished: bool = False
         self._status: str = "Not started"   # Status of the mission
 
@@ -88,6 +93,25 @@ class Mission:
         self._finished = True
         self._status = "Finished"
 
+    def _reorder_points(self):
+        """
+        @brief Reorder detected points using the eSHPSolver to minimize path length.
+        Updates self._absolute_points to follow optimal tour order.
+        """
+        if not self._absolute_points:
+            return
+
+        points = list(self._absolute_points.keys())
+        start_pos = self.executor.get_current_position()
+
+        try:
+            ordered_points = self.planner.plan_path(start_pos, points)
+            self._absolute_points = {pt: self._absolute_points[pt] for pt in ordered_points}
+            self._logger.info("Points reordered using %s planner.",
+                            self.planner.__class__.__name__)
+        except Exception as e:
+            self._logger.error("Error while reordering points: %s", str(e))
+
     # ---------------------------------------------------------
     # Mission lifecycle
     # ---------------------------------------------------------
@@ -97,6 +121,7 @@ class Mission:
         """
         self._logger.info("Starting mission...")
 
+        self._stop_inspection_flag = threading.Event()
         self._mission_thread = threading.Thread(target=self._run, daemon=True)
         self._mission_thread.start()
 
@@ -115,8 +140,7 @@ class Mission:
         @brief Orchestrates the full mission workflow.
         """
         # Inspection phase
-        self._logger.info("Mission: Starting inspector for %.2f seconds at %s...",
-                          self.inspection_duration, self.base_position)
+        self._logger.info("Mission: Starting inspector at %s...", self.base_position)
         self._status = "Inspector"
 
         self.inspector.set_callback_onPoint(self._on_inspector_point_detected)
@@ -124,9 +148,10 @@ class Mission:
 
         self.inspector.start_inspection() 
 
-        sleep(self.inspection_duration)
+        while not self._stop_inspection_flag.is_set():
+            sleep(config.MISSION_SLEEP_TIME)
 
-        self._logger.info("Mission: Stopping inspector.")
+        self._logger.info("Mission: Stop button pressed. Stopping inspector.")
         self.inspector.stop_inspection()
 
         # Execution phase
@@ -138,6 +163,7 @@ class Mission:
 
         self._logger.info("Mission: %d points detected. Sending path to executor.",
                           len(self._absolute_points))
+        self._reorder_points()
         self._status = "Executor"
 
         self.executor.set_callback_onPoint(self._on_executor_point_reached)
@@ -147,10 +173,13 @@ class Mission:
 
         self._logger.info("Mission: Waiting for executor to complete path.")
         while not self._finished:
-            sleep(0.1)
+            sleep(config.MISSION_SLEEP_TIME)
 
         self.executor.stop_inspection()
         self._logger.info("Mission completed successfully.")
+
+
+
 
     # ---------------------------------------------------------
     # Visualization
@@ -171,6 +200,15 @@ class Mission:
         ax_info = fig.add_subplot(1, 2, 2)
         ax_info.axis("off")
         text_info = ax_info.text(0.02, 0.98, "", va="top", fontsize=12)
+
+        # Buttom Stop Inspector
+        ax_button = plt.axes([0.45, 0.01, 0.1, 0.05])
+        stop_button = Button(ax_button, "Stop Inspector")
+
+        def stop_inspector(event):
+            self._stop_inspection_flag.set()
+            stop_button.disconnect_events()  
+        stop_button.on_clicked(stop_inspector)
 
         # Plot base station
         base_x, base_y = self.base_position

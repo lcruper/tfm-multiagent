@@ -167,3 +167,10 @@ ROBOT_DOG_REACHED_TOLERANCE: Final[float] = 0.05
 
 #: @brief Delay between robot dog movement commands.
 ROBOT_DOG_STEP_DELAY: Final[float] = 0.1
+
+
+# ============================================================
+# Mission
+# ============================================================
+#: @brief Sleep time in the mission control loop.
+MISSION_SLEEP_TIME: Final[float] = 0.1

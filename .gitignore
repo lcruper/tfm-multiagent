@@ -1,13 +1,4 @@
 # ========================
-# ROS2 build artifacts
-# ========================
-build/
-install/
-log/
-*.pyc
-*.swp
-
-# ========================
 # ESP32 / Drone SDK
 # ========================
 sdkconfig
@@ -33,14 +24,6 @@ docs/en/rst/sphinx-warning-log.txt
 docs/__pycache__/
 
 # ========================
-# Docker artifacts
-# ========================
-*.tar
-*.img
-*.container
-docker-compose.override.yml
-
-# ========================
 # IDE / Editor files
 # ========================
 .vscode/
@@ -52,8 +35,31 @@ docker-compose.override.yml
 # Python general
 # ========================
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
 *.egg-info/
 .env
 *.db
 *.sqlite3
+dist/
+build/
+.eggs/
+.venv
 
+# ========================
+# Project specific
+# ========================
+# YOLO models and large binaries
+yoloModels/
+*.pt
+*.weights
+
+# src cache
+src/__pycache__/
+src/**/*.pyc
+
+# Temporary / backup files
+*~
+*.bak
+*.swp

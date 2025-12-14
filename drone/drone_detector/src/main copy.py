@@ -8,14 +8,14 @@ from drone.color_detection import ColorDetection
 from drone.spiral_movement_simulator import SpiralMovementSimulator
 from robotDog.robot_dog import RobotDog
 from drone.constant_movement_simulator import ConstantMovementSimulator
-from utils.colored_logs import ColoredFormatter
-from core.missions_controller import MissionsController
+from utils.logs import ColoredFormatter, LoggerNameFilter
 from planners.nearest_neighbor_planner import NearestNeighborPlanner
 import logging
 
 import config
 
 handler = logging.StreamHandler()
+handler.addFilter(LoggerNameFilter("Mission"))
 handler.setFormatter(ColoredFormatter("[%(levelname)s] %(name)s: %(message)s"))
 
 logging.basicConfig(

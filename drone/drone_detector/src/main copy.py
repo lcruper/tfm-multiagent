@@ -9,6 +9,7 @@ from drone.spiral_movement_simulator import SpiralMovementSimulator
 from robotDog.robot_dog import RobotDog
 from drone.constant_movement_simulator import ConstantMovementSimulator
 from utils.colored_logs import ColoredFormatter
+from core.missions_controller import MissionsController
 from planners.nearest_neighbor_planner import NearestNeighborPlanner
 import logging
 
@@ -38,11 +39,12 @@ inspector = Drone(telemetry=telemetry,
 executor = RobotDog(config.ROBOT_DOG_SPEED)
 
 planner = NearestNeighborPlanner()
+
 mission = Mission(inspector=inspector,
                   executor=executor,
-                  base_position=(5.0, 5.0),
+                  base_positions=[(5.0, 5.0), (10.0, 10.0)],
                   planner=planner) 
 
-mission.start()
+#mission.start()
 mission.visualizer()
 mission.wait_until_finished()

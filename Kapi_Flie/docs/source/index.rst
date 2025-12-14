@@ -1,20 +1,14 @@
 Kapi_Flie Documentation
-=========================
+=======================
 
-Welcome to the documentation of the Kapi_Flie project.
-
-This documentation describes the architecture, configuration,
-and core components of the Drone and Robot Dog System.
+Welcome to the Kapi_Flie documentation.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Sections:
 
-   modules
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   configuration/index
+   structures/index
+   interfaces/index
+   drone/index
+   robotDog/index

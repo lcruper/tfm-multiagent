@@ -1,9 +1,12 @@
-# color_detection.py
 """
-@file color_detection.py
-@brief Implements the ColorDetection class for detecting specific colors inside YOLO-detected objects.
+Color Detection Module
+----------------------
+
+Detects configurable colors inside YOLO-detected objects in frames
+received from a camera/telemetry pipeline.
 """
-from typing import Optional
+
+from typing import Optional, Callable
 import config
 import threading
 import logging
@@ -14,85 +17,78 @@ from ultralytics import YOLO
 from time import sleep
 
 from interfaces.interfaces import IFrameConsumer
-from structures.structures import FrameWithTelemetry
+from structures.structures import FrameWithTelemetry, Position
+
 
 class ColorDetection(IFrameConsumer):
     """
-    @brief Detects configurable colors in framesWithPosition coming from a queue.
+    Detects a specified color in frames with telemetry.
 
-    Reads FrameWithPosition objects from the input queue,
-    runs YOLO object detection, then checks for colors in detected boxes.
-    It also triggers a callback with the position if colors are detected.
+    Reads FrameWithTelemetry objects from an internal queue, runs YOLO object
+    detection, and checks detected objects for the configured color. If the
+    color is detected, an optional callback is triggered with the current position.
     """
 
     def __init__(self,
                  color: str,
-                 yolo_model_path: str,
-                 callback: Optional[callable] = None) -> None:
+                 yolo_model_path: str) -> None:
         """
-        @brief Constructor.
+        Creates a ColorDetection instance.
 
-        @param color Color name to detect
-        @param yolo_model_path Path to the YOLO model file
-        @param callback Function(Position) called when color object is detected
+        Args:
+            color (str): Name of the color to detect.
+            yolo_model_path (str): Path to the YOLO model file.
         """
         self.color: str = color
-        self.model: YOLO = YOLO(yolo_model_path)     # YOLO model for object detection
-        self.callback: Optional[callable] = callback
+        self.model: YOLO = YOLO(yolo_model_path)
 
-        self._colorLowerUpper = config.COLOR_DETECTION_COLORS.get(color, None)      # Color HSV ranges
-        if self._colorLowerUpper is None:
+        self._callback: Optional[Callable[[Position], None]] = None
+
+        self._colorLimits = config.COLOR_DETECTION_COLORS.get(color)
+        if self._colorLimits is None:
             raise ValueError(f"Color '{color}' not defined in configuration.")
-        
-        self._queue: Queue = Queue(maxsize=config.COLOR_DETECTION_MAX_QUEUE_SIZE)  # Queue for FrameWithTelemetry
-        
-        # Threading
-        self._running: bool = False                         # Flag to control the background frame processing thread
-        self._thread: Optional[threading.Thread] = None     # Frame processing thread
 
-        # Logger
+        self._queue: Queue = Queue(maxsize=config.COLOR_DETECTION_MAX_QUEUE_SIZE)
+
+        self._running: bool = False
+        self._thread: Optional[threading.Thread] = None
+
         self._logger: logging.Logger = logging.getLogger("ColorDetection")
 
     # ----------------------------------------------------------------------
-    # Control
+    # Public methods
     # ----------------------------------------------------------------------
     def start(self) -> None:
-        """
-        @brief Starts the background frame processing thread.
-        """
+        """Starts the background color detection thread."""
         if self._running:
-            self._logger.warning("Frame processing already running.")
+            self._logger.warning("Already running.")
             return
 
         self._running = True
         self._thread = threading.Thread(target=self._process, daemon=True)
         self._thread.start()
-        self._logger.info("Frame processing started.")
+        self._logger.info("Started.")
 
     def stop(self) -> None:
-        """
-        @brief Stops the frame processing.
-        """
+        """Stops the background color detection thread."""
         if not self._running:
-            self._logger.warning("Frame processing already stopped.")
+            self._logger.warning("Already stopped.")
             return
 
         self._running = False
         if self._thread:
             self._thread.join(timeout=1.0)
             if self._thread.is_alive():
-                self._logger.warning("Frame processing thread didn't stop in time")
+                self._logger.warning("Did not stop in time.")
             self._thread = None
-        self._logger.info("Frame processing stopped.")
+        self._logger.info("Stopped.")
 
-    # --------------------------------------------------------------------
-    # Public API
-    # ---------------------------------------------------------------------
     def enqueue(self, fwt: FrameWithTelemetry) -> None:
         """
-        @brief Enqueues a FrameWithTelemetry for color detection.
+        Enqueues a FrameWithTelemetry for color detection.
 
-        @param fwt FrameWithTelemetry object
+        Args:
+            fwt (FrameWithTelemetry): Frame with telemetry to process.
         """
         while True:
             try:
@@ -102,86 +98,84 @@ class ColorDetection(IFrameConsumer):
             except Full:
                 try:
                     self._queue.get_nowait()
-                    self._logger.debug("Queue full, dropped oldest frame.")  
+                    self._logger.debug("Queue full, dropped oldest frame.")
                 except Empty:
                     break
+
+    def set_callback(self, callback: Callable[[Position], None]) -> None:
+        """
+        Sets the callback function to be called when the color is detected.
+
+        Args:
+            callback (Callable[[Position], None]): Callback function.
+        """
+        self._callback = callback
+
     # ----------------------------------------------------------------------
     # Internal methods
     # ----------------------------------------------------------------------
     def _detect_color(self, fwt: FrameWithTelemetry) -> None:
         """
-        @brief Detects colors in objects in the given FrameWithTelemetry.
-        
-        @param fwt FrameWithTelemetry object
+        Detects the configured color in a given frame using YOLO-detected objects.
+
+        Args:
+            fwt (FrameWithTelemetry): Frame with telemetry to analyze.
         """
         data = fwt.frame.data
         position = fwt.telemetry.pose.position
-
         self._logger.debug("Processing frame of shape %s at position %s", data.shape, position)
+
         try:
-            # Run YOLO object detection on the frame
-            results = self.model.predict(data,
-                                            device="cpu",
-                                            imgsz=config.COLOR_DETECTION_IMG_SIZE,
-                                            conf=config.COLOR_DETECTION_CONF_THRESH,
-                                            iou=config.COLOR_DETECTION_IOU_THRESH,
-                                            half=False,
-                                            verbose=False)
+            results = self.model.predict(
+                data,
+                device="cpu",
+                imgsz=config.COLOR_DETECTION_IMG_SIZE,
+                conf=config.COLOR_DETECTION_CONF_THRESH,
+                iou=config.COLOR_DETECTION_IOU_THRESH,
+                half=False,
+                verbose=False
+            )
         except Exception as e:
             self._logger.error("YOLO prediction error: %s", e)
             return
 
-        # Get detected boxes
         dets = results[0].boxes if len(results) else []
 
         for box in dets:
-            # Convert box to integer coordinates
             xyxy = box.xyxy.cpu().numpy().astype(int)[0] if hasattr(box.xyxy, "cpu") else np.array(box.xyxy).astype(int)[0]
             x1, y1, x2, y2 = xyxy
             w, h = x2 - x1, y2 - y1
-            if w*h < config.COLOR_DETECTION_MIN_BOX_AREA:
+            if w * h < config.COLOR_DETECTION_MIN_BOX_AREA:
                 continue
 
             roi = data[y1:y2, x1:x2]
             if roi.size == 0:
                 continue
 
-            # Convert ROI to HSV for color detection
             hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
-            mask1 = cv2.inRange(hsv, np.array(self._colorLowerUpper["lower1"]), np.array(self._colorLowerUpper["upper1"]))
-            mask2 = cv2.inRange(hsv, np.array(self._colorLowerUpper["lower2"]), np.array(self._colorLowerUpper["upper2"]))
+            mask1 = cv2.inRange(hsv, np.array(self._colorLimits["lower1"]), np.array(self._colorLimits["upper1"]))
+            mask2 = cv2.inRange(hsv, np.array(self._colorLimits["lower2"]), np.array(self._colorLimits["upper2"]))
             mask = cv2.bitwise_or(mask1, mask2)
-            red_ratio = cv2.countNonZero(mask) / (roi.shape[0]*roi.shape[1]+1e-6)
-            
-            if red_ratio >= config.COLOR_DETECTION_THRESH:
-                # Call the callback with the position
-                if self.callback:
-                    self.callback(position)
-                
-                self._logger.info("%s object detected at position %s", self.color.capitalize(), position)
+            ratio = cv2.countNonZero(mask) / (roi.shape[0] * roi.shape[1] + 1e-6)
 
-                # Stop checking other boxes once the color is detected
+            if ratio >= config.COLOR_DETECTION_THRESH:
+                if self._callback:
+                    self._callback(position)
+                self._logger.debug("%s object detected at position %s", self.color.capitalize(), position)
                 return
 
-        self._logger.debug("No %s object detected in this frame.", self.color)
-
     def _process(self) -> None:
-        """
-        @brief Reads framesWithTelemetry from the queue and detects colors.
-        """
+        """Background thread processing frames for color detection."""
         while self._running:
             try:
-                # Get a FrameWithTelemetry from the queue
                 fwt = self._queue.get(timeout=0.1)
             except Empty:
-                # Queue is empty
-                self._logger.debug("Queue empty, waiting for frames...")
                 sleep(config.COLOR_DETECTION_SLEEP_TIME)
                 continue
 
             try:
-                # Process the frame for red detection
                 self._detect_color(fwt)
             except Exception as e:
                 self._logger.error("Error processing frame: %s", e)
-        sleep(config.COLOR_DETECTION_SLEEP_TIME)
+
+            sleep(config.COLOR_DETECTION_SLEEP_TIME)

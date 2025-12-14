@@ -8,6 +8,7 @@ at runtime.
 """
 
 from pathlib import Path
+import struct
 from typing import Final
 
 # ============================================================
@@ -24,6 +25,18 @@ LOCAL_PORT: Final[int] = 2391
 """Local UDP port used to receive telemetry data."""
 
 
+PACKET_ID_BATTERY: Final[int] = 0x01
+"""Packet ID for battery telemetry packets."""
+
+PACKET_ID_POSE: Final[int] = 0x02
+"""Packet ID for pose telemetry packets."""
+
+STRUCT_POSE: Final[struct.Struct] = struct.Struct("<6f")
+"""Struct format for unpacking pose telemetry packets."""
+
+STRUCT_BATTERY: Final[struct.Struct] = struct.Struct("<f")
+"""Struct format for unpacking battery telemetry packets."""
+
 
 DRONE_UDP_BUFFER_SIZE: Final[int] = 128
 """Maximum UDP packet size for telemetry messages."""
@@ -33,6 +46,9 @@ DRONE_UDP_TIMEOUT: Final[float] = 0.5
 
 DRONE_UDP_HANDSHAKE_RETRIES: Final[int] = 3
 """Number of retry attempts during telemetry handshake."""
+
+HANDSHAKE_PACKET: Final[bytes] = b'\x01\x01'
+"""Handshake packet sent to initiate telemetry communication."""
 
 DRONE_UDP_HANDSHAKE_RETRY_DELAY: Final[float] = 0.5
 """Delay (in seconds) between handshake retry attempts."""
@@ -54,18 +70,6 @@ SPIRAL_SIMULATOR_JITTER: Final[float] = 0.02
 
 SPIRAL_SIMULATOR_EXP_SMOOTH: Final[float] = 0.1
 """Exponential smoothing factor for radial changes."""
-
-
-# ============================================================
-# Constant Movement Simulation
-# ============================================================
-
-CONSTANT_SIMULATOR_X: Final[float] = 10.0
-"""Fixed X coordinate for constant position simulation."""
-
-CONSTANT_SIMULATOR_Y: Final[float] = 10.0
-"""Fixed Y coordinate for constant position simulation."""
-
 
 # ============================================================
 # Camera

@@ -1,92 +1,89 @@
-# spiral_movement_simulator.py
 """
-@file spiral_movement_simulator.py
-@brief Implements a 2D spiral movement simulator.
+Spiral Movement Simulator Module
+--------------------------------
+
+This module implements a 2D spiral movement simulator.
+
+It generates (x, y) coordinates following a polar spiral pattern.
 """
+
 import config
 import logging
-from math import cos, exp, pi, sin
+from math import cos, sin
 from random import uniform
 from time import time
-from typing import Optional, Tuple
+from typing import Optional
 
+from structures.structures import Point2D
 from interfaces.interfaces import IMovementSimulator
+
 
 class SpiralMovementSimulator(IMovementSimulator):
     """
-    @brief Simulates 2D spiral movement.
-
-    This class generates (x, y) coordinates following a polar spiral,
-    allowing simulation of movement.
+    Simulates 2D spiral movement.
     """
 
     def __init__(self, rg: float, w: float) -> None:
         """
-        @brief Constructor.
-        
-        @param rg Radial growth per second 
-        @param w Angular speed 
+        Creates a SpiralMovementSimulator instance.
+
+        Args:
+            rg (float): Radial growth per unit angle (in m/s)
+            w (float): Angular speed (in rad/s).
         """
-        self.rg = rg
-        self.w = w
+        self.rg: float = rg
+        self.w: float = w
 
-        self.active: bool = False               # Flag indicating if simulation is active
-        self.t0: Optional[float] = None         # Simulation start time
+        self._active: bool = False
+        self._t0: Optional[float] = None
 
-        self._logger = logging.getLogger("SpiralMovementSimulator")
+        self._logger: logging.Logger = logging.getLogger("SpiralMovementSimulator")
 
     # ----------------------------------------------------------------------
-    # Control
+    # Public methods
     # ----------------------------------------------------------------------
     def start(self) -> None:
         """
-        @brief Activates the spiral movement simulation.
-
-        Initializes the reference time for the spiral.
+        Activates the spiral movement simulation.
         """
-        if self.active:
-            self._logger.warning("Spiral movement simulator already started.")
+        if self._active:
+            self._logger.warning("Already started.")
             return
-        self.active = True
-        self.t0 = time()
-        self._logger.info("Spiral movement simulator started.")
+        self._active = True
+        self._t0 = time()
+        self._logger.info("Started.")
 
     def stop(self) -> None:
         """
-        @brief Deactivates the spiral movement simulation.
-
-        Clears the start time and stops coordinate calculations.
+        Deactivates the spiral movement simulation.
         """
-        if not self.active:
-            self._logger.warning("Spiral movement simulator already stopped.")
+        if not self._active:
+            self._logger.warning("Already stopped.")
             return
-        self.active = False
-        self.t0 = None
-        self._logger.info("Spiral movement simulator stopped.")
+        self._active = False
+        self._t0 = None
+        self._logger.info("Stopped.")
 
-    # ----------------------------------------------------------------------
-    # Public API
-    # ----------------------------------------------------------------------
-    def get_xy(self) -> Tuple[Optional[float], Optional[float]]:
+    def get_xy(self) -> Optional[Point2D]:
         """
-        @brief Returns the current (x, y) coordinates of the spiral.
+        Returns the current (x, y) coordinates of the spiral.
 
-        Calculates the position based on the elapsed time since
-        the simulation started.
+        Calculates the position based on elapsed time since the simulation started.
+        Adds random jitter.
 
-        @return tuple(float, float) x and y coordinates of the spiral.
-        Returns (None, None) if the simulation is not active.
+        Returns:
+            Optional[Point2D]: Current x and y coordinates.
+            Returns None if the simulator is not active.
         """
-        if not self.active:
-            return None, None
+        if not self._active:
+            return None
 
-        t = time() - self.t0
+        t = time() - self._t0
 
-        theta = self.w * t 
-        r = self.rg * theta  
+        theta = self.w * t
+        r = self.rg * theta
 
-        # Convertir a coordenadas cartesianas con jitter
         x = r * cos(theta) + uniform(-config.SPIRAL_SIMULATOR_JITTER, config.SPIRAL_SIMULATOR_JITTER)
         y = r * sin(theta) + uniform(-config.SPIRAL_SIMULATOR_JITTER, config.SPIRAL_SIMULATOR_JITTER)
 
-        return x, y
+        return Point2D(x, y)

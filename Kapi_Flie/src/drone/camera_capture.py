@@ -1,4 +1,11 @@
-# camera_capture.py
+"""
+Camera Capture Module
+---------------------
+
+This module implements a camera interface that captures frames from a stream URL and maintains
+the latest frame in a thread-safe. It also allows turning the camera flash on and off.
+"""
+
 from typing import Optional
 import config
 import cv2
@@ -12,66 +19,62 @@ from numpy import ndarray
 from interfaces.interfaces import ICamera
 from structures.structures import Frame
 
+
 class CameraCapture(ICamera):
     """
-    @brief Captures frames from a stream URL.
+    Captures frames from a camera stream URL.
 
-    Maintains the camera open, updates the last captured frame thread-safe, 
-    and can recover if the stream temporarily fails.
+    Maintains the camera open, updates the last captured frame and supports flash control.
     """
 
-    def __init__(self, stream_url: str) -> None:
+    def __init__(self, stream_url: str, flash_url: str) -> None:
         """
-        @brief Constructor.
+        Creates a CameraCapture instance.
 
-        @param stream_url URL of the stream.
+        Args:
+            stream_url (str): URL of the camera stream.
+            flash_url (str): URL to control the camera flash.
         """
         self.stream_url: str = stream_url
-        self._flash_url: str = stream_url.replace(":81/stream", ":80/control")
+        self.flash_url: str = flash_url 
 
-        self._cap: Optional[cv2.VideoCapture] = None      # cv2.VideoCapture object
-        self._frame: Optional[Frame] = None               # Last captured frame
+        self._frame: Optional[Frame] = None
 
-        # Threading
-        self._lock: threading.Lock = threading.Lock()           # Lock for thread-safe access to latest frame
-        self._running: bool = False                             # Flag to control the background frames capture thread
-        self._thread: Optional[threading.Thread] = None         # Frames capture thread
+        self._cap: Optional[cv2.VideoCapture] = None
 
-        # Logger
+        self._lock: threading.Lock = threading.Lock()
+        self._running: bool = False
+        self._thread: Optional[threading.Thread] = None
+
         self._logger: logging.Logger = logging.getLogger("CameraCapture")
-    
+
     # ----------------------------------------------------------------------
-    # Control
+    # Public methods
     # ----------------------------------------------------------------------
     def start(self) -> None:
-        """
-        @brief Starts the frames capture thread.
-        """
+        """Starts the background thread to capture frames."""
         if self._running:
-            self._logger.warning("CameraCapture already running.")
+            self._logger.warning("Already running.")
             return
 
-        self._logger.info(f"Starting frames capture...")
         self._running = True
         self._thread = threading.Thread(target=self._capture, daemon=True)
         self._thread.start()
-        self._logger.info("Frames capture started.")
+        self._logger.info("Started.")
 
     def stop(self) -> None:
-        """
-        @brief Stops the frames capture thread and releases resources.
-        """
+        """Stops the background capture thread and releases the camera."""
         if not self._running:
-            self._logger.warning("Frames capture already stopped.")
+            self._logger.warning("Already stopped.")
             return
 
-        self._logger.info("Stopping frames capture...")
         self._running = False
         if self._thread:
             self._thread.join(timeout=1.0)
             if self._thread.is_alive():
-                self._logger.warning("Frame capture thread didn't stop in time")
+                self._logger.warning("Did not stop in time")
             self._thread = None
+
         if self._cap:
             try:
                 self._cap.release()
@@ -79,72 +82,68 @@ class CameraCapture(ICamera):
                 self._logger.exception("Error releasing VideoCapture")
             finally:
                 self._cap = None
-        self._logger.info("Camera capture stopped.")
 
-    # ----------------------------------------------------------------------
-    # Public API
-    # ----------------------------------------------------------------------
-    def get_frame(self) -> Frame:
+        self._logger.info("Stopped.")
+
+    def get_frame(self) -> Optional[Frame]:
         """
-        @brief Returns a copy of the latest captured frame.
+        Returns a copy of the latest captured frame.
 
-        @return Frame A new Frame object with the last captured frame.
+        Returns:
+            Frame: Latest frame captured from the camera. None if no frame is available.
         """
         with self._lock:
             return deepcopy(self._frame)
-        
+
     def turn_on_flash(self) -> None:
-        """
-        @brief Turns on the camera flash if supported.
-        """
+        """Turns on the camera flash if supported."""
         try:
             requests.get(
-                self._flash_url, 
-                params={"var": "led_intensity", "val": config.CAMERA_FLASH_INTENSITY_ON}, 
+                self.flash_url,
+                params={"var": "led_intensity", "val": config.CAMERA_FLASH_INTENSITY_ON},
                 timeout=config.CAMERA_REQUEST_TIMEOUT
-                )
+            )
             self._logger.debug("Flash turned on.")
-        except:
-            pass
+        except Exception:
+            self._logger.warning("Failed to turn on flash.")
 
     def turn_off_flash(self) -> None:
-        """
-        @brief Turns off the camera flash if supported. 
-        """
+        """Turns off the camera flash if supported."""
         try:
             requests.get(
-                self._flash_url, 
-                params={"var": "led_intensity", "val": config.CAMERA_FLASH_INTENSITY_OFF}, 
+                self.flash_url,
+                params={"var": "led_intensity", "val": config.CAMERA_FLASH_INTENSITY_OFF},
                 timeout=config.CAMERA_REQUEST_TIMEOUT
-                )
+            )
             self._logger.debug("Flash turned off.")
-        except:
-            pass
+        except Exception:
+            self._logger.warning("Failed to turn off flash.")
 
     # ----------------------------------------------------------------------
-    # Internal methods
+    # Private methods
     # ----------------------------------------------------------------------
     def _process_frame(self, data: ndarray) -> None:
         """
-        @brief Processes a frame and updates the latest frame.
+        Processes a frame and updates the latest frame safely.
 
-        @param data A frame
+        Args:
+            data (ndarray): Raw image frame captured from the camera.
         """
         with self._lock:
             self._frame = Frame(data=data)
-        self._logger.debug(f"Updated frame")
+        self._logger.debug("Updated frame.")
 
     def _open_stream(self) -> bool:
         """
-        @brief Attempts to open the stream URL.
+        Attempts to open the camera stream URL.
 
-        @return bool True if the stream was opened successfully, False otherwise.
+        Returns:
+            bool: True if the stream was successfully opened, False otherwise.
         """
         if self._cap:
             self._cap.release()
             self._cap = None
 
-        self._logger.info("Opening stream URL %s", self.stream_url)
         cap = cv2.VideoCapture(self.stream_url)
         if cap.isOpened():
             self._cap = cap
@@ -157,7 +156,7 @@ class CameraCapture(ICamera):
 
     def _capture(self) -> None:
         """
-        @brief Background frames capture thread.
+        Background thread that continuously captures frames from the stream.
         """
         while self._running:
             if not self._cap or not self._cap.isOpened():
@@ -165,7 +164,6 @@ class CameraCapture(ICamera):
                     sleep(config.CAMERA_STREAM_RETRY_DELAY)
                     continue
 
-            # Capture frame
             ret, data = self._cap.read()
             if not ret:
                 self._logger.warning("Failed to read frame. Retrying...")
@@ -173,11 +171,9 @@ class CameraCapture(ICamera):
                 continue
 
             self._logger.debug("Frame captured of size %s", data.shape)
-
-            # Process frame
             self._process_frame(data)
             sleep(config.CAMERA_SLEEP_TIME)
 
-        # Release capture on exit
-        self._cap.release()
-        self._cap = None
+        if self._cap:
+            self._cap.release()
+            self._cap = None

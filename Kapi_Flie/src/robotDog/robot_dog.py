@@ -1,150 +1,160 @@
-# robot_dog.py
 """
-@file robot_dog.py
-@brief Simulated robot dog that follows a list of 2D coordinates.
+RobotDog Module
+---------------
+
+Simulated robot dog that follows a list of 2D coordinates.
+Provides a unified API to start/stop movement and set callbacks for reached points and finish events.
 """
-import config
+
+import logging
 import threading
 import time
-import logging
 from math import hypot
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Callable
 
+import config
 from interfaces.interfaces import IRobot
 from structures.structures import Point2D
 
+
 class RobotDog(IRobot):
     """
-    @brief Simulated robot dog that follows a list of (x, y) coordinates sequentially.
-    
-    It moves at a constant speed and stops after reaching the final coordinate.
+    Simulated robot dog.
+
+    Moves sequentially along a list of 2D coordinates at a fixed speed. 
+    Supports callbacks for reached points and when the full path is completed.
     """
 
     def __init__(self, speed: float) -> None:
         """
-        @brief Constructor.
+        Create a RobotDog instance.
 
-        @param speed Movement speed of the robot dog.
+        Args:
+            speed (float): Movement speed of the robot dog (in m/s).
         """
-        self.speed: float = speed
+        self.speed = speed
 
-        self._callbackOnPoint: Optional[callable] = None
-        self._callbackOnFinish: Optional[callable] = None
+        self._current_position: Point2D = Point2D(0.0, 0.0)
+        self._waypoints: List[Point2D] = []
 
-        self._waypoints: List[Point2D] = []                 # List of (x, y) target positions
-        self._current_position: Point2D = Point2D(0.0, 0.0)        # Current (x, y) position
-        
-        # Threading
-        self._running: bool = False                             # Flag to control the background robot dog movement thread
-        self._thread: Optional[threading.Thread] = None         # Robot dog movement thread
+        self._callback_on_point: Optional[Callable[[Point2D], None]] = None
+        self._callback_on_finish: Optional[Callable[[], None]] = None
 
-        # Logger
-        self._logger: logging.Logger = logging.getLogger("RobotDog")
+        self._running: bool = False
+        self._thread: Optional[threading.Thread] = None
 
-    # ---------------------------------------------------------
-    # Control
-    # ---------------------------------------------------------
+        self._logger = logging.getLogger("RobotDog")
+
+    # ---------------------------------------------------
+    # Public methods
+    # ---------------------------------------------------
     def start_inspection(self, positions: List[Point2D]) -> None:
         """
-        @brief Start the robot dog movement along a list of (x, y) coordinates.
+        Start moving along the given list of positions.
 
-        @param positions List of positions 
+        Args: 
+            positions (List[Point2D]): List of target positions.
         """
         if self._running:
-            self._logger.warning("Movement robot dog already running.")
+            self._logger.warning("Already running.")
             return
-        
+
         if not positions:
-            self._logger.warning("Received empty path. Robot dog will not move.")
+            self._logger.warning("Received empty path. RobotDog will not move.")
             return
 
         self._waypoints = positions
         self._running = True
         self._thread = threading.Thread(target=self._move, daemon=True)
         self._thread.start()
-        self._logger.info("Movement robot dog started.")
+        self._logger.info("Started.")
 
-    def stop_inspection(self):
+    def stop_inspection(self) -> None:
         """
-        @brief Stops the robot dog movement thread.
+        Stop the movement.
         """
         if not self._running:
-            self._logger.warning("Movement robot dog already stopped.")
+            self._logger.warning("Already stopped.")
             return
-        
+
         self._running = False
         if self._thread:
             self._thread.join(timeout=1.0)
             if self._thread.is_alive():
-                self._logger.warning("Movement dog thread didn't stop in time")
+                self._logger.warning("Did not stop in time.")
             self._thread = None
-        self._logger.info("Movement dog stopped.")
-        return None
-    
-    def set_callback_onFinish(self, callback: callable) -> None:
-        """
-        @brief Sets a callback function to be called when the robot dog inspection finishes.
+        self._logger.info("Stopped.")
 
-        @param callback Function to call when inspection finishes.
+    def set_callback_on_point(self, callback: Callable[[Point2D], None]) -> None:
         """
-        self._callbackOnFinish = callback
+        Set a callback to be called when a point is reached.
 
-    def set_callback_onPoint(self, callback: callable) -> None:
+        Args:
+            callback (Callable[[Point2D], None]): Function called with the reached point.
         """
-        @brief Sets a callback function to be called when the robot dog reaches each point.
+        self._callback_on_point = callback
 
-        @param callback Function to call when reaching each point: fn(x: float, y: float)
+    def set_callback_on_finish(self, callback: Callable[[], None]) -> None:
         """
-        self._callbackOnPoint = callback
+        Set a callback to be called when all points are reached.
+
+        Args:
+            callback (Callable[[], None]): Function called when movement finishes.  
+        """
+        self._callback_on_finish = callback
 
     def get_current_position(self) -> Point2D:
         """
-        @brief Retrieves the current (x, y) position of the robot dog.
+        Get the current 2D position.
 
-        @return Tuple of (x, y) coordinates.
+        Returns:   
+            Point2D: Current position as Point2D.   
         """
-        return self._current_position
+        return Point2D(self._current_position.x, self._current_position.y)  
 
-    # ---------------------------------------------------------
+    # ---------------------------------------------------
     # Internal methods
-    # ---------------------------------------------------------
+    # ---------------------------------------------------
     def _move(self) -> None:
         """
-        @brief Moves the robot dog along the path.
+        Internal movement loop.
+
+        Moves sequentially through the waypoints, triggering callbacks as needed.
         """
         for target in self._waypoints:
             if not self._running:
                 break
+
             tx, ty = target
             self._logger.debug("Moving toward (%.2f, %.2f)...", tx, ty)
 
             while self._running:
                 cx, cy = self._current_position
-                # Distance to target
                 dist = hypot(tx - cx, ty - cy)
-                if dist < config.ROBOT_DOG_REACHED_TOLERANCE:  # consider reached
-                    self._current_position = (tx, ty)
+                if dist < config.ROBOT_DOG_REACHED_TOLERANCE:
+                    self._current_position = Point2D(tx, ty)
                     self._logger.info("Reached (%.2f, %.2f)", tx, ty)
-                    if self._callbackOnPoint:
+
+                    if self._callback_on_point:
                         try:
-                            self._callbackOnPoint(tx, ty)   
+                            self._callback_on_point(Point2D(tx, ty))
                         except Exception as e:
-                            self._logger.error("Callback onPoint failed: %s", e)
+                            self._logger.error("Callback on_point failed: %s", e)
                     break
-                # Move step toward the target
-                step = min(dist, self.speed * config.ROBOT_SLEEP_TIME) 
+
+                step = min(dist, self.speed * config.ROBOT_SLEEP_TIME)
                 ratio = step / dist
                 nx = cx + (tx - cx) * ratio
                 ny = cy + (ty - cy) * ratio
-                self._current_position = (nx, ny)
+                self._current_position = Point2D(nx, ny)
 
-                time.sleep(config.ROBOT_SLEEP_TIME) 
+                time.sleep(config.ROBOT_SLEEP_TIME)
 
-        if self._callbackOnFinish:
+        if self._callback_on_finish:
             try:
-                self._callbackOnFinish()
+                self._callback_on_finish()
             except Exception as e:
-                self._logger.error("Callback onFinish failed: %s", e)
+                self._logger.error("Callback on_finish failed: %s", e)
 
-        self._logger.info("Robot dog finished all target positions.")
+        self._logger.info("Finished all target positions.")
         self._running = False

@@ -73,11 +73,21 @@ class ITelemetry(ABC):
         """
         pass
 
-# -------------------------------
+# ----------------------------------------
 # FrameWithTelemetry Consumer Interface
-# -------------------------------
+# ----------------------------------------
 class IFrameConsumer(ABC):
     """Interface for classes consuming FrameWithTelemetry objects."""
+
+    @abstractmethod
+    def start(self) -> None:
+        """Starts the frame processing."""
+        pass
+
+    @abstractmethod
+    def stop(self) -> None:
+        """Stops the frame processing."""
+        pass
 
     @abstractmethod
     def enqueue(self, fwt: FrameWithTelemetry) -> None:
@@ -114,7 +124,6 @@ class IMovementSimulator(ABC):
             Optional[Point2D]: Current position, or None if unavailable.
         """
         pass
-
 
 # -------------------------------
 # Robot Interface

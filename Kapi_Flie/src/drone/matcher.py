@@ -1,8 +1,12 @@
 # matcher.py
 """
-@file matcher.py
-@brief Combines camera frames and telemetry into FrameWithTelemetry objects.
+Matcher Module
+--------------
+
+Combines camera frames and telemetry into FrameWithTelemetry objects and
+distributes them to registered consumers.
 """
+
 import config
 import threading
 import logging
@@ -12,106 +16,110 @@ from typing import List, Optional
 from interfaces.interfaces import ICamera, IFrameConsumer, ITelemetry
 from structures.structures import FrameWithTelemetry
 
+
 class Matcher:
     """
-    @brief Associates frames from a camera with telemetry data.
+    Associates frames from a camera with telemetry data.
 
-    Captures camera frames and telemetry data, combines them into FrameWithTelemetry objects,
-    and distributes them to multiple registered consumer queues.
+    This class retrieves frames from a camera
+    and telemetry data, combines them into FrameWithTelemetry objects, and
+    distributes them to all registered consumers.
     """
-    def __init__(self, 
-                 telemetry: ITelemetry, 
-                 camera: ICamera) -> None:
-        """
-        @brief Constructor.
 
-        @param telemetry ITelemetry object
-        @param camera ICamera object
+    def __init__(self, telemetry: ITelemetry, camera: ICamera) -> None:
+        """
+        Creates a Matcher instance.
+
+        Args:
+            telemetry (ITelemetry): Telemetry provider.
+            camera (ICamera): Camera provider.
         """
         self.telemetry: ITelemetry = telemetry
         self.camera: ICamera = camera
 
-        # Consumers for distributing FrameWithTelemetry objects
         self._consumers: List[IFrameConsumer] = []
 
-        # Threading
-        self._running: bool = False                                 # Flag to control the background matcher thread
-        self._thread: Optional[threading.Thread] = None             # Matcher thread
-        
-        # Logger
+        self._running: bool = False
+        self._thread: Optional[threading.Thread] = None
+
         self._logger: logging.Logger = logging.getLogger("Matcher")
 
     # ----------------------------------------------------------------------
-    # Control
+    # Public methods
     # ----------------------------------------------------------------------
     def start(self) -> None:
-        """
-        @brief Starts the matcher thread.
-        """
+        """Starts the background matcher thread."""
         if self._running:
-            self._logger.warning("Matcher already running.")
+            self._logger.warning("Already running.")
             return
         
         self._running = True
         self._thread = threading.Thread(target=self._match, daemon=True)
         self._thread.start()
-        self._logger.info("Matcher started.")
+        self._logger.info("Started.")
 
     def stop(self) -> None:
-        """
-        @brief Stops the matcher thread and cleans up resources.
-        """
+        """Stops the background matcher thread."""
         if not self._running:
-            self._logger.warning("Matcher already stopped.")
+            self._logger.warning("Already stopped.")
             return
         
         self._running = False
         if self._thread:
             self._thread.join(timeout=1.0)
             if self._thread.is_alive():
-                self._logger.warning("Matcher thread didn't stop in time")
+                self._logger.warning("Did not stop in time.")
             self._thread = None
-        self._logger.info("Matcher stopped.")
+        self._logger.info("Stopped.")
 
-    # ----------------------------------------------------------------------
-    # Public API
-    # ----------------------------------------------------------------------
-    def register_consumer(self, consumer: IFrameConsumer):
+    def register_consumer(self, consumer: IFrameConsumer) -> None:
         """
-        @brief Registers a consumer to receive FrameWithTelemetry objects.
+        Registers a consumer to receive FrameWithTelemetry objects.
 
-        @param consumer IFrameConsumer object to receive matched frames
+        Args:
+            consumer (IFrameConsumer): Consumer to receive matched frames.
         """
+        if consumer in self._consumers:
+            self._logger.warning(
+                "Consumer %s already registered.",
+                type(consumer).__name__
+            )
+            return
         self._consumers.append(consumer)
         self._logger.info("Registered consumer: %s", type(consumer).__name__)
-    
+
     # ----------------------------------------------------------------------
-    # Internal methods
-    # ----------------------------------------------------------------------    
-    def _match(self):
+    # Private methods
+    # ----------------------------------------------------------------------
+    def _match(self) -> None:
         """
-        @brief Background matcher thread.
+        Background thread method to retrieve frames and telemetry,
+        combine them into FrameWithTelemetry objects, and distribute
+        them to all registered consumers.
         """
         while self._running:
-            # Get camera frame
             frame = self.camera.get_frame()
             if frame is None:
                 sleep(config.MATCHER_SLEEP_TIME)
                 continue
             self._logger.debug("Retrieved frame of shape %s", frame.data.shape)
 
-            # Get telemetry
             telemetry = self.telemetry.get_telemetry()
-            self._logger.debug("Retrieved telemetry %s", telemetry)
-            # Create FrameWithTelemetry object
-            fwt = FrameWithTelemetry(frame, telemetry)
-            self._logger.debug("Matched frame of shape %s with telemetry %s", frame.data.shape, telemetry)
+            self._logger.debug("Retrieved telemetry: %s", telemetry)
 
-            # Distribute to all consumers
+            fwt = FrameWithTelemetry(frame, telemetry)
+            self._logger.debug(
+                "Matched frame of shape %s with telemetry %s",
+                frame.data.shape, telemetry
+            )
+
             for consumer in self._consumers:
                 try:
                     consumer.enqueue(fwt)
                 except Exception as e:
-                    self._logger.error("Error sending to consumer %s: %s", type(consumer).__name__, e)
+                    self._logger.error(
+                        "Error sending to consumer %s: %s",
+                        type(consumer).__name__, e
+                    )
 
-            sleep(config.MATCHER_SLEEP_TIME)  
+            sleep(config.MATCHER_SLEEP_TIME)

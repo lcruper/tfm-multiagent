@@ -1,10 +1,13 @@
-# drone.py
 """
-@file drone.py
-@brief Aggregates drone components: telemetry, camera, matcher, color detector, and viewer.
+Drone Module
+------------
+
+Aggregates drone components: telemetry, camera, matcher, color detector, and viewer.
+Provides a unified API to start/stop inspections and set callbacks for points detections and inspection finish.
 """
+
 import logging
-from typing import  List, Optional, Tuple
+from typing import List, Optional, Callable
 
 from interfaces.interfaces import ICamera, ITelemetry, IRobot
 from drone.matcher import Matcher
@@ -12,11 +15,15 @@ from drone.color_detection import ColorDetection
 from drone.viewer import Viewer
 from structures.structures import Position, Point2D
 
+
 class Drone(IRobot):
     """
-    @brief Aggregates all drone-related components: telemetry, camera, matcher, color detector and viewer.
-           Provides a unified API to start/stop inspections.
+    Aggregates all drone components.
+
+    Provides a unified interface for inspection, detection and finish callbacks, and
+    retrieval of detected points..
     """
+
     def __init__(self,
                  telemetry: ITelemetry,
                  camera: ICamera,
@@ -24,143 +31,160 @@ class Drone(IRobot):
                  color_detector: ColorDetection,
                  viewer: Viewer) -> None:
         """
-        @brief Constructor.
+        Creates a Drone instance.
 
-        @param telemetry Telemetry interface for the drone
-        @param camera Camera interface for the drone
-        @param matcher Matcher instance for object matching 
-        @param color_detector ColorDetection instance for color-specific detection 
-        @param viewer Viewer instance for displaying camera frames with telemetry overlay
+        Args:
+            telemetry (ITelemetry): Telemetry interface for the drone.
+            camera (ICamera): Camera interface for the drone.
+            matcher (Matcher): Matcher instance for combining frames and telemetry.
+            color_detector (ColorDetection): Color detector instance.
+            viewer (Viewer): Viewer instance for displaying frames with telemetry overlay.
         """
-        self.telemetry: ITelemetry = telemetry
-        self.camera: ICamera = camera
-        self.matcher: Matcher = matcher
-        self.color_detector: ColorDetection = color_detector
-        self.viewer: Viewer = viewer
+        self.telemetry = telemetry
+        self.camera = camera
+        self.matcher = matcher
+        self.color_detector = color_detector
+        self.viewer = viewer
 
-        self.color_detector.callback = self._on_color_detected
-
-        self._callbackOnPoint: Optional[callable] = None
-        self._callbackOnFinish: Optional[callable] = None
-
-        # Register consumers
-        self.matcher.register_consumer(self.color_detector)  
-        self.matcher.register_consumer(self.viewer)        
-
-        # Storage for detected points
         self._detected_points: List[Point2D] = []
+        self._active: bool = False
 
-        # Flag to indicate if inspection is running
-        self._running: bool = False                      
+        self._callback_on_point: Optional[Callable[[Point2D], None]] = None
+        self._callback_on_finish: Optional[Callable[[], None]] = None
 
-        # Logger
         self._logger = logging.getLogger("Drone")
 
+        self.color_detector.set_callback(self._on_color_detected)
+        self.matcher.register_consumer(self.color_detector)
+        self.matcher.register_consumer(self.viewer)
+
     # ---------------------------------------------------
-    # Control
+    # Public methods
     # ---------------------------------------------------
     def start_inspection(self) -> None:
         """
-        @brief Start the drone's telemetry, camera, matcher and color detector.
+        Starts telemetry, camera, matcher, color detector, and viewer.
+
+        Initializes the system and clears previous detections.
         """
-        if self._running:
-            self._logger.warning("Drone inspection already running.")
+        if self._active:
+            self._logger.warning("Already running.")
             return
-        
-        self._running = True
+
+        self._active = True
         self._detected_points.clear()
 
         self.telemetry.start()
-        if hasattr(self.telemetry, "simulator") and self.telemetry.simulator:
-            self.telemetry.simulator.start()    
+        simulator = getattr(self.telemetry, "simulator", None)
+        if simulator:
+            simulator.start()
         self.camera.start()
         self.matcher.start()
         self.color_detector.start()
         self.viewer.start()
 
-        self._logger.info("Drone inspection started.")
+        self._logger.info("Started.")
 
     def stop_inspection(self) -> List[Point2D]:
         """
-        @brief Stop color detector, matcher, camera and telemetry.
+        Stops all subsystems and returns detected points.
 
-        @return List of detected points.
+        Returns:
+            List[Point2D]: Detected 2D points during the inspection.
         """
-        if not self._running:
-            self._logger.warning("Drone inspection already stopped.")
-            return
-        
-        self._running = False
+        if not self._active:
+            self._logger.warning("Already stopped.")
+            return []
+
+        self._active = False
 
         self.viewer.stop()
         self.color_detector.stop()
         self.matcher.stop()
         self.camera.stop()
-        if hasattr(self.telemetry, "simulator") and self.telemetry.simulator:
-            self.telemetry.simulator.stop()
+        simulator = getattr(self.telemetry, "simulator", None)
+        if simulator:
+            simulator.stop()
         self.telemetry.stop()
 
-        if self._callbackOnFinish:
+        if self._callback_on_finish:
             try:
-                self._callbackOnFinish()
+                self._callback_on_finish()
             except Exception as e:
                 self._logger.error("Callback onFinish failed: %s", e)
 
-        self._logger.info("Drone inspection stopped.")
+        self._logger.info("Stopped.")
+        return self._detected_points.copy()
 
-        return self._detected_points
-
-    def set_callback_onFinish(self, callback: callable) -> None:
+    def get_current_position(self) -> Optional[Point2D]:
         """
-        @brief Sets a callback function to be called when the drone inspection finishes.
+        Returns the current 2D position of the drone.
 
-        @param callback Function to call when inspection finishes.
+        Returns:
+            Optional[Point2D]: Current (x, y) coordinates. None if unavailable.
         """
-        self._callbackOnFinish = callback
+        try:
+            telemetry = self.telemetry.get_telemetry()
+            if telemetry:
+                pos = telemetry.pose.position
+                return Point2D(pos.x, pos.y)
+        except Exception as e:
+            self._logger.error("Failed to get current position: %s", e)
+        return None
 
-    def set_callback_onPoint(self, callback: callable) -> None:
+    def get_detected_points(self) -> List[Point2D]:
         """
-        @brief Sets a callback function to be called when the drone reaches each point.
+        Returns the list of detected 2D points.
 
-        @param callback Function to call when reaching each point: fn(x: float, y: float)
+        Returns:
+            List[Point2D]: List of detected (x, y) coordinates.
         """
-        self._callbackOnPoint = callback
+        return self._detected_points.copy()
 
-    def get_current_position(self) -> Point2D:
+    def set_callback_on_point(self, callback: Callable[[Point2D], None]) -> None:
         """
-        @brief Retrieves the current (x, y) position of the drone.
+        Sets a callback to be called when a color object is detected.
 
-        @return Tuple of (x, y) coordinates.
+        Args:
+            callback (Callable[[Point2D], None]): Function to call with detected point.
         """
-        x = self.telemetry.get_telemetry().pose.position.x
-        y = self.telemetry.get_telemetry().pose.position.y
-        return Point2D(x, y)
+        self._callback_on_point = callback
 
-    # ---------------------------------------------------------
-    # Internal Callbacks
-    # ---------------------------------------------------------
+    def set_callback_on_finish(self, callback: Callable[[], None]) -> None:
+        """
+        Sets a callback to be called when the inspection finishes.
 
+        Args:
+            callback (Callable[[], None]): Function to call at inspection end.
+        """
+        self._callback_on_finish = callback
+
+    # ---------------------------------------------------
+    # Internal methods
+    # ---------------------------------------------------
     def _on_color_detected(self, position: Position) -> None:
         """
-        @brief Called by ColorDetection when a colored object is detected.
+        Internal callback invoked by ColorDetection when a color object is detected.
 
-        Saves the detection with its 3D position and timestamp.
+        Stores the detection, flashes the camera, and triggers user callback.
+
+        Args:
+            position (Position): 3D position of detected object.
         """
-        self._logger.debug("Colored detected at position x=%.2f, y=%.2f, z=%.2f", position.x, position.y, position.z)
+        self._logger.debug(
+            "Color detected at (%.2f, %.2f, %.2f)", position.x, position.y, position.z
+        )
 
-        # Turn on flash
         try:
-            self.camera.turn_on_flash() 
+            self.camera.turn_on_flash()
             self.camera.turn_off_flash()
         except Exception as e:
-            self._logger.error("Failed to turn on flash: %s", e)
+            self._logger.error("Failed to flash camera: %s", e)
 
-        # Store detection
-        self._detected_points.append((position.x, position.y))
+        self._detected_points.append(Point2D(position.x, position.y))
 
-        # Call point callback
-        if self._callbackOnPoint:
+        if self._callback_on_point:
             try:
-                self._callbackOnPoint(position.x, position.y)
+                self._callback_on_point(Point2D(position.x, position.y))
             except Exception as e:
                 self._logger.error("Callback onPoint failed: %s", e)

@@ -12,3 +12,4 @@ Welcome to the Kapi_Flie documentation.
    interfaces/index
    drone/index
    robotDog/index
+   planners/index

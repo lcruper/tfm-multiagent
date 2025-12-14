@@ -189,6 +189,20 @@ class IPathPlanner(ABC):
     """Interface for path planner classes."""
 
     @abstractmethod
+    def euclidean_distance(self, p1: Point2D, p2: Point2D) -> float:
+        """
+        Computes the Euclidean distance between two points.
+
+        Args:
+            p1 (Point2D): First point.
+            p2 (Point2D): Second point.
+
+        Returns:
+            float: Euclidean distance between p1 and p2.
+        """
+        return ((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2) ** 0.5
+
+    @abstractmethod
     def plan_path(self, start: Point2D, points: List[Point2D]) -> List[Point2D]:
         """
         Plans a path from start to multiple points.

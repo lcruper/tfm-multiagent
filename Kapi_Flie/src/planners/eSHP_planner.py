@@ -1,38 +1,46 @@
-# eSHP_planner.py
 """
-@file eSHP_planner.py
-@brief Euclidean Shortest Hamiltonian Path solver with fixed start point
-       using Gurobi and lazy subtour elimination.
+eSHP Planner Module
+------------------
+
+Euclidean Shortest Hamiltonian Path (eSHP) solver with fixed start point.
+
+This module implements an optimization-based path planner using Gurobi,
+solving a Hamiltonian path problem with lazy subtour elimination constraints.
 """
+
 import gurobipy as gp
-from gurobipy import GRB
 from collections import deque
 from typing import List, Tuple, Dict
 
 from structures.structures import Point2D
-
 from interfaces.interfaces import IPathPlanner
 
 
 class eSHPPlanner(IPathPlanner):
     """
-    @class eSHPPlanner
-    @brief Solver for the Euclidean Shortest Hamiltonian Path (eSHP)
-           with a fixed start point.
+    Euclidean Shortest Hamiltonian Path planner.
 
-    This solver computes the minimum-length Hamiltonian path that
-    starts at a specified point and visits all other points exactly once.
+    This planner computes the minimum-length Hamiltonian path that:
+    - starts from a fixed start point
+    - visits all remaining points exactly once
+    - minimizes the total Euclidean distance
+
+    The problem is solved using Gurobi with lazy subtour elimination.
     """
 
-    def _find_components(self,
-                         n: int,
-                         edges: List[Tuple[int, int]]) -> List[List[int]]:
+    # ---------------------------------------------------
+    # Internal methods
+    # ---------------------------------------------------
+    def _find_components(self, n: int, edges: List[Tuple[int, int]]) -> List[List[int]]:
         """
-        @brief Find connected components induced by a set of edges
+        Finds connected components induced by a set of edges.
 
-        @param n Number of nodes
-        @param edges List of undirected edges (i, j)
-        @return List of connected components
+        Args:
+            n (int): Number of nodes.
+            edges (List[Tuple[int, int]]): Active edges.
+
+        Returns:
+            List[List[int]]: List of connected components.
         """
         adj = [[] for _ in range(n)]
         for i, j in edges:
@@ -58,17 +66,17 @@ class eSHPPlanner(IPathPlanner):
 
         return components
 
-    def _extract_path_from_start(self,
-                                 n: int,
-                                 edges: List[Tuple[int, int]],
-                                 start: int) -> List[int]:
+    def _extract_path(self, n: int, edges: List[Tuple[int, int]], start: int) -> List[int]:
         """
-        @brief Reconstruct a Hamiltonian path starting from the fixed start node
+        Reconstructs a Hamiltonian path starting from the fixed start node.
 
-        @param n Number of nodes
-        @param edges List of undirected edges (i, j)
-        @param start Fixed start node index
-        @return Ordered list of node indices in visiting order
+        Args:
+            n (int): Number of nodes.
+            edges (List[Tuple[int, int]]): Edges in the solution.
+            start (int): Index of the start node.
+
+        Returns:
+            List[int]: Ordered list of node indices.
         """
         adj = [[] for _ in range(n)]
         for i, j in edges:
@@ -91,36 +99,32 @@ class eSHPPlanner(IPathPlanner):
             prev, cur = cur, nxt
 
         return path
-
-    def _subtour_elimination_callback(self,
-                                     model: gp.Model,
-                                     where: int) -> None:
+    
+    def _subtour_elimination_callback(self, model: gp.Model, where: int) -> None:
         """
-        @brief Lazy constraint callback for subtour elimination
+        Lazy constraint callback for subtour elimination.
 
-        @param model Gurobi model
-        @param where Callback context
+        This callback prevents the formation of disconnected subtours
+        that do not include the fixed start node.
+
+        Args:
+            model (gp.Model): Gurobi optimization model.
+            where (int): Callback execution context.
         """
-        if where == GRB.Callback.MIPSOL:
+        if where == gp.GRB.Callback.MIPSOL:
             vals = {
                 (i, j): model.cbGetSolution(var)
                 for (i, j), var in model._xvars.items()
             }
 
-            active_edges = [
-                (i, j) for (i, j), v in vals.items() if v > 0.5
-            ]
+            active_edges = [(i, j) for (i, j), v in vals.items() if v > 0.5]
 
             components = self._find_components(model._n, active_edges)
             for comp in components:
-                # Skip full component
                 if len(comp) == model._n:
                     continue
-
-                # Do not cut the component containing the start node
                 if model._start in comp:
                     continue
-
                 if len(comp) > 1:
                     expr = gp.quicksum(
                         model._xvars[(i, j)]
@@ -128,92 +132,81 @@ class eSHPPlanner(IPathPlanner):
                     )
                     model.cbLazy(expr <= len(comp) - 1)
 
-    def _solve(self,
-              points: List[Point2D],
-              start_point: int) -> Dict:
+    def _solve(self, points: List[Point2D], start_point: int) -> Dict:
         """
-        @brief Solve the Euclidean Shortest Hamiltonian Path problem
-               with a fixed start point.
+        Solves the eSHP problem with a fixed start point.
 
-        @param points List of 2D points (x, y)
-        @param start_point Index of the fixed start point (0-based)
-        @return Dictionary containing the solution
+        Args:
+            points (List[Point2D]): List of 2D points.
+            start_point (int): Index of the fixed start point.
+
+        Returns:
+            Dict: Solution dictionary containing status, objective value
+                  and ordered points.
         """
         n = len(points)
         nodes = list(range(n))
 
-        # Compute distances
         dist = {
             (i, j): self.euclidean_distance(points[i], points[j])
             for i in range(n) for j in range(i + 1, n)
         }
 
-        # Build model
         m = gp.Model("eSHP")
         m.Params.LazyConstraints = 1
         m.Params.PreCrush = 1
 
-        # Decision variables
         x = {
-            (i, j): m.addVar(
-                vtype=GRB.BINARY,
-                obj=d,
-                name=f"x_{i}_{j}"
-            )
+            (i, j): m.addVar(vtype=gp.GRB.BINARY, obj=d, name=f"x_{i}_{j}")
             for (i, j), d in dist.items()
         }
         m.update()
 
-        # Degree constraints
         for i in nodes:
             deg_expr = gp.quicksum(
                 x[(min(i, j), max(i, j))]
                 for j in nodes if j != i
             )
-
             if i == start_point:
-                m.addConstr(deg_expr == 1, name="deg_start")
+                m.addConstr(deg_expr == 1)
             else:
-                m.addConstr(deg_expr <= 2, name=f"deg_{i}")
+                m.addConstr(deg_expr <= 2)
 
-        # Path has exactly n - 1 edges
-        m.addConstr(
-            gp.quicksum(x.values()) == n - 1,
-            name="num_edges"
-        )
+        m.addConstr(gp.quicksum(x.values()) == n - 1)
+        m.modelSense = gp.GRB.MINIMIZE
 
-        m.modelSense = GRB.MINIMIZE
-
-        # Store data for callback
         m._xvars = x
         m._n = n
         m._start = start_point
 
-        # Optimize
         m.optimize(self._subtour_elimination_callback)
 
-        # Extract solution
-        sol_edges = [
-            (i, j) for (i, j), var in x.items() if var.x > 0.5
-        ]
-
-        path = self._extract_path_from_start(n, sol_edges, start_point)
-        ordered_points = [points[i] for i in path]
+        sol_edges = [(i, j) for (i, j), var in x.items() if var.x > 0.5]
+        path = self._extract_path(n, sol_edges, start_point)
 
         return {
             "status": m.status,
-            "obj": m.objVal if m.status == GRB.OPTIMAL else None,
-            "ordered_points": ordered_points
+            "obj": m.objVal if m.status == gp.GRB.OPTIMAL else None,
+            "ordered_points": [points[i] for i in path]
         }
-    
+
+    # ---------------------------------------------------
+    # Public methods
+    # ---------------------------------------------------
     def plan_path(self, start_point: Point2D, points: List[Point2D]) -> List[Point2D]:
         """
-        @brief Plans a path using the eSHP solver.
+        Plans a path using the eSHP solver.
 
-        @param start_point The starting (x, y) coordinates.
-        @param points List of (x, y) coordinates to visit.
-        @return Ordered list of (x, y) coordinates representing the planned path.
+        Args:
+            start_point (Point2D): Starting point.
+            points (List[Point2D]): Points to visit.
+
+        Returns:
+            List[Point2D]: Ordered path.
         """
+        if not points:
+            return []
+        
         all_points = [start_point] + points
         result = self._solve(all_points, start_point=0)
         return result["ordered_points"][1:] if result["ordered_points"] else []

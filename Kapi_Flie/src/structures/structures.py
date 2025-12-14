@@ -1,143 +1,143 @@
-# structures.py
 """
-@file structures.py
-@brief Core data structures for the drone + robot dog system.
+Core Data Structures for the Drone and Robot Dog System
+-------------------------------------------------------
+
+This module defines immutable data containers used across the system
+to exchange telemetry, perception data, and geometric information.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
-from numpy import ndarray
+import numpy as np
+
 
 # ============================================================
 # Battery
 # ============================================================
 
-@dataclass
+@dataclass(frozen=True)
 class Battery:
-    """
-    @brief Stores battery information.
+    """Battery status snapshot.
 
-    @var voltage
-        Battery voltage in volts.
+    Attributes:
+        voltage (int): Battery voltage in volts.
     """
     voltage: float
+
 
 # ============================================================
 # Position
 # ============================================================
 
-@dataclass
+@dataclass(frozen=True)
 class Position:
-    """
-    @brief Represents a 3D coordinate in space.
+    """3D position in space.
 
-    @var x
-        X coordinate in meters.
-    @var y
-        Y coordinate in meters.
-    @var z
-        Z coordinate in meters.
+    Attributes:
+        x (float): X coordinate in meters.
+        y (float): Y coordinate in meters.
+        z (float): Z coordinate in meters.
     """
     x: float
     y: float
     z: float
 
+
 # ============================================================
 # Orientation
 # ============================================================
 
-@dataclass
+@dataclass(frozen=True)
 class Orientation:
-    """
-    @brief Represents an orientation using Euler angles.
+    """Orientation expressed as Euler angles.
 
-    @var roll
-        Rotation around the X-axis in degrees.
-    @var pitch
-        Rotation around the Y-axis in degrees.
-    @var yaw
-        Rotation around the Z-axis in degrees.
+    Attributes:
+        roll (float): Rotation around the X-axis in degrees.
+        pitch (float): Rotation around the Y-axis in degrees.
+        yaw (float): Rotation around the Z-axis in degrees.
     """
     roll: float
     pitch: float
     yaw: float
 
+
 # ============================================================
 # Pose
 # ============================================================
 
-@dataclass
+@dataclass(frozen=True)
 class Pose:
-    """
-    @brief Combines a 3D position with Euler orientation.
+    """Full 6-DOF pose.
 
-    @var position
-        3D position of the system.
-    @var orientation
-        Euler rotation angles (roll, pitch, yaw).
+    Combines position and orientation.
+
+    Attributes:
+        position (Position): 3D position.
+        orientation (Orientation): Euler orientation.
     """
     position: Position
     orientation: Orientation
 
+
 # ============================================================
-# Telemetry Data
+# Telemetry
 # ============================================================
 
-@dataclass
+@dataclass(frozen=True)
 class TelemetryData:
-    """
-    @brief Aggregated telemetry information.
+    """Aggregated telemetry snapshot.
 
-    @var pose
-        Current system pose (position + orientation).
-    @var battery
-        Current battery status.
+    Attributes:
+        pose (Pose): System pose.
+        battery (Battery): Battery status.
     """
     pose: Pose
     battery: Battery
+
 
 # ============================================================
 # Frame
 # ============================================================
 
-@dataclass
+@dataclass(frozen=True)
 class Frame:
-    """
-    @brief Represents a single captured camera frame.
+    """Captured camera frame.
 
-    @var data
-        Image matrix as a NumPy array (H x W x 3), typically RGB.
+    Attributes:
+        data (np.ndarray): Image array with shape (H, W, C).
+              Typically uint8 RGB or BGR.
     """
-    data: ndarray
+    data: np.ndarray
+
 
 # ============================================================
-# Frame With Telemetry
+# Frame with Telemetry
 # ============================================================
 
-@dataclass
+@dataclass(frozen=True)
 class FrameWithTelemetry:
-    """
-    @brief Associates a camera frame with telemetry data.
+    """Camera frame synchronized with telemetry.
 
-    @var frame
-        Captured camera frame.
-    @var telemetry
-        Telemetry information at the exact moment the frame was captured.
+    Attributes:
+        frame (Frame): Captured camera frame.
+        telemetry (TelemetryData): Telemetry snapshot at capture time.
     """
     frame: Frame
     telemetry: TelemetryData
 
+
 # ============================================================
 # Point 2D
 # ============================================================
+
 @dataclass(frozen=True)
 class Point2D:
-    """
-    @brief Represents a point in 2D space.
+    """2D point.
 
-    @var x
-        X coordinate.
-    @var y
-        Y coordinate.
+    Attributes:
+        x (float): X coordinate in meters.
+        y (float): Y coordinate in meters.
     """
     x: float
     y: float

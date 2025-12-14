@@ -132,13 +132,13 @@ class RobotDog(IRobot):
                             self._logger.error("Callback onPoint failed: %s", e)
                     break
                 # Move step toward the target
-                step = min(dist, self.speed * config.ROBOT_DOG_STEP_DELAY) 
+                step = min(dist, self.speed * config.ROBOT_SLEEP_TIME) 
                 ratio = step / dist
                 nx = cx + (tx - cx) * ratio
                 ny = cy + (ty - cy) * ratio
                 self._current_position = (nx, ny)
 
-                time.sleep(config.ROBOT_DOG_STEP_DELAY) 
+                time.sleep(config.ROBOT_SLEEP_TIME) 
 
         if self._callbackOnFinish:
             try:

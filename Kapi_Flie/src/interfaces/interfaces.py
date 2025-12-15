@@ -188,7 +188,6 @@ class IRobot(ABC):
 class IPathPlanner(ABC):
     """Interface for path planner classes."""
 
-    @abstractmethod
     def euclidean_distance(self, p1: Point2D, p2: Point2D) -> float:
         """
         Computes the Euclidean distance between two points.

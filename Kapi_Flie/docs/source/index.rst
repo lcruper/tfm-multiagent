@@ -13,3 +13,4 @@ Welcome to the Kapi_Flie documentation.
    drone/index
    robotDog/index
    planners/index
+   operation/index

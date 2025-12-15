@@ -3,20 +3,19 @@ from drone.drone import Drone
 from drone.drone_telemetry import DroneTelemetry
 from drone.camera_capture import CameraCapture 
 from drone.viewer import Viewer
-from mission.mission import Mission
 from drone.color_detection import ColorDetection
 from drone.spiral_movement_simulator import SpiralMovementSimulator
 from robotDog.robot_dog import RobotDog
-from mission.mission_controller import MissionController
-from mission.mission_visualizer import MissionVisualizer
+from operation.operation_controller import OperationController
+from operation.operation_visualizer import OperationVisualizer
 from utils.logs import ColoredFormatter, LoggerNameFilter
 from planners.nearest_neighbor_planner import NearestNeighborPlanner
+from structures.structures import Point2D
 import logging
 
 import config
 
 handler = logging.StreamHandler()
-handler.addFilter(LoggerNameFilter("Mission"))
 handler.setFormatter(ColoredFormatter("[%(levelname)s] %(name)s: %(message)s"))
 
 logging.basicConfig(
@@ -24,37 +23,57 @@ logging.basicConfig(
     handlers=[handler]
 )
 
-# -------------------------
-# Inicializar robots
-# -------------------------
-camera = CameraCapture("http://192.168.43.44:81/stream")
-telemetry = DroneTelemetry(config.DRONE_IP, config.DRONE_PORT, config.LOCAL_PORT, SpiralMovementSimulator(config.SPIRAL_SIMULATOR_RADIAL_GROWTH, config.SPIRAL_SIMULATOR_ANGULAR_SPEED))
+
+
+telemetry = DroneTelemetry(
+    config.DRONE_IP, 
+    config.DRONE_PORT, 
+    config.LOCAL_PORT, 
+    SpiralMovementSimulator(
+        config.SPIRAL_SIMULATOR_RADIAL_GROWTH, 
+        config.SPIRAL_SIMULATOR_ANGULAR_SPEED
+    )
+)
+
+camera = CameraCapture(
+    config.CAMERA_STREAM_URL, 
+    config.CAMERA_FLASH_URL
+)
+
 matcher = Matcher(telemetry, camera)
-color_detector = ColorDetection(config.COLOR_DETECTION_COLOR, config.YOLO_MODEL_PATH, None)
+
+color_detector = ColorDetection(config.COLOR_DETECTION_COLOR, config.YOLO_MODEL_PATH)
+
 viewer = Viewer()
-inspector = Drone(telemetry=telemetry,
-                  camera=camera,
-                  matcher=matcher,
-                  color_detector=color_detector,
-                  viewer=viewer)
+
+inspector = Drone(
+    telemetry=telemetry,
+    camera=camera,
+    matcher=matcher,
+    color_detector=color_detector,
+    viewer=viewer
+) 
+
 executor = RobotDog(config.ROBOT_DOG_SPEED)
 
 planner = NearestNeighborPlanner()
 
 
-base_positions = [(5,5), (10, 10), (15, 15)] 
-controller = MissionController(inspector, executor, planner, base_positions)
-visualizer = MissionVisualizer(controller)
+base_positions = [Point2D(5,5), Point2D(10, 10), Point2D(15, 15)] 
+controller = OperationController(
+    inspector_robot=inspector, 
+    executor_robot=executor, 
+    planner=planner, 
+    base_positions=base_positions
+)
+visualizer = OperationVisualizer(controller)
 visualizer.start()
-controller.shutdown()
 
 """
-mission = Mission(inspector=inspector,
-                  executor=executor,
-                  base_positions=[(5.0, 5.0), (10.0, 10.0)],
-                  planner=planner) 
-
-#mission.start()
-mission.visualizer()
-mission.wait_until_finished()
+Cierre de la ventana
+Carpeta con métricas
+Test y mockers
+Colores en el texto
+Simulador espiral misma velocidad
+Panel con más étricas  y más profesional, points por mision
 """

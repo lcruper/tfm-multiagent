@@ -85,7 +85,7 @@ class RobotDog(IRobot):
             self._thread = None
         self._logger.info("Stopped.")
 
-    def set_callback_on_point(self, callback: Callable[[Point2D], None]) -> None:
+    def set_callback_onPoint(self, callback: Callable[[Point2D], None]) -> None:
         """
         Set a callback to be called when a point is reached.
 
@@ -94,7 +94,7 @@ class RobotDog(IRobot):
         """
         self._callback_on_point = callback
 
-    def set_callback_on_finish(self, callback: Callable[[], None]) -> None:
+    def set_callback_onFinish(self, callback: Callable[[], None]) -> None:
         """
         Set a callback to be called when all points are reached.
 
@@ -125,11 +125,13 @@ class RobotDog(IRobot):
             if not self._running:
                 break
 
-            tx, ty = target
+            tx = target.x
+            ty = target.y
             self._logger.debug("Moving toward (%.2f, %.2f)...", tx, ty)
 
             while self._running:
-                cx, cy = self._current_position
+                cx = self._current_position.x
+                cy = self._current_position.y
                 dist = hypot(tx - cx, ty - cy)
                 if dist < config.ROBOT_DOG_REACHED_TOLERANCE:
                     self._current_position = Point2D(tx, ty)

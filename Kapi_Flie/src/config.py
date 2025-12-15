@@ -44,7 +44,7 @@ DRONE_UDP_BUFFER_SIZE: Final[int] = 128
 DRONE_UDP_TIMEOUT: Final[float] = 0.5
 """Timeout (in seconds) for UDP socket operations."""
 
-DRONE_UDP_HANDSHAKE_RETRIES: Final[int] = 3
+DRONE_UDP_HANDSHAKE_RETRIES: Final[int] = 1
 """Number of retry attempts during telemetry handshake."""
 
 HANDSHAKE_PACKET: Final[bytes] = b'\x01\x01'
@@ -74,6 +74,13 @@ SPIRAL_SIMULATOR_EXP_SMOOTH: Final[float] = 0.1
 # ============================================================
 # Camera
 # ============================================================
+
+CAMERA_STREAM_URL: Final[str] = "http://192.168.43.43:81/stream"
+"""URL of the camera video stream."""
+
+CAMERA_FLASH_URL: Final[str] = "http://192.168.43.43:80/control"
+"""URL to control the camera flash."""
+
 
 CAMERA_STREAM_RETRY_DELAY: Final[float] = 5.0
 """Delay before retrying to open the camera stream (seconds)."""
@@ -181,8 +188,8 @@ ROBOT_SLEEP_TIME: Final[float] = 0.1
 
 
 # ============================================================
-# Mission
+# Operation
 # ============================================================
 
-INSPECTION_POINT_MIN_DIST: Final[float] = 0.5
-"""Minimum distance between detected points for being considered distinct."""
+DRONE_VISIBILITY: Final[float] = 1.0
+"""Maximum visibility radius of the drone."""

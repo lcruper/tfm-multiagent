@@ -121,12 +121,16 @@ class DroneTelemetry(ITelemetry):
         with self._lock:
             telemetry_copy = deepcopy(self._telemetry)
 
-        if self.simulator and getattr(self.simulator, "active", False):
+        if self.simulator and getattr(self.simulator, "_active", False):
             xy = self.simulator.get_xy()
             if xy is not None:
-                telemetry_copy.pose.position.x = xy.x
-                telemetry_copy.pose.position.y = xy.y
-
+                telemetry_copy = TelemetryData(
+                    pose=Pose(
+                        position=Position(xy.x, xy.y, telemetry_copy.pose.position.z),
+                        orientation=deepcopy(telemetry_copy.pose.orientation)
+                    ),
+                    battery=deepcopy(telemetry_copy.battery)
+                )
         return telemetry_copy
 
     # ----------------------------------------------------------------------
@@ -173,7 +177,10 @@ class DroneTelemetry(ITelemetry):
 
         (voltage,) = config.STRUCT_BATTERY.unpack_from(payload)
         with self._lock:
-            self._telemetry.battery.voltage = voltage
+            self._telemetry = TelemetryData(
+                pose=deepcopy(self._telemetry.pose),
+                battery=Battery(voltage=voltage)
+            )
         self._logger.debug("Updated battery: %.2f V", voltage)
 
     def _process_pose_packet(self, payload: bytes) -> None:
@@ -193,12 +200,13 @@ class DroneTelemetry(ITelemetry):
         
         x, y, z, roll, pitch, yaw = config.STRUCT_POSE.unpack_from(payload)
         with self._lock:
-            self._telemetry.pose.position.x = x
-            self._telemetry.pose.position.y = y
-            self._telemetry.pose.position.z = z
-            self._telemetry.pose.orientation.roll = roll
-            self._telemetry.pose.orientation.pitch = pitch
-            self._telemetry.pose.orientation.yaw = yaw
+            self._telemetry = TelemetryData(
+                pose=Pose(
+                    position=Position(x, y, z),
+                    orientation=Orientation(roll, pitch, yaw)
+                ),
+                battery=deepcopy(self._telemetry.battery)
+            )
         self._logger.debug("Updated pose: %s", self._telemetry.pose)
 
     def _listen(self) -> None:

@@ -43,7 +43,7 @@ class InspectorWorker(threading.Thread):
         self.robot: IRobot = robot
         self.base_positions: List[Point2D] = base_positions
         self.points_queue: Queue[Dict[Point2D, bool]] = points_queue
-        self.events: OperationEvents = events
+        self._events: OperationEvents = events
 
         self.actual_points: Dict[Point2D, bool] = {}
         self.mission_id: int = 0
@@ -123,13 +123,13 @@ class InspectorWorker(threading.Thread):
         the worker waits for the next mission.
         """
         while self.mission_id < len(self.base_positions) - 1:
-            self.events.next_mission.wait()
-            self.events.next_mission.clear()
+            self._events.wait_for_next_mission()
+            self._events.clear_next_mission()
             self._logger.info("Starting mission %d", self.mission_id)
             self.status = Status.RUNNING
-            self.events.stop_inspection.clear()
+            self._events.clear_stop_inspection()
             self.robot.start_inspection()
-            self.events.stop_inspection.wait()
+            self._events.wait_for_stop_inspection()
             self.robot.stop_inspection()
             
         if self._callback_onFinishAll:
@@ -141,4 +141,4 @@ class InspectorWorker(threading.Thread):
         Signals the operation to start the next mission.
         """
         self.mission_id += 1
-        self.events.next_mission.set()
+        self._events.trigger_next_mission()

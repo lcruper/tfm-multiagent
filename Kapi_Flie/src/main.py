@@ -70,7 +70,12 @@ visualizer = OperationVisualizer(controller)
 visualizer.start()
 
 """
-Cierre de la ventana
+Panel:
+    Operacion
+    Dron
+    Perro
+    Mision
+Abort button
 Carpeta con métricas
 Test y mockers
 Colores en el texto

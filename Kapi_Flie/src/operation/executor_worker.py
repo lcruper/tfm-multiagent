@@ -41,7 +41,7 @@ class ExecutorWorker(threading.Thread):
         self.planner: IPathPlanner = planner
         self.n_missions: int = n_missions
         self.points_queue: Queue[Dict[Point2D, bool]] = points_queue
-        self.events: OperationEvents = events
+        self._events: OperationEvents = events
 
         self.mission_id: int = 0
         self.status: Status = Status.NOT_STARTED
@@ -73,7 +73,7 @@ class ExecutorWorker(threading.Thread):
         """
         self._logger.info("Finished mission %d", self.mission_id)
         self.status = Status.FINISHED
-        self.events.executor_done.set()
+        self._events.trigger_executor_done()
 
     # -------------------
     # Public methods
@@ -93,7 +93,7 @@ class ExecutorWorker(threading.Thread):
             if not points:
                 self._logger.info("Skipping empty mission %d", self.mission_id)
                 self.status = Status.FINISHED
-                self.events.executor_done.set()
+                self._events.trigger_executor_done()
                 self.points_queue.task_done()
                 if self.mission_id < self.n_missions - 1:
                     self.mission_id += 1
@@ -104,10 +104,10 @@ class ExecutorWorker(threading.Thread):
 
             self._logger.info("Starting mission %d with %d points", self.mission_id, len(points))
             self.status = Status.RUNNING
-            self.events.executor_done.clear()
+            self._events.clear_executor_done()
             path = self.planner.plan_path(self.robot.get_current_position(), list(points.keys()))
             self.robot.start_inspection(path)
-            self.events.executor_done.wait()
+            self._events.wait_for_executor_done()
             self.robot.stop_inspection()
             self.points_queue.task_done()
             if self.mission_id < self.n_missions - 1:

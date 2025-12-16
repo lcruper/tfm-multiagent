@@ -12,6 +12,7 @@ from matplotlib.widgets import Button
 from numpy import array
 from time import time
 from typing import List
+import threading
 
 import config
 from operation.operation_status import Status
@@ -116,7 +117,10 @@ class OperationVisualizer:
         next_button.on_clicked(lambda event: self.controller.next_mission())
         ax_next.set_visible(False)
 
-        fig.canvas.mpl_connect("close_event", lambda event: self.controller.shutdown())
+        ax_abort = plt.axes([0.10, 0.01, 0.1, 0.05])
+        abort_button = Button(ax_abort, "Abort Operation (no funciona)")
+        abort_button.on_clicked(lambda event: threading.Thread(target=self.controller.shutdown, daemon=True).start())
+        ax_abort.set_visible(True)
 
         # ----------------------------
         # Animation update

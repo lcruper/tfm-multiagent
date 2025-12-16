@@ -58,7 +58,7 @@ class OperationController:
         self.inspector.start()
         self.executor.start()
         self._logger.info("Operation started. Triggering first mission...")
-        self._events.next_mission.set()
+        self._events.trigger_next_mission()
 
     def next_mission(self) -> None:
         """
@@ -72,12 +72,12 @@ class OperationController:
         Signals the inspector to stop the current mission.
         """
         self._logger.info("Stopping current inspection...")
-        self._events.stop_inspection.set()
+        self._events.trigger_stop_inspection()
 
     def shutdown(self) -> None:
         """Stops and safely shuts down the operation."""
         self._logger.info("Shutting down operation...")
-        self._events.stop_inspection.set()
+        self._events.trigger_stop_inspection()
         self._queue.put(None)
         if self.inspector.is_alive():
             self.inspector.join()

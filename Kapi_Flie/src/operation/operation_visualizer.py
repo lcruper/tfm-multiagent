@@ -11,7 +11,7 @@ import matplotlib.animation as animation
 from matplotlib.widgets import Button
 from numpy import array
 from time import time
-from typing import List
+from typing import List, Dict
 import threading
 
 import config
@@ -37,6 +37,8 @@ class OperationVisualizer:
         self.controller: OperationController = controller
         self._inspector_positions: List[Point2D] = []
         self._executor_positions: List[Point2D] = []
+
+        self._points_by_mission: Dict[int, List[Point2D]] = {}
 
     def _distance_traveled(self, path: List[Point2D]) -> float:
         """
@@ -156,10 +158,23 @@ class OperationVisualizer:
                 executor_path.set_data(ex, ey)
 
             # Detected points
+            """
             points = list(self.controller.all_points.keys())
             if points:
                 coords = array([[p.x, p.y] for p in points])
                 colors = ['green' if self.controller.all_points[p][1] else 'red' for p in points]
+            """
+            self._points_by_mission.clear()
+            all_points = []
+            colors = []
+
+            for point, (mid, reached) in self.controller.all_points.items():
+                self._points_by_mission.setdefault(mid, []).append(point)
+                all_points.append(point)
+                colors.append("green" if reached else "red")
+
+            if all_points:
+                coords = array([[p.x, p.y] for p in all_points])
                 detected_scatter.set_offsets(coords)
                 detected_scatter.set_color(colors)
 
@@ -174,8 +189,17 @@ class OperationVisualizer:
             elapsed = time() - self.controller.start_time if self.controller.start_time else 0.0
             ins_dist = self._distance_traveled(self._inspector_positions)
             exe_dist = self._distance_traveled(self._executor_positions)
-            points_text = "\n".join([f"• ({p.x:.2f},{p.y:.2f})" for p in points])
+            #points_text = "\n".join([f"• ({p.x:.2f},{p.y:.2f})" for p in points])
 
+            missions_text = ""
+            for mid in range(len(self._points_by_mission)):
+                pts = self._points_by_mission[mid]
+                missions_text += (
+                    f"\nMission {mid}\n"
+                    f"  Points: {len(pts)}\n"
+                    "\n".join([f"• ({p.x:.2f},{p.y:.2f})" for p in pts])
+            )
+                
             info = f"""
             OPERATION:
             - Time: {elapsed:.1f}s
@@ -193,10 +217,8 @@ class OperationVisualizer:
             - Robot Dog Position: x={exe_abs.x:.2f}, y={exe_abs.y:.2f}
             - Robot Dog Distance: {exe_dist:.2f}
 
-            Points Detected: {len(points)}
-            {points_text}
-            
-            MISSION:
+            POINTS DETECTED:
+            {missions_text}
             """
             text_info.set_text(info)
             text_info.set_color('black')

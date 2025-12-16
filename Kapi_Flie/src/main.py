@@ -1,7 +1,8 @@
 from drone.matcher import Matcher
 from drone.drone import Drone
 from drone.drone_telemetry import DroneTelemetry
-from drone.camera_capture import CameraCapture 
+from drone.camera_capture import CameraCapture
+from drone.camera_simulator import CameraSimulator
 from drone.viewer import Viewer
 from drone.color_detection import ColorDetection
 from drone.spiral_movement_simulator import SpiralMovementSimulator
@@ -35,10 +36,12 @@ telemetry = DroneTelemetry(
     )
 )
 
-camera = CameraCapture(
-    config.CAMERA_STREAM_URL, 
-    config.CAMERA_FLASH_URL
-)
+#camera = CameraCapture(
+#    config.CAMERA_STREAM_URL, 
+#    config.CAMERA_FLASH_URL
+#)
+
+camera = CameraSimulator(None,None)
 
 matcher = Matcher(telemetry, camera)
 
@@ -76,5 +79,6 @@ Abort button (shutdown y abort status)
 Carpeta con métricas
 Métricas: tiempos 
 Test y mockers
+Grabar operación
 Simulador espiral misma velocidad
 """

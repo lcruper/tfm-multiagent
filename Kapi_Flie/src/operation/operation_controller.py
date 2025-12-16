@@ -87,8 +87,7 @@ class OperationController:
         self._logger.info("Shutting down operation...")
         # TODO
         self._logger.info("Operation shut down safely.")
-
-
+        
     # -------------------
     # Internal methods
     # -------------------

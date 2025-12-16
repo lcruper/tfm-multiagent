@@ -29,33 +29,36 @@ class InspectorWorker(threading.Thread):
     recording detected points, and synchronizing with operation events.
     """
 
-    def __init__(self, robot: IRobot, base_positions: List[Point2D], points_queue: Queue[Dict[Point2D, bool]], events: OperationEvents) -> None:
+    def __init__(self, robot: IRobot, base_positions: List[Point2D], points_queue: Queue[Point2D], all_points: Dict[Point2D, (int, bool)], events: OperationEvents) -> None:
         """
         Creates a InspectorWorker instance.
 
         Args:
             robot (IRobot): The robot to control.
             base_positions (List[Point2D]): List of base positions for missions.
-            points_queue (Queue[Dict[Point2D, bool]]): Queue for detected points.
+            points_queue (Queue[Point2D]): Queue for detected points.
+            all_points (Dict[Point2D, (int, bool)]): Dictionary of all points detected across missions with their processed status.
             events (OperationEvents): Shared operation synchronization events.
         """
         super().__init__(daemon=True)
-        self.robot: IRobot = robot
-        self.base_positions: List[Point2D] = base_positions
-        self.points_queue: Queue[Dict[Point2D, bool]] = points_queue
+        self._robot: IRobot = robot
+        self._base_positions: List[Point2D] = base_positions
+        self._points_queue: Queue[Point2D] = points_queue
+        self._all_points: Dict[Point2D, (int, bool)] = all_points
         self._events: OperationEvents = events
 
-        self.actual_points: Dict[Point2D, bool] = {}
+        self._actual_points: List[Point2D] = []
         self.mission_id: int = 0
         self.status: Status = Status.NOT_STARTED
+
         self._callback_onFinishAll: Callable[[], None] = None
 
         self._lock: threading.Lock = threading.Lock()
 
         self._logger: logging.Logger = logging.getLogger("InspectorWorker")
 
-        self.robot.set_callback_onPoint(self._on_point)
-        self.robot.set_callback_onFinish(self._on_finish)
+        self._robot.set_callback_onPoint(self._on_point)
+        self._robot.set_callback_onFinish(self._on_finish)
 
     # -------------------
     # Internal methods
@@ -71,15 +74,16 @@ class InspectorWorker(threading.Thread):
             point (Point2D): Detected relative point from the robot.
         """
         abs_point = Point2D(
-            self.base_positions[self.mission_id].x + point.x,
-            self.base_positions[self.mission_id].y + point.y
+            self._base_positions[self.mission_id].x + point.x,
+            self._base_positions[self.mission_id].y + point.y
         )
         self._logger.info("Detected point at %s in mission %d. Beeping...", abs_point, self.mission_id)
         winsound.Beep(1000, 200)
 
         with self._lock:
             if not self._is_too_close(abs_point):
-                self.actual_points[abs_point] = False
+                self._actual_points.append(Point2D(abs_point.x, abs_point.y))
+                self._all_points[Point2D(abs_point.x, abs_point.y)] = (self.mission_id, False)
             else:
                 self._logger.info("Skipping point (too close) at %s in mission %d", abs_point, self.mission_id)
 
@@ -90,10 +94,10 @@ class InspectorWorker(threading.Thread):
         Stores collected points into the queue and clears the internal buffer.
         """
         with self._lock:
-            self._logger.info("Finished mission %d with %d points", self.mission_id, len(self.actual_points))
+            self._logger.info("Finished mission %d with %d points", self.mission_id, len(self._actual_points))
             self.status = Status.FINISHED
-            self.points_queue.put(dict(self.actual_points))
-            self.actual_points.clear()
+            self._points_queue.put(list(self._actual_points))
+            self._actual_points.clear()
 
     def _is_too_close(self, new_point: Point2D) -> bool:
         """
@@ -105,7 +109,7 @@ class InspectorWorker(threading.Thread):
         Returns:
             bool: True if the point is closer than INSPECTION_POINT_MIN_DIST to any existing point.
         """
-        for pt in self.actual_points.keys():
+        for pt in self._actual_points:
             dist = ((pt.x - new_point.x) ** 2 + (pt.y - new_point.y) ** 2) ** 0.5
             if dist < config.DRONE_VISIBILITY:
                 return True
@@ -122,15 +126,15 @@ class InspectorWorker(threading.Thread):
         the stop_inspection event is triggered. The robot is then stopped, and
         the worker waits for the next mission.
         """
-        while self.mission_id < len(self.base_positions) - 1:
+        while self.mission_id < len(self._base_positions) - 1:
             self._events.wait_for_next_mission()
             self._events.clear_next_mission()
             self._logger.info("Starting mission %d", self.mission_id)
             self.status = Status.RUNNING
             self._events.clear_stop_inspection()
-            self.robot.start_inspection()
+            self._robot.start_inspection()
             self._events.wait_for_stop_inspection()
-            self.robot.stop_inspection()
+            self._robot.stop_inspection()
             
         if self._callback_onFinishAll:
             self._logger.info("All missions completed.")

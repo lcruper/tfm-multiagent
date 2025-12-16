@@ -75,10 +75,10 @@ SPIRAL_SIMULATOR_EXP_SMOOTH: Final[float] = 0.1
 # Camera
 # ============================================================
 
-CAMERA_STREAM_URL: Final[str] = "http://192.168.43.44:81/stream"
+CAMERA_STREAM_URL: Final[str] = "http://192.168.43.43:81/stream"
 """URL of the camera video stream."""
 
-CAMERA_FLASH_URL: Final[str] = "http://192.168.43.44:80/control"
+CAMERA_FLASH_URL: Final[str] = "http://192.168.43.43:80/control"
 """URL to control the camera flash."""
 
 

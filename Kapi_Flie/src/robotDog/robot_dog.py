@@ -58,11 +58,7 @@ class RobotDog(IRobot):
         if self._running:
             self._logger.warning("Already running.")
             return
-
-        if not positions:
-            self._logger.warning("Received empty path. RobotDog will not move.")
-            return
-
+        
         self._waypoints = positions
         self._running = True
         self._thread = threading.Thread(target=self._move, daemon=True)

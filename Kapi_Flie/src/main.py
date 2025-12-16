@@ -71,14 +71,10 @@ visualizer.start()
 
 """
 Panel:
-    Operacion
-    Dron
-    Perro
     Mision
-Abort button
+Abort button (shutdown y abort status)
 Carpeta con métricas
+Métricas: tiempos 
 Test y mockers
-Colores en el texto
 Simulador espiral misma velocidad
-Panel con más étricas  y más profesional, points por mision
 """

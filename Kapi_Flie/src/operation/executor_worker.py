@@ -25,7 +25,7 @@ class ExecutorWorker(threading.Thread):
     Threaded worker executing missions for a robot.
     """
 
-    def __init__(self, robot: IRobot, planner: IPathPlanner, n_missions: int, points_queue: Queue[Dict[Point2D, bool]], events: OperationEvents) -> None:
+    def __init__(self, robot: IRobot, planner: IPathPlanner, n_missions: int, points_queue: Queue[Point2D], all_points: Dict[Point2D, (int, bool)], events: OperationEvents) -> None:
         """
         Creates an ExecutorWorker instance.
 
@@ -33,24 +33,29 @@ class ExecutorWorker(threading.Thread):
             robot (IRobot): The robot to control.
             planner (IPathPlanner): Planner to determine inspection order.
             n_missions (int): Number of missions to execute.
-            points_queue (Queue[Dict[Point2D, bool]]): Queue with points to inspect.
+            points_queue (Queue[Point2D]): Queue with points to inspect.
+            all_points (Dict[Point2D, (int, bool)]): Dictionary of all points detected across missions with their processed status.
             events (OperationEvents): Shared operation synchronization events.
         """
         super().__init__(daemon=True)
-        self.robot: IRobot = robot
-        self.planner: IPathPlanner = planner
-        self.n_missions: int = n_missions
-        self.points_queue: Queue[Dict[Point2D, bool]] = points_queue
+        self._robot: IRobot = robot
+        self._planner: IPathPlanner = planner
+        self._n_missions: int = n_missions
+        self._points_queue: Queue[Dict[Point2D, bool]] = points_queue
+        self._all_points: Dict[Point2D, (int, bool)] = all_points
         self._events: OperationEvents = events
 
         self.mission_id: int = 0
         self.status: Status = Status.NOT_STARTED
+
         self._callback_onFinishAll: Callable[[], None] = None
+
+        self._lock: threading.Lock = threading.Lock()
 
         self._logger: logging.Logger = logging.getLogger("ExecutorWorker")
 
-        self.robot.set_callback_onPoint(self._on_point)
-        self.robot.set_callback_onFinish(self._on_finish)
+        self._robot.set_callback_onPoint(self._on_point)
+        self._robot.set_callback_onFinish(self._on_finish)
 
     # -------------------
     # Internal methods
@@ -67,13 +72,21 @@ class ExecutorWorker(threading.Thread):
         self._logger.info("Reached point %s in mission %d. Beeping...", point, self.mission_id)
         winsound.Beep(1000, 200)
 
+        with self._lock:
+            if point in self._all_points:
+                mission_idx, _ = self._all_points[point]
+                if mission_idx == self.mission_id:
+                    self._all_points[point] = (mission_idx, True)
+
     def _on_finish(self) -> None:
         """
         Callback triggered when the robot finishes inspecting all points.
         """
-        self._logger.info("Finished mission %d", self.mission_id)
-        self.status = Status.FINISHED
-        self._events.trigger_executor_done()
+        with self._lock:
+            self._logger.info("Finished mission %d", self.mission_id)
+            self.status = Status.FINISHED
+            self._events.trigger_executor_done()
+            self._points_queue.task_done()
 
     # -------------------
     # Public methods
@@ -85,36 +98,17 @@ class ExecutorWorker(threading.Thread):
         Waits for the next_mission event, plans the path, starts inspection, 
         and waits for the stop_inspection event before finishing the mission.
         """
-        while self.mission_id < self.n_missions:
-            points = self.points_queue.get()
-            if points is None:
-                break
-
-            if not points:
-                self._logger.info("Skipping empty mission %d", self.mission_id)
-                self.status = Status.FINISHED
-                self._events.trigger_executor_done()
-                self.points_queue.task_done()
-                if self.mission_id < self.n_missions - 1:
-                    self.mission_id += 1
-                    self.status = Status.NOT_STARTED
-                else:
-                    break
-                continue
-
+        while self.mission_id < self._n_missions:
+            points = self._points_queue.get()
+            if self.status == Status.FINISHED:
+                self.mission_id += 1
             self._logger.info("Starting mission %d with %d points", self.mission_id, len(points))
             self.status = Status.RUNNING
             self._events.clear_executor_done()
-            path = self.planner.plan_path(self.robot.get_current_position(), list(points.keys()))
-            self.robot.start_inspection(path)
+            path = self._planner.plan_path(self._robot.get_current_position(), list(points))
+            self._robot.start_inspection(path)
             self._events.wait_for_executor_done()
-            self.robot.stop_inspection()
-            self.points_queue.task_done()
-            if self.mission_id < self.n_missions - 1:
-                self.mission_id += 1
-                self.status = Status.NOT_STARTED
-            else:
-                break
+            self._robot.stop_inspection()
 
         if self._callback_onFinishAll:
             self._logger.info("All missions completed.")

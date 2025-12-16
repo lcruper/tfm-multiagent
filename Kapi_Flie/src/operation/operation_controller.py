@@ -9,6 +9,7 @@ from time import time
 from queue import Queue
 import logging
 from typing import List, Dict
+import threading
 
 from operation.inspector_worker import InspectorWorker
 from operation.executor_worker import ExecutorWorker
@@ -34,13 +35,20 @@ class OperationController:
             base_positions (List[Point2D]): Base positions for each mission.
         """        
         self._queue: Queue[Dict[Point2D, bool]] = Queue(maxsize=len(base_positions))
+        self.all_points: Dict[Point2D, (int, bool)] = {}
         self._events: OperationEvents = OperationEvents()
     
+        self.inspector_robot: IRobot = inspector_robot
+        self.executor_robot: IRobot = executor_robot
+        self.base_positions: List[Point2D] = base_positions
+
         self.status: Status = Status.NOT_STARTED
         self.start_time: float = None
 
-        self.inspector: InspectorWorker = InspectorWorker(inspector_robot, base_positions, self._queue, self._events)
-        self.executor: ExecutorWorker = ExecutorWorker(executor_robot, planner, len(base_positions), self._queue, self._events)
+        self.inspector_worker: InspectorWorker = InspectorWorker(inspector_robot, base_positions, self._queue, self.all_points, self._events)
+        self.executor_worker: ExecutorWorker = ExecutorWorker(executor_robot, planner, len(base_positions), self._queue, self.all_points, self._events)
+
+        self._lock: threading.Lock = threading.Lock()
 
         self._logger: logging.Logger = logging.getLogger("OperationController")
 
@@ -52,11 +60,11 @@ class OperationController:
         Starts both inspector and executor threads and signals the first mission.
         """
         self.start_time = time()
-        self.inspector._callback_onFinishAll = self._on_all_missions_finished
-        self.executor._callback_onFinishAll = self._on_all_missions_finished
+        self.inspector_worker._callback_onFinishAll = self._on_all_missions_finished
+        self.executor_worker._callback_onFinishAll = self._on_all_missions_finished
         self.status = Status.RUNNING
-        self.inspector.start()
-        self.executor.start()
+        self.inspector_worker.start()
+        self.executor_worker.start()
         self._logger.info("Operation started. Triggering first mission...")
         self._events.trigger_next_mission()
 
@@ -65,7 +73,7 @@ class OperationController:
         Signals to start the next mission.
         """
         self._logger.info("Triggering next mission...")
-        self.inspector.start_next_mission()
+        self.inspector_worker.start_next_mission()
 
     def stop_inspection(self) -> None:
         """
@@ -77,19 +85,18 @@ class OperationController:
     def shutdown(self) -> None:
         """Stops and safely shuts down the operation."""
         self._logger.info("Shutting down operation...")
-        self._events.trigger_stop_inspection()
-        self._queue.put(None)
-        if self.inspector.is_alive():
-            self.inspector.join()
-        if self.executor.is_alive():
-            self.executor.join()
+        # TODO
         self._logger.info("Operation shut down safely.")
 
 
+    # -------------------
+    # Internal methods
+    # -------------------
     def _on_all_missions_finished(self) -> None:
         """
         Callback triggered when all missions are finished.
         """
-        if self.inspector.status == Status.FINISHED and self.executor.status == Status.FINISHED:
-            self.status = Status.FINISHED
-            self._logger.info("Operation finished.")
+        with self._lock:
+            if self.inspector_worker.mission_id == len(self.base_positions)-1 and self.executor_worker.mission_id == len(self.base_positions)-1:
+                self.status = Status.FINISHED
+                self._logger.info("Operation finished.")

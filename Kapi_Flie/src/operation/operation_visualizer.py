@@ -69,14 +69,14 @@ class OperationVisualizer:
         ax_map.set_ylabel("Y")
         ax_map.set_title("Operation Map")
 
-        base_positions = self.controller.inspector.base_positions
+        base_positions = self.controller.base_positions
         ax_map.set_xlim(min(p.x for p in base_positions) - 5, max(p.x for p in base_positions) + 5)
         ax_map.set_ylim(min(p.y for p in base_positions) - 5, max(p.y for p in base_positions) + 5)
 
         # Base stations
         base_markers = []
         for idx, bp in enumerate(base_positions):
-            color = 'lightblue' if idx == self.controller.inspector.mission_id else 'k'
+            color = 'lightblue' if idx == self.controller.inspector_worker.mission_id else 'k'
             marker, = ax_map.plot(bp.x, bp.y, 's', color=color, markersize=8)
             ax_map.text(bp.x + 0.3, bp.y + 0.3, str(idx), fontsize=12)
             base_markers.append(marker)
@@ -118,7 +118,7 @@ class OperationVisualizer:
         ax_next.set_visible(False)
 
         ax_abort = plt.axes([0.10, 0.01, 0.1, 0.05])
-        abort_button = Button(ax_abort, "Abort Operation (no funciona)")
+        abort_button = Button(ax_abort, "Abort Operation")
         abort_button.on_clicked(lambda event: threading.Thread(target=self.controller.shutdown, daemon=True).start())
         ax_abort.set_visible(True)
 
@@ -126,7 +126,7 @@ class OperationVisualizer:
         # Animation update
         # ----------------------------
         def update(frame):
-            mission_id = self.controller.inspector.mission_id
+            mission_id = self.controller.inspector_worker.mission_id
             base_position = base_positions[mission_id]
 
             # Update base markers
@@ -134,13 +134,13 @@ class OperationVisualizer:
                 marker.set_color('lightblue' if idx == mission_id else 'k')
 
             # Inspector position
-            ins_rel = self.controller.inspector.robot.get_current_position()
+            ins_rel = self.controller.inspector_robot.get_current_position()
             ins_abs = Point2D(base_position.x + ins_rel.x, base_position.y + ins_rel.y)
             self._inspector_positions.append(ins_abs)
             inspector_visibility.center = (ins_abs.x, ins_abs.y)
 
             # Executor position
-            exe_rel = self.controller.executor.robot.get_current_position()
+            exe_rel = self.controller.executor_robot.get_current_position()
             exe_abs = Point2D(exe_rel.x, exe_rel.y)
             self._executor_positions.append(exe_abs)
 
@@ -156,18 +156,18 @@ class OperationVisualizer:
                 executor_path.set_data(ex, ey)
 
             # Detected points
-            points = list(self.controller.inspector.actual_points.keys())
+            points = list(self.controller.all_points.keys())
             if points:
                 coords = array([[p.x, p.y] for p in points])
-                colors = ['green' if self.controller.inspector.actual_points[p] else 'red' for p in points]
+                colors = ['green' if self.controller.all_points[p][1] else 'red' for p in points]
                 detected_scatter.set_offsets(coords)
                 detected_scatter.set_color(colors)
 
             # Buttons visibility
             start_button.ax.set_visible(self.controller.status == Status.NOT_STARTED)
-            stop_button.ax.set_visible(self.controller.inspector.status == Status.RUNNING)
+            stop_button.ax.set_visible(self.controller.inspector_worker.status == Status.RUNNING)
             next_button.ax.set_visible(self.controller.status == Status.RUNNING and 
-                                       self.controller.inspector.status == Status.FINISHED and
+                                       self.controller.inspector_worker.status == Status.FINISHED and
                                        mission_id + 1 < len(base_positions))
 
             # Info panel
@@ -177,21 +177,26 @@ class OperationVisualizer:
             points_text = "\n".join([f"• ({p.x:.2f},{p.y:.2f})" for p in points])
 
             info = f"""
-            Time: {elapsed:.1f}s
-            Operation Status: {self.controller.status.name}
+            OPERATION:
+            - Time: {elapsed:.1f}s
+            - Operation Status: {self.controller.status.name}
 
-            Drone Mission: {mission_id}
-            Drone Mission Status: {self.controller.inspector.status.name}
-            Drone Position: x={ins_abs.x:.2f}, y={ins_abs.y:.2f}
-            Drone Distance: {ins_dist:.2f}
+            DRONE:
+            - Drone Mission: {mission_id}
+            - Drone Mission Status: {self.controller.inspector_worker.status.name}
+            - Drone Position: x={ins_abs.x:.2f}, y={ins_abs.y:.2f}
+            - Drone Distance: {ins_dist:.2f}
 
-            Robot Dog Mission: {self.controller.executor.mission_id}
-            Robot Dog Mission Status: {self.controller.executor.status.name}
-            Robot Dog Position: x={exe_abs.x:.2f}, y={exe_abs.y:.2f}
-            Robot Dog Distance: {exe_dist:.2f}
+            ROBOT DOG:
+            - Robot Dog Mission: {self.controller.executor_worker.mission_id}
+            - Robot Dog Mission Status: {self.controller.executor_worker.status.name}
+            - Robot Dog Position: x={exe_abs.x:.2f}, y={exe_abs.y:.2f}
+            - Robot Dog Distance: {exe_dist:.2f}
 
             Points Detected: {len(points)}
             {points_text}
+            
+            MISSION:
             """
             text_info.set_text(info)
             text_info.set_color('black')

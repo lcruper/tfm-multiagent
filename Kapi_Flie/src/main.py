@@ -78,6 +78,5 @@ Panel:
 Abort button (shutdown y abort status)
 Carpeta con métricas
 Métricas: tiempos 
-Test y mockers
 Grabar operación
 """

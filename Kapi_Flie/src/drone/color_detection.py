@@ -138,8 +138,8 @@ class ColorDetection(IFrameConsumer):
         except Exception as e:
             self._logger.error("YOLO prediction error: %s", e)
             return
-
         dets = results[0].boxes if len(results) else []
+        self._logger.debug("YOLO detected %d objects", len(dets))
 
         for box in dets:
             xyxy = box.xyxy.cpu().numpy().astype(int)[0] if hasattr(box.xyxy, "cpu") else np.array(box.xyxy).astype(int)[0]
@@ -154,8 +154,10 @@ class ColorDetection(IFrameConsumer):
 
             hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
             mask1 = cv2.inRange(hsv, np.array(self._colorLimits["lower1"]), np.array(self._colorLimits["upper1"]))
-            mask2 = cv2.inRange(hsv, np.array(self._colorLimits["lower2"]), np.array(self._colorLimits["upper2"]))
-            mask = cv2.bitwise_or(mask1, mask2)
+            mask2 = None
+            if "lower2" in self._colorLimits and "upper2" in self._colorLimits:
+                mask2 = cv2.inRange(hsv, np.array(self._colorLimits["lower2"]), np.array(self._colorLimits["upper2"]))
+            mask = mask1 if mask2 is None else cv2.bitwise_or(mask1, mask2)
             ratio = cv2.countNonZero(mask) / (roi.shape[0] * roi.shape[1] + 1e-6)
 
             if ratio >= config.COLOR_DETECTION_THRESH:

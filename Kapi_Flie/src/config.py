@@ -97,6 +97,36 @@ CAMERA_FLASH_INTENSITY_OFF: Final[int] = 0
 CAMERA_SLEEP_TIME: Final[float] = 0.01
 """Sleep duration between camera processing cycles."""
 
+# ============================================================
+# Camera Simulator
+# ============================================================
+
+CAMERA_SIMULATOR_COLOR_PROBABILITY: Final[float] = 0.1
+"""Probability of generating a `COLOR_DETECTION_COLOR` object in the simulated camera frame."""
+
+CAMERA_SIMULATOR_COLOR_DICT: Final[dict] = {
+    "red": [0, 0, 255],
+    "green": [0, 255, 0],
+    "blue": [255, 0, 0],
+    "yellow": [0, 255, 255],
+    "orange": [0, 165, 255],
+    "purple": [255, 0, 255],
+    "cyan": [255, 255, 0],
+    "pink": [255, 192, 203],
+}
+"""BGR color values for different target colors used in the camera simulator."""
+
+CAMERA_SIMULATOR_MIN_RADIUS: Final[int] = 50
+"""Minimum radius of objects generated in the simulated camera frame."""
+
+CAMERA_SIMULATOR_MAX_RADIUS: Final[int] = 100
+"""Maximum radius of objects generated in the simulated camera frame."""
+
+CAMERA_SIMULATOR_FRAME_PERIOD: Final[float] = 2.0
+"""Time period (in seconds) between frames in the camera simulator."""
+
+CAMERA_SIMULATOR_SLEEP_TIME: Final[float] = 0.01
+"""Sleep duration between camera simulator cycles."""
 
 # ============================================================
 # Matcher
@@ -104,7 +134,6 @@ CAMERA_SLEEP_TIME: Final[float] = 0.01
 
 MATCHER_SLEEP_TIME: Final[float] = 0.01
 """Sleep duration between matcher processing cycles."""
-
 
 # ============================================================
 # Color Detection
@@ -129,6 +158,34 @@ COLOR_DETECTION_COLORS: Final[dict] = {
         "upper1": [10, 255, 255],
         "lower2": [160, 80, 50],
         "upper2": [180, 255, 255],
+    },
+    "green": {
+        "lower1": [40, 50, 50],
+        "upper1": [80, 255, 255],
+    },
+    "blue": {
+        "lower1": [100, 150, 50],
+        "upper1": [140, 255, 255],
+    },
+    "yellow": {
+        "lower1": [20, 100, 100],
+        "upper1": [30, 255, 255],
+    },
+    "orange": {
+        "lower1": [10, 100, 20],
+        "upper1": [25, 255, 255],
+    },
+    "purple": {
+        "lower1": [130, 50, 50],
+        "upper1": [160, 255, 255],
+    },
+    "cyan": {
+        "lower1": [80, 50, 50],
+        "upper1": [100, 255, 255],
+    },
+    "pink": {
+        "lower1": [145, 50, 50],
+        "upper1": [170, 255, 255],
     },
 }
 """HSV color ranges used for color segmentation."""

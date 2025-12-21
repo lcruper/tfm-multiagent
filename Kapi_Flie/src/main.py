@@ -24,7 +24,6 @@ logging.basicConfig(
     handlers=[handler]
 )
 
-
 telemetry = DroneTelemetry(
     config.DRONE_IP, 
     config.DRONE_PORT, 
@@ -35,14 +34,14 @@ telemetry = DroneTelemetry(
     )
 )
 
-#camera = CameraCapture(
-#    config.CAMERA_STREAM_URL, 
-#    config.CAMERA_FLASH_URL
-#)
+camera = CameraCapture(
+    config.CAMERA_STREAM_URL, 
+    config.CAMERA_FLASH_URL
+)
 
-camera = CameraSimulator(None,None)
+cameraSimulator = CameraSimulator(None,None)
 
-matcher = Matcher(telemetry, camera)
+matcher = Matcher(telemetry, cameraSimulator)
 
 color_detector = ColorDetection(config.COLOR_DETECTION_COLOR, config.YOLO_MODEL_PATH)
 
@@ -50,7 +49,7 @@ viewer = Viewer()
 
 inspector = Drone(
     telemetry=telemetry,
-    camera=camera,
+    camera=cameraSimulator,
     matcher=matcher,
     color_detector=color_detector,
     viewer=viewer
@@ -60,7 +59,6 @@ executor = RobotDog(config.ROBOT_DOG_SPEED)
 
 planner = NearestNeighborPlanner()
 
-
 base_positions = [Point2D(5,5), Point2D(10, 10), Point2D(15, 15)] 
 controller = OperationController(
     inspector_robot=inspector, 
@@ -68,5 +66,6 @@ controller = OperationController(
     planner=planner, 
     base_positions=base_positions
 )
+
 visualizer = OperationVisualizer(controller)
 visualizer.start()

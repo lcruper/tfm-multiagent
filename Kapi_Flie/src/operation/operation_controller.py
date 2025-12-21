@@ -47,6 +47,7 @@ class OperationController:
 
         self.status: Status = Status.NOT_STARTED
         self.start_time: float = None
+        self.finished_time: float = None
 
         self.inspector_worker: InspectorWorker = InspectorWorker(inspector_robot, base_positions, self._queue, self.all_points, self._events)
         self.executor_worker: ExecutorWorker = ExecutorWorker(executor_robot, planner, len(base_positions), self._queue, self.all_points, self._events)
@@ -102,6 +103,7 @@ class OperationController:
         """
         with self._lock:
             if self.inspector_worker.status == Status.ALL_FINISHED and self.executor_worker.status == Status.ALL_FINISHED:
+                self.finished_time = time()
                 self.status = Status.FINISHED
                 self._logger.info("Operation finished.")
                 self._save_metrics_excel()

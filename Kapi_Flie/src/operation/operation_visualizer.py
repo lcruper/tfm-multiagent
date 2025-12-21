@@ -158,12 +158,6 @@ class OperationVisualizer:
                 executor_path.set_data(ex, ey)
 
             # Detected points
-            """
-            points = list(self.controller.all_points.keys())
-            if points:
-                coords = array([[p.x, p.y] for p in points])
-                colors = ['green' if self.controller.all_points[p][1] else 'red' for p in points]
-            """
             self._points_by_mission.clear()
             all_points = []
             colors = []
@@ -186,40 +180,59 @@ class OperationVisualizer:
                                        mission_id + 1 < len(base_positions))
 
             # Info panel
-            elapsed = time() - self.controller.start_time if self.controller.start_time else 0.0
+            if self.controller.status == Status.NOT_STARTED:
+                elapsed = 0.0
+            elif self.controller.status == Status.RUNNING:
+                elapsed = time() - self.controller.start_time
+            else: 
+                elapsed = self.controller.finished_time - self.controller.start_time 
+
             ins_dist = self._distance_traveled(self._inspector_positions)
             exe_dist = self._distance_traveled(self._executor_positions)
-            #points_text = "\n".join([f"• ({p.x:.2f},{p.y:.2f})" for p in points])
+
+            left_blocks = []
+            right_blocks = []
+            for mid in range(len(base_positions)):
+                pts = self._points_by_mission.get(mid, [])
+                block = [f"Mission {mid}: {len(pts)} points"]
+                for p in pts:
+                    block.append(f"• ({p.x:.2f}, {p.y:.2f})")
+                if mid % 2 == 0:
+                    left_blocks.append(block)
+                else:
+                    right_blocks.append(block)
 
             missions_text = ""
-            for mid in range(len(self._points_by_mission)):
-                pts = self._points_by_mission[mid]
-                missions_text += (
-                    f"\nMission {mid}\n"
-                    f"  Points: {len(pts)}\n"
-                    "\n".join([f"• ({p.x:.2f},{p.y:.2f})" for p in pts])
-            )
+            max_blocks = max(len(left_blocks), len(right_blocks))
+            for i in range(max_blocks):
+                left_block = left_blocks[i] if i < len(left_blocks) else []
+                right_block = right_blocks[i] if i < len(right_blocks) else []
+                max_lines = max(len(left_block), len(right_block))
+                for j in range(max_lines):
+                    left_line = left_block[j] if j < len(left_block) else ""
+                    right_line = right_block[j] if j < len(right_block) else ""
+                    missions_text += f"{left_line:<45} {right_line}\n"
+                missions_text += "\n"
                 
-            info = f"""
-            OPERATION:
-            - Time: {elapsed:.1f}s
-            - Operation Status: {self.controller.status.name}
+            info = f"""OPERATION:
+- Time: {elapsed:.1f}s
+- Operation Status: {self.controller.status.name}
 
-            DRONE:
-            - Drone Mission: {mission_id}
-            - Drone Mission Status: {self.controller.inspector_worker.status.name}
-            - Drone Position: x={ins_abs.x:.2f}, y={ins_abs.y:.2f}
-            - Drone Distance: {ins_dist:.2f}
+DRONE:
+- Drone Mission: {mission_id}
+- Drone Mission Status: {self.controller.inspector_worker.status.name}
+- Drone Position: x={ins_abs.x:.2f}, y={ins_abs.y:.2f}
+- Drone Distance: {ins_dist:.2f}
 
-            ROBOT DOG:
-            - Robot Dog Mission: {self.controller.executor_worker.mission_id}
-            - Robot Dog Mission Status: {self.controller.executor_worker.status.name}
-            - Robot Dog Position: x={exe_abs.x:.2f}, y={exe_abs.y:.2f}
-            - Robot Dog Distance: {exe_dist:.2f}
+ROBOT DOG:
+- Robot Dog Mission: {self.controller.executor_worker.mission_id}
+- Robot Dog Mission Status: {self.controller.executor_worker.status.name}
+- Robot Dog Position: x={exe_abs.x:.2f}, y={exe_abs.y:.2f}
+- Robot Dog Distance: {exe_dist:.2f}
 
-            POINTS DETECTED:
-            {missions_text}
-            """
+POINTS DETECTED:
+{missions_text}
+"""
             text_info.set_text(info)
             text_info.set_color('black')
 

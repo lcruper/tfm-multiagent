@@ -101,7 +101,7 @@ CAMERA_SLEEP_TIME: Final[float] = 0.01
 # Camera Simulator
 # ============================================================
 
-CAMERA_SIMULATOR_COLOR_PROBABILITY: Final[float] = 0.1
+CAMERA_SIMULATOR_COLOR_PROBABILITY: Final[float] = 0.3
 """Probability of generating a `COLOR_DETECTION_COLOR` object in the simulated camera frame."""
 
 CAMERA_SIMULATOR_COLOR_DICT: Final[dict] = {

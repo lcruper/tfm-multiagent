@@ -73,9 +73,6 @@ visualizer = OperationVisualizer(controller)
 visualizer.start()
 
 """
-Panel:
-    Mision
 Abort button (shutdown y abort status)
 Métricas: tiempos 
-Grabar operación
 """

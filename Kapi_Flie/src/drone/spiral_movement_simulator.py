@@ -2,9 +2,10 @@
 Spiral Movement Simulator Module
 --------------------------------
 
-This module implements a 2D spiral movement simulator.
+This module implements a 2D spiral movement simulator with constant linear speed.
 
-It generates (x, y) coordinates following a polar spiral pattern.
+It generates (x, y) coordinates following an Archimedean spiral:
+    r = rg * theta
 """
 
 import config
@@ -20,22 +21,24 @@ from interfaces.interfaces import IMovementSimulator
 
 class SpiralMovementSimulator(IMovementSimulator):
     """
-    Simulates 2D spiral movement.
+    Simulates 2D spiral movement with constant linear speed.
     """
 
-    def __init__(self, rg: float, w: float) -> None:
+    def __init__(self, rg: float, v: float) -> None:
         """
         Creates a SpiralMovementSimulator instance.
 
         Args:
-            rg (float): Radial growth per unit angle (in m/s)
-            w (float): Angular speed (in rad/s).
+            rg (float): Radial growth per unit angle (in m/rad)
+            v (float): Linear speed (in ms/s).
         """
         self.rg: float = rg
-        self.w: float = w
+        self.v: float = v
+
+        self._theta: float = 0.0
 
         self._active: bool = False
-        self._t0: Optional[float] = None
+        self._last_t: Optional[float] = None
 
         self._logger: logging.Logger = logging.getLogger("SpiralMovementSimulator")
 
@@ -49,8 +52,9 @@ class SpiralMovementSimulator(IMovementSimulator):
         if self._active:
             self._logger.warning("Already started.")
             return
+        self._theta = 0.0
+        self._last_t = time()
         self._active = True
-        self._t0 = time()
         self._logger.info("Started.")
 
     def stop(self) -> None:
@@ -61,7 +65,7 @@ class SpiralMovementSimulator(IMovementSimulator):
             self._logger.warning("Already stopped.")
             return
         self._active = False
-        self._t0 = None
+        self._last_t = None
         self._logger.info("Stopped.")
 
     def get_xy(self) -> Optional[Point2D]:
@@ -75,15 +79,21 @@ class SpiralMovementSimulator(IMovementSimulator):
             Optional[Point2D]: Current x and y coordinates.
             Returns None if the simulator is not active.
         """
-        if not self._active:
+        if not self._active or self._last_t is None:
             return None
 
-        t = time() - self._t0
+        now = time()
+        dt = now - self._last_t
+        self._last_t = now
 
-        theta = self.w * t
-        r = self.rg * theta
+        if dt <= 0.0:
+            return None
+        
+        dtheta = (self.v * dt) /  max(self.rg * (1.0 + self._theta**2)**0.5, 1e-6)
+        self._theta += dtheta
 
-        x = r * cos(theta) + uniform(-config.SPIRAL_SIMULATOR_JITTER, config.SPIRAL_SIMULATOR_JITTER)
-        y = r * sin(theta) + uniform(-config.SPIRAL_SIMULATOR_JITTER, config.SPIRAL_SIMULATOR_JITTER)
+        r = self.rg * self._theta
+        x = r * cos(self._theta) + uniform(-config.SPIRAL_SIMULATOR_JITTER, config.SPIRAL_SIMULATOR_JITTER)
+        y = r * sin(self._theta) + uniform(-config.SPIRAL_SIMULATOR_JITTER, config.SPIRAL_SIMULATOR_JITTER)
 
         return Point2D(x, y)

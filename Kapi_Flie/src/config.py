@@ -61,8 +61,8 @@ DRONE_UDP_HANDSHAKE_RETRY_DELAY: Final[float] = 0.5
 SPIRAL_SIMULATOR_RADIAL_GROWTH: Final[float] = 0.16
 """Radial growth rate (m/s) for spiral movement simulation."""
 
-SPIRAL_SIMULATOR_ANGULAR_SPEED: Final[float] = 0.25
-"""Angular velocity (rad/s) of the spiral movement."""
+SPIRAL_SIMULATOR_LINEAR_SPEED: Final[float] = 0.25
+"""Linear speed (m/s) of the spiral movement."""
 
 
 SPIRAL_SIMULATOR_JITTER: Final[float] = 0.02

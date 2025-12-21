@@ -32,7 +32,7 @@ telemetry = DroneTelemetry(
     config.LOCAL_PORT, 
     SpiralMovementSimulator(
         config.SPIRAL_SIMULATOR_RADIAL_GROWTH, 
-        config.SPIRAL_SIMULATOR_ANGULAR_SPEED
+        config.SPIRAL_SIMULATOR_LINEAR_SPEED
     )
 )
 
@@ -80,5 +80,4 @@ Carpeta con métricas
 Métricas: tiempos 
 Test y mockers
 Grabar operación
-Simulador espiral misma velocidad
 """

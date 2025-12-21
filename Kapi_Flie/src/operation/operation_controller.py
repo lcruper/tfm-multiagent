@@ -5,6 +5,7 @@ Operation Controller
 Coordinates the Inspector and Executor workers for an operation.
 """
 
+import json
 import os
 from time import time
 from queue import Queue
@@ -38,7 +39,7 @@ class OperationController:
             base_positions (List[Point2D]): Base positions for each mission.
         """        
         self._queue: Queue[Dict[Point2D, bool]] = Queue(maxsize=len(base_positions))
-        self.all_points: Dict[Point2D, (int, bool)] = {}
+        self.all_points: Dict[Point2D, (int, bool, time, time)] = {}
         self._events: OperationEvents = OperationEvents()
     
         self.inspector_robot: IRobot = inspector_robot
@@ -53,8 +54,6 @@ class OperationController:
         self.executor_worker: ExecutorWorker = ExecutorWorker(executor_robot, planner, len(base_positions), self._queue, self.all_points, self._events)
 
         self._lock: threading.Lock = threading.Lock()
-
-        self._metrics: List[Dict] = [{"a": 1}]  
 
         self._logger: logging.Logger = logging.getLogger("OperationController")
 
@@ -88,12 +87,6 @@ class OperationController:
         self._logger.info("Stopping current inspection...")
         self._events.trigger_stop_inspection()
 
-    def shutdown(self) -> None:
-        """Stops and safely shuts down the operation."""
-        self._logger.info("Shutting down operation...")
-        # TODO
-        self._logger.info("Operation shut down safely.")
-        
     # -------------------
     # Internal methods
     # -------------------
@@ -106,15 +99,69 @@ class OperationController:
                 self.finished_time = time()
                 self.status = Status.FINISHED
                 self._logger.info("Operation finished.")
-                self._save_metrics_excel()
+                self._save_metrics()
 
-    def _save_metrics_excel(self) -> None:
+    def _save_metrics(self) -> None:
         """
-        Saves the collected metrics to an Excel file.
+        Saves all the collected metrics to a JSON file.
         """
-        if not self._metrics:
-            self._logger.warning("No metrics to save.")
-            return
-        path = f"results/metrics_{datetime.fromtimestamp(self.start_time).strftime("%Y_%m_%d_%H_%M_%S")}.xlsx"
-        DataFrame(self._metrics).to_excel(path, index=False)
-        self._logger.info(f"Metrics saved to {os.path.abspath(path)}")
+        def ts_to_iso(ts: float) -> str:
+            return datetime.fromtimestamp(ts).isoformat() if ts else None
+
+        operation_data = {
+            "operation_start_time": ts_to_iso(self.start_time),
+            "operation_finished_time": ts_to_iso(self.finished_time),
+            "operation_duration": self.finished_time - self.start_time if self.finished_time else None,
+            "status": self.status.name,
+            "number_of_missions": len(self.base_positions),
+            "number_of_points": len(self.inspector_worker._all_points),
+            "missions": [],
+            "points": []
+        }
+
+        for mission_id, base_pos in enumerate(self.base_positions):
+            inspector_start, inspector_finish = self.inspector_worker.times[mission_id]
+            executor_start, executor_finish = self.executor_worker.times[mission_id]
+
+            operation_data["missions"].append({
+                "mission_id": mission_id,
+                "mission_base_position": {
+                    "x": base_pos.x, 
+                    "y": base_pos.y
+                },
+                "inspector_info": {
+                    "start_time": ts_to_iso(inspector_start),
+                    "finish_time": ts_to_iso(inspector_finish),
+                    "duration": inspector_finish - inspector_start,
+                    "relative_start_time": inspector_start - self.start_time,
+                    "relative_finish_time": inspector_finish - self.start_time
+                },
+                "executor_info": {
+                    "start_time": ts_to_iso(executor_start),
+                    "finish_time": ts_to_iso(executor_finish),
+                    "duration": executor_finish - executor_start,
+                    "relative_start_time": executor_start - self.start_time,
+                    "relative_finish_time": executor_finish - self.start_time
+                }
+            })
+
+
+        for point, (mission_id, processed, detected_time, finished_time) in self.inspector_worker._all_points.items():
+            operation_data["points"].append({
+                "point": {
+                    "x": point.x,
+                    "y": point.y
+                },
+                "mission_id": mission_id,
+                "detected_time": ts_to_iso(detected_time),
+                "inspected_time": ts_to_iso(finished_time),
+            })
+
+        timestamp = datetime.fromtimestamp(self.start_time).strftime("%Y_%m_%d_%H_%M_%S")
+        os.makedirs("results", exist_ok=True)
+        path = f"results/{timestamp}.json"
+
+        with open(path, "w") as f:
+            json.dump(operation_data, f, indent=4)
+
+        self._logger.info(f"Operation metrics saved to {os.path.abspath(path)}")

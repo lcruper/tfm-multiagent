@@ -12,6 +12,7 @@ import threading
 from typing import Dict, List, Callable
 from queue import Queue
 import logging
+from time import time
 import winsound
 
 import config
@@ -29,7 +30,7 @@ class InspectorWorker(threading.Thread):
     recording detected points, and synchronizing with operation events.
     """
 
-    def __init__(self, robot: IRobot, base_positions: List[Point2D], points_queue: Queue[Point2D], all_points: Dict[Point2D, (int, bool)], events: OperationEvents) -> None:
+    def __init__(self, robot: IRobot, base_positions: List[Point2D], points_queue: Queue[Point2D], all_points: Dict[Point2D, (int, bool, float, float)], events: OperationEvents) -> None:
         """
         Creates a InspectorWorker instance.
 
@@ -37,19 +38,22 @@ class InspectorWorker(threading.Thread):
             robot (IRobot): The robot to control.
             base_positions (List[Point2D]): List of base positions for missions.
             points_queue (Queue[Point2D]): Queue for detected points.
-            all_points (Dict[Point2D, (int, bool)]): Dictionary of all points detected across missions with their processed status.
+            all_points (Dict[Point2D, (int, bool, float, float)]): Dictionary of all points detected across missions with their processed status and timestamps when detected and inspected.
             events (OperationEvents): Shared operation synchronization events.
         """
         super().__init__(daemon=True)
         self._robot: IRobot = robot
         self._base_positions: List[Point2D] = base_positions
         self._points_queue: Queue[Point2D] = points_queue
-        self._all_points: Dict[Point2D, (int, bool)] = all_points
+        self._all_points: Dict[Point2D, (int, bool, float, float)] = all_points
         self._events: OperationEvents = events
 
         self._actual_points: List[Point2D] = []
         self.mission_id: int = 0
         self.status: Status = Status.NOT_STARTED
+
+        self._start_time_actual_mission: float = None
+        self.times: List[(float, float)] = []
 
         self._callback_onFinishAll: Callable[[], None] = None
 
@@ -83,7 +87,7 @@ class InspectorWorker(threading.Thread):
         with self._lock:
             if not self._is_too_close(abs_point):
                 self._actual_points.append(Point2D(abs_point.x, abs_point.y))
-                self._all_points[Point2D(abs_point.x, abs_point.y)] = (self.mission_id, False)
+                self._all_points[Point2D(abs_point.x, abs_point.y)] = (self.mission_id, False, time(), 0.0)
             else:
                 self._logger.info("Skipping point (too close) at %s in mission %d", abs_point, self.mission_id)
 
@@ -94,8 +98,11 @@ class InspectorWorker(threading.Thread):
         Stores collected points into the queue and clears the internal buffer.
         """
         with self._lock:
+            finish_time = time()
+            self.times.append((self._start_time_actual_mission, finish_time))
             self._logger.info("Finished mission %d with %d points", self.mission_id, len(self._actual_points))
             self.status = Status.FINISHED
+            self._start_time_actual_mission = None
             self._points_queue.put(list(self._actual_points))
             self._actual_points.clear()
 
@@ -131,6 +138,7 @@ class InspectorWorker(threading.Thread):
             self._events.clear_next_mission()
             self._logger.info("Starting mission %d", self.mission_id)
             self.status = Status.RUNNING
+            self._start_time_actual_mission = time() 
             self._events.clear_stop_inspection()
             self._robot.start_inspection()
             self._events.wait_for_stop_inspection()

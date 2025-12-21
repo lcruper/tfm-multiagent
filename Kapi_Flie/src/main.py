@@ -25,7 +25,6 @@ logging.basicConfig(
 )
 
 
-
 telemetry = DroneTelemetry(
     config.DRONE_IP, 
     config.DRONE_PORT, 
@@ -71,8 +70,3 @@ controller = OperationController(
 )
 visualizer = OperationVisualizer(controller)
 visualizer.start()
-
-"""
-Abort button (shutdown y abort status)
-Métricas: tiempos 
-"""

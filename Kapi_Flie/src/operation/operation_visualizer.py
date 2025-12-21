@@ -118,12 +118,7 @@ class OperationVisualizer:
         next_button = Button(ax_next, "Next mission")
         next_button.on_clicked(lambda event: self.controller.next_mission())
         ax_next.set_visible(False)
-
-        ax_abort = plt.axes([0.10, 0.01, 0.1, 0.05])
-        abort_button = Button(ax_abort, "Abort Operation")
-        abort_button.on_clicked(lambda event: threading.Thread(target=self.controller.shutdown, daemon=True).start())
-        ax_abort.set_visible(True)
-
+        
         # ----------------------------
         # Animation update
         # ----------------------------
@@ -162,7 +157,7 @@ class OperationVisualizer:
             all_points = []
             colors = []
 
-            for point, (mid, reached) in self.controller.all_points.items():
+            for point, (mid, reached, _, _) in self.controller.all_points.items():
                 self._points_by_mission.setdefault(mid, []).append(point)
                 all_points.append(point)
                 colors.append("green" if reached else "red")

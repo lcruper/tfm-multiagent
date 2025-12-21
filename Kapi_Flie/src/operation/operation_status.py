@@ -19,5 +19,3 @@ class Status(Enum):
     """Finished successfully."""
     ALL_FINISHED = auto()
     """All finished."""
-    ABORTED = auto()
-    """Aborted before completion."""

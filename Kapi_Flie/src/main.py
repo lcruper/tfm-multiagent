@@ -76,7 +76,6 @@ visualizer.start()
 Panel:
     Mision
 Abort button (shutdown y abort status)
-Carpeta con métricas
 Métricas: tiempos 
 Grabar operación
 """

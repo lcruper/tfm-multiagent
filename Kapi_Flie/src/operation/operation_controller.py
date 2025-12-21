@@ -5,11 +5,14 @@ Operation Controller
 Coordinates the Inspector and Executor workers for an operation.
 """
 
+import os
 from time import time
 from queue import Queue
 import logging
+from pandas import DataFrame
 from typing import List, Dict
 import threading
+from datetime import datetime
 
 from operation.inspector_worker import InspectorWorker
 from operation.executor_worker import ExecutorWorker
@@ -49,6 +52,8 @@ class OperationController:
         self.executor_worker: ExecutorWorker = ExecutorWorker(executor_robot, planner, len(base_positions), self._queue, self.all_points, self._events)
 
         self._lock: threading.Lock = threading.Lock()
+
+        self._metrics: List[Dict] = [{"a": 1}]  
 
         self._logger: logging.Logger = logging.getLogger("OperationController")
 
@@ -96,6 +101,18 @@ class OperationController:
         Callback triggered when all missions are finished.
         """
         with self._lock:
-            if self.inspector_worker.mission_id == len(self.base_positions)-1 and self.executor_worker.mission_id == len(self.base_positions)-1:
+            if self.inspector_worker.status == Status.ALL_FINISHED and self.executor_worker.status == Status.ALL_FINISHED:
                 self.status = Status.FINISHED
                 self._logger.info("Operation finished.")
+                self._save_metrics_excel()
+
+    def _save_metrics_excel(self) -> None:
+        """
+        Saves the collected metrics to an Excel file.
+        """
+        if not self._metrics:
+            self._logger.warning("No metrics to save.")
+            return
+        path = f"results/metrics_{datetime.fromtimestamp(self.start_time).strftime("%Y_%m_%d_%H_%M_%S")}.xlsx"
+        DataFrame(self._metrics).to_excel(path, index=False)
+        self._logger.info(f"Metrics saved to {os.path.abspath(path)}")

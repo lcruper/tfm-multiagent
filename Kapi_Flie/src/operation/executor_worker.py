@@ -98,7 +98,7 @@ class ExecutorWorker(threading.Thread):
         Waits for the next_mission event, plans the path, starts inspection, 
         and waits for the stop_inspection event before finishing the mission.
         """
-        while self.mission_id < self._n_missions:
+        while self.mission_id < self._n_missions - 1:
             points = self._points_queue.get()
             if self.status == Status.FINISHED:
                 self.mission_id += 1
@@ -110,6 +110,7 @@ class ExecutorWorker(threading.Thread):
             self._events.wait_for_executor_done()
             self._robot.stop_inspection()
 
+        self.status = Status.ALL_FINISHED
+        self._logger.info("All missions finished.")
         if self._callback_onFinishAll:
-            self._logger.info("All missions completed.")
             self._callback_onFinishAll()

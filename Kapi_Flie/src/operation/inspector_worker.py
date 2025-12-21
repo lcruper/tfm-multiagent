@@ -136,8 +136,10 @@ class InspectorWorker(threading.Thread):
             self._events.wait_for_stop_inspection()
             self._robot.stop_inspection()
             
+        self.status = Status.ALL_FINISHED
+        self._logger.info("All missions finished.")
+        
         if self._callback_onFinishAll:
-            self._logger.info("All missions completed.")
             self._callback_onFinishAll()
 
     def start_next_mission(self) -> None:

@@ -10,7 +10,6 @@ import os
 from time import time
 from queue import Queue
 import logging
-from pandas import DataFrame
 from typing import List, Dict
 import threading
 from datetime import datetime
@@ -146,7 +145,7 @@ class OperationController:
             })
 
 
-        for point, (mission_id, processed, detected_time, finished_time) in self.inspector_worker._all_points.items():
+        for point, (mission_id, _, detected_time, finished_time) in self.inspector_worker._all_points.items():
             operation_data["points"].append({
                 "point": {
                     "x": point.x,
@@ -155,6 +154,9 @@ class OperationController:
                 "mission_id": mission_id,
                 "detected_time": ts_to_iso(detected_time),
                 "inspected_time": ts_to_iso(finished_time),
+                "telemetry": {
+                    "temperature": self.executor_worker.points_temperatures.get(point, None)
+                },
             })
 
         timestamp = datetime.fromtimestamp(self.start_time).strftime("%Y_%m_%d_%H_%M_%S")

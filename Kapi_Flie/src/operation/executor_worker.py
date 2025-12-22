@@ -44,6 +44,7 @@ class ExecutorWorker(threading.Thread):
         self._n_missions: int = n_missions
         self._points_queue: Queue[Dict[Point2D, bool]] = points_queue
         self._all_points: Dict[Point2D, (int, bool, float, float)] = all_points
+        self.points_temperatures: Dict[Point2D, float] = {}
         self._events: OperationEvents = events
 
         self.mission_id: int = 0
@@ -81,6 +82,7 @@ class ExecutorWorker(threading.Thread):
                 mission_idx, _, _, _ = self._all_points[point]
                 if mission_idx == self.mission_id:
                     self._all_points[point] = (mission_idx, True, self._all_points[point][2], time())
+                    self.points_temperatures[point] = self._robot.get_telemetry().get("temperature", None)
 
     def _on_finish(self) -> None:
         """

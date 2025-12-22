@@ -10,7 +10,8 @@ import logging
 import threading
 import time
 from math import hypot
-from typing import List, Optional, Callable
+from typing import Dict, List, Optional, Callable
+from numpy.random import normal
 
 import config
 from interfaces.interfaces import IRobot
@@ -107,10 +108,29 @@ class RobotDog(IRobot):
             Point2D: Current position as Point2D.   
         """
         return Point2D(self._current_position.x, self._current_position.y)  
+    
+    def get_telemetry(self) -> Optional[Dict[str, float]]:
+        """
+        Retrieves the current telemetry data of the robot. In this case, it returns the current temperature.
+
+        Returns:
+            Optional[Dict[str, float]]: Current telemetry data, or None if unavailable.
+        """
+        return {"temperature": self._get_temperature()}
 
     # ---------------------------------------------------
     # Internal methods
     # ---------------------------------------------------
+    def _get_temperature(self) -> float:
+        """
+        Get the current temperature of the ambient environment.
+    
+        It simulates temperature readings using a normal distribution.
+        Returns:
+            float: Current temperature in Celsius.
+        """
+        return normal(config.ROBOT_DOG_MEAN_TEMPERATURE, config.ROBOT_DOG_TEMPERATURE_STDDEV)
+    
     def _move(self) -> None:
         """
         Internal movement loop.

@@ -243,6 +243,11 @@ ROBOT_DOG_REACHED_TOLERANCE: Final[float] = 0.05
 ROBOT_SLEEP_TIME: Final[float] = 0.1
 """Sleep duration between robot dog movement steps."""
 
+ROBOT_DOG_MEAN_TEMPERATURE: Final[float] = 25.0
+"""Mean ambient temperature measured by the robot dog (Celsius)."""
+
+ROBOT_DOG_TEMPERATURE_STDDEV: Final[float] = 5.0
+"""Standard deviation of ambient temperature measured by the robot dog (Celsius)."""
 
 # ============================================================
 # Operation

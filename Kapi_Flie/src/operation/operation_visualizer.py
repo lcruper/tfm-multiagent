@@ -12,7 +12,6 @@ from matplotlib.widgets import Button
 from numpy import array
 from time import time
 from typing import List, Dict
-import threading
 
 import config
 from operation.operation_status import Status
@@ -191,7 +190,10 @@ class OperationVisualizer:
                 pts = self._points_by_mission.get(mid, [])
                 block = [f"Mission {mid}: {len(pts)} points"]
                 for p in pts:
-                    block.append(f"• ({p.x:.2f}, {p.y:.2f})")
+                    if p in self.controller.executor_worker.points_temperatures:
+                        block.append(f"• ({p.x:.2f}, {p.y:.2f}) -> {self.controller.executor_worker.points_temperatures[p]:.2f}°C")
+                    else:
+                        block.append(f"• ({p.x:.2f}, {p.y:.2f})")
                 if mid % 2 == 0:
                     left_blocks.append(block)
                 else:

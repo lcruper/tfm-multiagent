@@ -7,7 +7,7 @@ Provides a unified API to start/stop inspections and set callbacks for points de
 """
 
 import logging
-from typing import List, Optional, Callable
+from typing import Dict, List, Optional, Callable
 
 from interfaces.interfaces import ICamera, ITelemetry, IRobot
 from drone.matcher import Matcher
@@ -130,6 +130,15 @@ class Drone(IRobot):
                 return Point2D(pos.x, pos.y)
         except Exception as e:
             self._logger.error("Failed to get current position: %s", e)
+        return None
+    
+    def get_telemetry(self) -> Optional[Dict[str, float]]:
+        """
+        Retrieves the current telemetry data of the drone. Not implemented.
+        
+        Returns:
+            Optional[Dict[str, float]]: Current telemetry data, or None if unavailable.
+        """
         return None
 
     def get_detected_points(self) -> List[Point2D]:

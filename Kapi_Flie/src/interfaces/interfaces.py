@@ -7,7 +7,7 @@ key components.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Callable
+from typing import Dict, List, Optional, Callable
 
 from structures.structures import Frame, FrameWithTelemetry, Point2D, TelemetryData
 
@@ -178,6 +178,15 @@ class IRobot(ABC):
 
         Returns:
             Optional[Point2D]: Current position, or None if unavailable.
+        """
+        pass
+
+    def get_telemetry(self) -> Optional[Dict[str, float]]:
+        """
+        Retrieves the current telemetry data of the robot.
+
+        Returns:
+            Optional[Dict[str, float]]: Current telemetry data, or None if unavailable.
         """
         pass
 

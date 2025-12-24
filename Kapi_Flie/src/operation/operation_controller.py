@@ -2,7 +2,7 @@
 Operation Controller
 -----------------------
 
-Coordinates the Inspector and Executor workers for an operation.
+Coordinates the explorer and inspector workers for an operation.
 """
 
 import json
@@ -14,8 +14,8 @@ from typing import List, Dict
 import threading
 from datetime import datetime
 
+from operation.explorer_worker import ExplorerWorker
 from operation.inspector_worker import InspectorWorker
-from operation.executor_worker import ExecutorWorker
 from operation.operation_events import OperationEvents
 from operation.operation_status import Status
 from interfaces.interfaces import IPathPlanner, IRobot
@@ -24,17 +24,17 @@ from structures.structures import Point2D
 
 class OperationController:
     """
-    Controller for coordinating inspector and executor threads.
+    Controller for coordinating explorer and inspector threads.
     """
 
-    def __init__(self, inspector_robot: IRobot, executor_robot: IRobot, planner: IPathPlanner, base_positions_path: str) -> None:
+    def __init__(self, explorer_robot: IRobot, inspector_robot: IRobot, planner: IPathPlanner, base_positions_path: str) -> None:
         """
         Creates an OperationController instance.
 
         Args:
-            inspector_robot (IRobot): Robot for inspection.
-            executor_robot (IRobot): Robot for executing points.
-            planner (IPathPlanner): Path planner for executor robot.
+            explorer_robot (IRobot): Robot for inspection.
+            inspector_robot (IRobot): Robot for executing points.
+            planner (IPathPlanner): Path planner for inspector robot.
             base_positions (List[Point2D]): Base positions for each mission.
         """        
         self.base_positions: List[Point2D] = self._load_base_positions(base_positions_path)
@@ -43,15 +43,15 @@ class OperationController:
         self.all_points: Dict[Point2D, (int, bool, time, time)] = {}
         self._events: OperationEvents = OperationEvents()
     
+        self.explorer_robot: IRobot = explorer_robot
         self.inspector_robot: IRobot = inspector_robot
-        self.executor_robot: IRobot = executor_robot
 
         self.status: Status = Status.NOT_STARTED
         self.start_time: float = None
         self.finished_time: float = None
 
-        self.inspector_worker: InspectorWorker = InspectorWorker(inspector_robot, self.base_positions, self._queue, self.all_points, self._events)
-        self.executor_worker: ExecutorWorker = ExecutorWorker(executor_robot, planner, len(self.base_positions), self._queue, self.all_points, self._events)
+        self.explorer_worker: ExplorerWorker = ExplorerWorker(explorer_robot, self.base_positions, self._queue, self.all_points, self._events)
+        self.inspector_worker: InspectorWorker = InspectorWorker(inspector_robot, planner, len(self.base_positions), self._queue, self.all_points, self._events)
 
         self._lock: threading.Lock = threading.Lock()
 
@@ -62,14 +62,14 @@ class OperationController:
     # -------------------
     def start(self) -> None:
         """
-        Starts both inspector and executor threads and signals the first mission.
+        Starts both explorer and inspector threads and signals the first mission.
         """
         self.start_time = time()
+        self.explorer_worker._callback_onFinishAll = self._on_all_missions_finished
         self.inspector_worker._callback_onFinishAll = self._on_all_missions_finished
-        self.executor_worker._callback_onFinishAll = self._on_all_missions_finished
         self.status = Status.RUNNING
+        self.explorer_worker.start()
         self.inspector_worker.start()
-        self.executor_worker.start()
         self._logger.info("Operation started. Triggering first mission...")
         self._events.trigger_next_mission()
 
@@ -78,11 +78,11 @@ class OperationController:
         Signals to start the next mission.
         """
         self._logger.info("Triggering next mission...")
-        self.inspector_worker.start_next_mission()
+        self.explorer_worker.start_next_mission()
 
     def stop_inspection(self) -> None:
         """
-        Signals the inspector to stop the current mission.
+        Signals the explorer to stop the current mission.
         """
         self._logger.info("Stopping current inspection...")
         self._events.trigger_stop_inspection()
@@ -109,7 +109,7 @@ class OperationController:
         Callback triggered when all missions are finished.
         """
         with self._lock:
-            if self.inspector_worker.status == Status.ALL_FINISHED and self.executor_worker.status == Status.ALL_FINISHED:
+            if self.explorer_worker.status == Status.ALL_FINISHED and self.inspector_worker.status == Status.ALL_FINISHED:
                 self.finished_time = time()
                 self.status = Status.FINISHED
                 self._logger.info("Operation finished.")
@@ -123,19 +123,19 @@ class OperationController:
             return datetime.fromtimestamp(ts).isoformat() if ts else None
 
         operation_data = {
-            "operation_start_time": ts_to_iso(self.start_time),
-            "operation_finished_time": ts_to_iso(self.finished_time),
+            "operation_start_timestamp": ts_to_iso(self.start_time),
+            "operation_finished_timestamp": ts_to_iso(self.finished_time),
             "operation_duration": self.finished_time - self.start_time if self.finished_time else None,
             "status": self.status.name,
             "number_of_missions": len(self.base_positions),
-            "number_of_points": len(self.inspector_worker._all_points),
+            "number_of_points": len(self.explorer_worker._all_points),
             "missions": [],
             "points": []
         }
 
         for mission_id, base_pos in enumerate(self.base_positions):
+            explorer_start, explorer_finish = self.explorer_worker.times[mission_id]
             inspector_start, inspector_finish = self.inspector_worker.times[mission_id]
-            executor_start, executor_finish = self.executor_worker.times[mission_id]
 
             operation_data["missions"].append({
                 "mission_id": mission_id,
@@ -143,34 +143,36 @@ class OperationController:
                     "x": base_pos.x, 
                     "y": base_pos.y
                 },
+                "explorer_info": {
+                    "start_timestamp": ts_to_iso(explorer_start),
+                    "finish_timestamp": ts_to_iso(explorer_finish),
+                    "duration": explorer_finish - explorer_start,
+                    "relative_start_time": explorer_start - self.start_time,
+                    "relative_finish_time": explorer_finish - self.start_time
+                },
                 "inspector_info": {
-                    "start_time": ts_to_iso(inspector_start),
-                    "finish_time": ts_to_iso(inspector_finish),
+                    "start_timestamp": ts_to_iso(inspector_start),
+                    "finish_timestamp": ts_to_iso(inspector_finish),
                     "duration": inspector_finish - inspector_start,
                     "relative_start_time": inspector_start - self.start_time,
                     "relative_finish_time": inspector_finish - self.start_time
-                },
-                "executor_info": {
-                    "start_time": ts_to_iso(executor_start),
-                    "finish_time": ts_to_iso(executor_finish),
-                    "duration": executor_finish - executor_start,
-                    "relative_start_time": executor_start - self.start_time,
-                    "relative_finish_time": executor_finish - self.start_time
                 }
             })
 
 
-        for point, (mission_id, _, detected_time, finished_time) in self.inspector_worker._all_points.items():
+        for point, (mission_id, _, detected_time, finished_time) in self.explorer_worker._all_points.items():
             operation_data["points"].append({
                 "point": {
                     "x": point.x,
                     "y": point.y
                 },
                 "mission_id": mission_id,
-                "detected_time": ts_to_iso(detected_time),
-                "inspected_time": ts_to_iso(finished_time),
+                "detected_timestamp": ts_to_iso(detected_time),
+                "detected_relative_time": detected_time - self.start_time,
+                "inspected_timestamp": ts_to_iso(finished_time),
+                "inspected_relative_time": finished_time - self.start_time,
                 "telemetry": {
-                    "temperature": self.executor_worker.points_temperatures.get(point, None)
+                    "temperature": self.inspector_worker.points_temperatures.get(point, None)
                 },
             })
 

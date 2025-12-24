@@ -13,7 +13,7 @@ class OperationEvents:
     Container for threading events used during an operation execution.
 
     These events allow safe synchronization between the operation controller and 
-    mission executors.
+    mission inspectors.
     """
 
     def __init__(self) -> None:
@@ -24,8 +24,8 @@ class OperationEvents:
         """Event to signal stopping the inspection process."""
         self._next_mission: threading.Event = threading.Event()
         """Event to signal starting the next mission."""
-        self._executor_done: threading.Event = threading.Event()
-        """Event to signal that the executor has finished its mission."""
+        self._inspector_done: threading.Event = threading.Event()
+        """Event to signal that the inspector has finished its mission."""
 
     def trigger_stop_inspection(self) -> None:
         """
@@ -39,11 +39,11 @@ class OperationEvents:
         """
         self._next_mission.set()
 
-    def trigger_executor_done(self) -> None:
+    def trigger_inspector_done(self) -> None:
         """
-        Triggers the executor done event.
+        Triggers the inspector done event.
         """
-        self._executor_done.set()
+        self._inspector_done.set()
 
     def clear_stop_inspection(self) -> None:
         """
@@ -57,11 +57,11 @@ class OperationEvents:
         """
         self._next_mission.clear()  
 
-    def clear_executor_done(self) -> None:
+    def clear_inspector_done(self) -> None:
         """
-        Clears the executor done event.
+        Clears the inspector done event.
         """
-        self._executor_done.clear() 
+        self._inspector_done.clear() 
 
     def wait_for_stop_inspection(self) -> None:
         """
@@ -75,11 +75,11 @@ class OperationEvents:
         """
         self._next_mission.wait()
 
-    def wait_for_executor_done(self) -> None:
+    def wait_for_inspector_done(self) -> None:
         """
-        Blocks until the executor done event is set.
+        Blocks until the inspector done event is set.
         """
-        self._executor_done.wait()
+        self._inspector_done.wait()
 
 
     

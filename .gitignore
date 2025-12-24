@@ -53,6 +53,7 @@ build/
 # YOLO models and large binaries
 yoloModels/
 results/
+input/
 *.pt
 *.weights
 

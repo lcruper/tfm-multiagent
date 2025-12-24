@@ -46,7 +46,7 @@ color_detector = ColorDetection(config.COLOR_DETECTION_COLOR, config.YOLO_MODEL_
 
 viewer = Viewer()
 
-inspector = Drone(
+explorer = Drone(
     telemetry=telemetry,
     camera=cameraSimulator,
     matcher=matcher,
@@ -54,13 +54,13 @@ inspector = Drone(
     viewer=viewer
 ) 
 
-executor = RobotDog(config.ROBOT_DOG_SPEED)
+inspector = RobotDog(config.ROBOT_DOG_SPEED)
 
 planner = NearestNeighborPlanner()
 
 controller = OperationController(
+    explorer_robot=explorer, 
     inspector_robot=inspector, 
-    executor_robot=executor, 
     planner=planner, 
     base_positions_path=config.BASE_POSITIONS_PATH
 )

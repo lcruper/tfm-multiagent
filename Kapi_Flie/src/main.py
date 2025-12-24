@@ -11,7 +11,6 @@ from operation.operation_controller import OperationController
 from operation.operation_visualizer import OperationVisualizer
 from utils.logs import ColoredFormatter, LoggerNameFilter
 from planners.nearest_neighbor_planner import NearestNeighborPlanner
-from structures.structures import Point2D
 import logging
 
 import config
@@ -59,12 +58,11 @@ executor = RobotDog(config.ROBOT_DOG_SPEED)
 
 planner = NearestNeighborPlanner()
 
-base_positions = [Point2D(5,5), Point2D(10, 10), Point2D(15, 15)] 
 controller = OperationController(
     inspector_robot=inspector, 
     executor_robot=executor, 
     planner=planner, 
-    base_positions=base_positions
+    base_positions_path=config.BASE_POSITIONS_PATH
 )
 
 visualizer = OperationVisualizer(controller)

@@ -27,7 +27,7 @@ class OperationController:
     Controller for coordinating inspector and executor threads.
     """
 
-    def __init__(self, inspector_robot: IRobot, executor_robot: IRobot, planner: IPathPlanner, base_positions: List[Point2D]) -> None:
+    def __init__(self, inspector_robot: IRobot, executor_robot: IRobot, planner: IPathPlanner, base_positions_path: str) -> None:
         """
         Creates an OperationController instance.
 
@@ -37,20 +37,21 @@ class OperationController:
             planner (IPathPlanner): Path planner for executor robot.
             base_positions (List[Point2D]): Base positions for each mission.
         """        
-        self._queue: Queue[Dict[Point2D, bool]] = Queue(maxsize=len(base_positions))
+        self.base_positions: List[Point2D] = self._load_base_positions(base_positions_path)
+    
+        self._queue: Queue[Dict[Point2D, bool]] = Queue(maxsize=len(self.base_positions))
         self.all_points: Dict[Point2D, (int, bool, time, time)] = {}
         self._events: OperationEvents = OperationEvents()
     
         self.inspector_robot: IRobot = inspector_robot
         self.executor_robot: IRobot = executor_robot
-        self.base_positions: List[Point2D] = base_positions
 
         self.status: Status = Status.NOT_STARTED
         self.start_time: float = None
         self.finished_time: float = None
 
-        self.inspector_worker: InspectorWorker = InspectorWorker(inspector_robot, base_positions, self._queue, self.all_points, self._events)
-        self.executor_worker: ExecutorWorker = ExecutorWorker(executor_robot, planner, len(base_positions), self._queue, self.all_points, self._events)
+        self.inspector_worker: InspectorWorker = InspectorWorker(inspector_robot, self.base_positions, self._queue, self.all_points, self._events)
+        self.executor_worker: ExecutorWorker = ExecutorWorker(executor_robot, planner, len(self.base_positions), self._queue, self.all_points, self._events)
 
         self._lock: threading.Lock = threading.Lock()
 
@@ -89,6 +90,20 @@ class OperationController:
     # -------------------
     # Internal methods
     # -------------------
+    def _load_base_positions(self, path: str) -> List[Point2D]:
+        """
+        Loads base positions from a JSON file.
+
+        Args:
+            path (str): Path to the JSON file.
+        Returns:
+            List[Point2D]: List of base positions.
+        """
+        with open(path, "r") as f:
+            data = json.load(f)
+        base_positions = [Point2D(pos["x"], pos["y"]) for pos in data["base_positions"]]
+        return base_positions
+    
     def _on_all_missions_finished(self) -> None:
         """
         Callback triggered when all missions are finished.

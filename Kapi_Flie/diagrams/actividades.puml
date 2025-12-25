@@ -1,0 +1,46 @@
+@startuml
+skinparam ConditionEndStyle hline
+
+
+|Operación|
+start
+:Iniciar operación;
+
+while (Quedan misiones por ejecutar) is (sí)
+    :Seleccionar misión;
+    |Fase de exploración|
+    :Iniciar fase de exploración;
+    :Ir a estación base;
+
+    while (Quedan zonas por explorar) is (sí)
+        :Explorar zona;
+        :Detectar puntos de interés;
+        if (Punto de interés detectado) then (sí)
+            :Almacenar punto de interés;
+        endif
+    endwhile (no)
+    split
+        |Fase de exploración|
+        :Regresar a estación base;
+        :Finalizar misión de exploración;
+    split again
+        :Enviar puntos de interés;
+        |Fase de inspección|
+        :Recibir puntos de interés;
+        while (Inspector ocupado) is (sí)
+            :Esperar a que termine misiones anteriores;
+        endwhile (no)
+        :Iniciar fase de inspección;
+        :Planificar ruta;
+        while (Quedan puntos por inspeccionar) is (sí)
+            :Desplazarse al punto;
+            :Inspeccionar punto;
+        endwhile (no)
+        :Finalizar fase de inspección;
+        detach
+    end split
+endwhile (no)
+|Operación|
+: Finalizar operación;
+stop
+@enduml

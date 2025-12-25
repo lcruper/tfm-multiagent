@@ -1,0 +1,72 @@
+@startuml
+left to right direction
+
+skinparam rectangle {
+  Shadowing true
+  BackgroundColor White
+  BorderColor Black
+  FontColor Black
+  BorderThickness 1
+}
+skinparam rectangle<<Sistema>> {
+}
+skinparam rectangle<<Estructura>> {
+}
+skinparam rectangle<<Espacio>> {
+}
+skinparam rectangle<<Plataforma>> {
+  BorderStyle dashed
+}
+
+together {
+  rectangle "Sistema Multiagente" <<Sistema>> as Sistema
+
+  rectangle "Agente Explorador" <<Sistema>>
+  rectangle "Agente Inspector" <<Sistema>>
+
+  rectangle "Dron" <<Plataforma>>
+  rectangle "Robot Cuadrúpedo" <<Plataforma>>
+}
+
+together {
+  rectangle "Operación" <<Estructura>>
+  rectangle "Misión" <<Estructura>>
+}
+
+together {
+  rectangle "Fase de Exploración" <<Estructura>>
+  rectangle "Fase de Inspección" <<Estructura>>
+}
+
+together {
+  rectangle "Terreno" <<Espacio>>
+  rectangle "Región" <<Espacio>>
+  rectangle "Estación Base" <<Espacio>>
+  rectangle "Punto de Interés" <<Espacio>>
+}
+
+Sistema --> "Agente Explorador" : está compuesto por
+Sistema --> "Agente Inspector" : está compuesto por
+
+"Agente Explorador" --> Dron : se implementa mediante
+"Agente Inspector" --> "Robot Cuadrúpedo" : se implementa mediante
+
+Sistema --> Operación : ejecuta
+Operación --> Terreno : se realiza sobre
+Operación --> Misión : se divide en
+
+Misión --> Región : se realiza sobre
+Misión --> "Estación Base" : tiene asociada
+Misión --> "Fase de Exploración" : consta de
+Misión --> "Fase de Inspección" : consta de
+
+"Fase de Exploración" --> "Punto de Interés" : detecta y localiza
+"Fase de Inspección" --> "Punto de Interés" : actúa sobre
+
+"Agente Explorador" --> "Fase de Exploración" : ejecuta
+"Agente Inspector" --> "Fase de Inspección" : ejecuta
+
+Sistema -[hidden]-> Operación
+Operación -[hidden]-> "Fase de Inspección"
+
+@enduml

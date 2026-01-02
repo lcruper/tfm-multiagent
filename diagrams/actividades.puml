@@ -1,6 +1,11 @@
 @startuml
 skinparam ConditionEndStyle hline
 
+skinparam activity {
+  BorderStyle solid
+  BorderColor #000000ff
+  BackgroundColor #ffffffff
+}
 
 |Operación|
 start

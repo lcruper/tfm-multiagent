@@ -1,0 +1,80 @@
+@startuml
+left to right direction
+
+skinparam rectangle<<Sistema>> {
+  BorderStyle solid
+  BorderColor #000000ff
+  BackgroundColor #ffffffff
+  RoundCorner 20
+}
+
+skinparam rectangle<<Estructura>> {
+  BorderStyle solid
+  BorderColor #000000ff
+  BackgroundColor #ffffffff
+  RoundCorner 20
+}
+
+skinparam rectangle<<Espacio>> {
+  BorderStyle solid
+  BorderColor #000000ff
+  BackgroundColor #ffffffff
+  RoundCorner 20
+}
+
+skinparam rectangle<<Plataforma>> {
+  BorderStyle dashed
+  BorderColor #000000ff
+  BackgroundColor #ffffffff
+  RoundCorner 20
+}
+
+together {
+  rectangle "Sistema Multiagente" <<Sistema>> 
+  rectangle "Agente Explorador" <<Sistema>>
+  rectangle "Agente Inspector" <<Sistema>>
+  rectangle "Dron" <<Plataforma>>
+  rectangle "Robot Cuadrúpedo" <<Plataforma>>
+}
+
+together {
+  rectangle "Operación" <<Estructura>>
+  rectangle "Misión" <<Estructura>>
+}
+
+together {
+  rectangle "Fase de Exploración" <<Estructura>>
+  rectangle "Fase de Inspección" <<Estructura>>
+}
+
+together {
+  rectangle "Terreno" <<Espacio>>
+  rectangle "Región" <<Espacio>>
+  rectangle "Estación Base" <<Espacio>>
+  rectangle "Punto de Interés" <<Espacio>>
+}
+
+"Sistema Multiagente" --> "Agente Inspector" : consta de
+"Agente Inspector" --> "Robot Cuadrúpedo" : se implementa mediante
+"Sistema Multiagente" --> "Agente Explorador" : consta de
+"Agente Explorador" --> Dron : se implementa mediante
+
+"Sistema Multiagente" --> Operación : ejecuta
+Operación --> Misión : se divide en
+Misión --> "Fase de Inspección" : consta de
+Misión --> "Fase de Exploración" : consta de
+
+"Agente Inspector" --> "Fase de Inspección" : ejecuta
+"Agente Explorador" --> "Fase de Exploración" : ejecuta
+
+"Fase de Inspección" --> "Punto de Interés" : actúa sobre
+"Fase de Exploración" --> "Punto de Interés" : detecta y localiza
+
+Operación --> Terreno : se realiza sobre
+Misión --> Región : se realiza sobre
+
+Terreno --> Región: se divide en
+Región --> "Estación Base": tiene asociada
+Región --> "Punto de Interés": contiene
+
+@enduml

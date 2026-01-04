@@ -1,0 +1,101 @@
+@startuml
+
+skinparam rectangle {
+  BorderStyle solid
+  BorderColor #000000ff
+  BackgroundColor #ffffffff
+}
+
+skinparam rectangle<<NotUsed>>{
+  BorderStyle dashed
+  BorderColor #000000ff
+  BackgroundColor #ffffffff
+}
+
+' Nivel 0
+rectangle "." as root
+
+' Nivel 1: components
+rectangle "components" as comp
+root --> comp
+
+' Nivel 1: main
+rectangle "main" as main
+root --> main
+
+' Nivel 2: components
+rectangle "config" as config
+rectangle "core" as core
+rectangle "drivers" as drivers
+rectangle "lib" as lib
+rectangle "platform" as platform
+
+comp --> config
+comp --> core
+comp --> drivers
+comp --> lib
+comp --> platform
+
+' Nivel 3: core
+rectangle "crazyflie" as crazy
+core --> crazy
+
+' Nivel 3: drivers
+rectangle "deck" as deck
+rectangle "general" as general
+rectangle "i2c_bus" as i2c_bus
+rectangle "i2c_devices" as i2c_dev
+rectangle "spi_devices" <<NotUsed>> as spi_dev
+
+drivers --> deck
+drivers --> general
+drivers --> i2c_bus
+drivers --> i2c_dev
+drivers --> spi_dev
+
+' Nivel 3: lib
+rectangle "dsp_lib" as dsp_lib
+lib --> dsp_lib
+
+' Nivel 4: crazyflie
+rectangle "hal" as hal
+rectangle "modules" as modules
+rectangle "utils" as utils
+
+crazy --> hal
+crazy --> modules
+crazy --> utils
+
+' Nivel 4: general
+rectangle "adc" as adc
+rectangle "buzzer" <<NotUsed>> as buzzer
+rectangle "led" as led 
+rectangle "motors" as motors 
+rectangle "wifi" as wifi
+
+general --> adc
+general --> buzzer
+general --> led
+general --> motors
+general --> wifi
+
+' Nivel 4: i2c_devices
+rectangle "eeprom\n(Memoria ROM)" <<NotUsed>> as eeprom 
+rectangle "hmc5883l\n(Magnetómetro)" <<NotUsed>> as hmc 
+rectangle "mpu6050\n(IMU)" as mpu 
+rectangle "ms5611\n(Sensor de presión)" <<NotUsed>> as ms
+rectangle "vl53l0\n(Sensor de distancia ToF)" <<NotUsed>> as vl0
+rectangle "vl53l1\n(Sensor de distancia ToF)" <<NotUsed>> as vl1
+
+i2c_dev --> eeprom
+i2c_dev --> hmc
+i2c_dev --> mpu
+i2c_dev --> ms
+i2c_dev --> vl0
+i2c_dev --> vl1
+
+' Nivel 4: spi_devices
+rectangle "pmw3901\n(Sensor de flujo óptico)" <<NotUsed>> as pmw
+spi_dev --> pmw
+
+@enduml

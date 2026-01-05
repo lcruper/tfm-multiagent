@@ -1,0 +1,55 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.2.9">
+  <diagram name="Página-1" id="GfPRw9iUoLVLA3cpZu7C">
+    <mxGraphModel dx="2412" dy="1599" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="dePVjaqaMgtsluXmtaUV-13" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="&lt;b&gt;Puerto de datos&lt;/b&gt;&lt;div&gt;4 Bits&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="160" x="-1640" y="-920" as="geometry" />
+        </mxCell>
+        <mxCell id="dePVjaqaMgtsluXmtaUV-14" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="2 Bits reservados" vertex="1">
+          <mxGeometry height="40" width="80" x="-1480" y="-920" as="geometry" />
+        </mxCell>
+        <mxCell id="dePVjaqaMgtsluXmtaUV-15" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="&lt;b&gt;Canal&lt;/b&gt;&lt;div&gt;2 Bits&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="80" x="-1400" y="-920" as="geometry" />
+        </mxCell>
+        <mxCell id="dePVjaqaMgtsluXmtaUV-16" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;" value="&lt;b&gt;Cabecera&lt;br&gt;&lt;/b&gt;&lt;div&gt;1 Byte&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="320" x="-1640" y="-994" as="geometry" />
+        </mxCell>
+        <mxCell id="dePVjaqaMgtsluXmtaUV-26" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;fillColor=none;strokeColor=none;" value="&lt;b&gt;Datos&amp;nbsp;&lt;/b&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;31 Bytes&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="480" x="-1320" y="-994" as="geometry" />
+        </mxCell>
+        <mxCell id="dePVjaqaMgtsluXmtaUV-29" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;fillColor=#f8cecc;strokeColor=#b85450;" value="&lt;b&gt;Datos&amp;nbsp;&lt;/b&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;31 Bytes&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="480" x="-1320" y="-920" as="geometry" />
+        </mxCell>
+        <mxCell id="dePVjaqaMgtsluXmtaUV-24" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;" value="&lt;b&gt;CRTP&lt;/b&gt;&lt;div&gt;32 Bytes&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="800" x="-1640" y="-1074" as="geometry" />
+        </mxCell>
+        <mxCell id="dePVjaqaMgtsluXmtaUV-34" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="&lt;b&gt;CKSUM&lt;/b&gt;&lt;div&gt;1 byte&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="320" x="-840" y="-920" as="geometry" />
+        </mxCell>
+        <mxCell id="dePVjaqaMgtsluXmtaUV-35" parent="1" style="shape=curlyBracket;whiteSpace=wrap;html=1;rounded=1;flipH=1;labelPosition=right;verticalLabelPosition=middle;align=left;verticalAlign=middle;rotation=-90;" value="" vertex="1">
+          <mxGeometry height="320" width="20" x="-1490" y="-1100" as="geometry" />
+        </mxCell>
+        <mxCell id="dePVjaqaMgtsluXmtaUV-36" parent="1" style="shape=curlyBracket;whiteSpace=wrap;html=1;rounded=1;flipH=1;labelPosition=right;verticalLabelPosition=middle;align=left;verticalAlign=middle;rotation=-90;" value="" vertex="1">
+          <mxGeometry height="480" width="20" x="-1090" y="-1180" as="geometry" />
+        </mxCell>
+        <mxCell id="dePVjaqaMgtsluXmtaUV-37" parent="1" style="shape=curlyBracket;whiteSpace=wrap;html=1;rounded=1;flipH=1;labelPosition=right;verticalLabelPosition=middle;align=left;verticalAlign=middle;rotation=-90;" value="" vertex="1">
+          <mxGeometry height="800" width="20" x="-1250" y="-1410" as="geometry" />
+        </mxCell>
+        <mxCell id="dePVjaqaMgtsluXmtaUV-38" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;" value="&lt;b&gt;Datagrama&lt;/b&gt;&lt;div&gt;33 Bytes&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="1110" x="-1640" y="-1160" as="geometry" />
+        </mxCell>
+        <mxCell id="dePVjaqaMgtsluXmtaUV-39" parent="1" style="shape=curlyBracket;whiteSpace=wrap;html=1;rounded=1;flipH=1;labelPosition=right;verticalLabelPosition=middle;align=left;verticalAlign=middle;rotation=-90;" value="" vertex="1">
+          <mxGeometry height="1120" width="20" x="-1090" y="-1650" as="geometry" />
+        </mxCell>
+        <mxCell id="dePVjaqaMgtsluXmtaUV-40" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;" value="&lt;b&gt;CKSUM&lt;/b&gt;&lt;br&gt;&lt;div&gt;1 Byte&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="320" x="-840" y="-1074" as="geometry" />
+        </mxCell>
+        <mxCell id="dePVjaqaMgtsluXmtaUV-41" parent="1" style="shape=curlyBracket;whiteSpace=wrap;html=1;rounded=1;flipH=1;labelPosition=right;verticalLabelPosition=middle;align=left;verticalAlign=middle;rotation=-90;" value="" vertex="1">
+          <mxGeometry height="320" width="20" x="-690" y="-1170" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

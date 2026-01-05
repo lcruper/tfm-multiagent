@@ -41,7 +41,7 @@ rectangle "crazyflie" as crazy
 core --> crazy
 
 ' Nivel 3: drivers
-rectangle "deck" as deck
+rectangle "deck" <<NotUsed>> as deck
 rectangle "general" as general
 rectangle "i2c_bus" as i2c_bus
 rectangle "i2c_devices" as i2c_dev
@@ -60,11 +60,9 @@ lib --> dsp_lib
 ' Nivel 4: crazyflie
 rectangle "hal" as hal
 rectangle "modules" as modules
-rectangle "utils" as utils
 
 crazy --> hal
 crazy --> modules
-crazy --> utils
 
 ' Nivel 4: general
 rectangle "adc" as adc
@@ -95,7 +93,7 @@ i2c_dev --> vl0
 i2c_dev --> vl1
 
 ' Nivel 4: spi_devices
-rectangle "pmw3901\n(Sensor de flujo óptico)" <<NotUsed>> as pmw
+rectangle "pmw3901\n(Sensor óptico de flujo)" <<NotUsed>> as pmw
 spi_dev --> pmw
 
 @enduml

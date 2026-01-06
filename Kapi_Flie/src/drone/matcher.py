@@ -7,7 +7,7 @@ Combines camera frames and telemetry into FrameWithTelemetry objects and
 distributes them to registered consumers.
 """
 
-import configuration.config as config
+from configuration import matcher as config
 import threading
 import logging
 from time import sleep

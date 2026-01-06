@@ -1,5 +1,5 @@
 """
-Operation Visusualizer
+Operation Visualizer
 ---------------------
 
 Provides a visual interface to monitor and control the operation execution.
@@ -13,7 +13,7 @@ from numpy import array
 from time import time
 from typing import List, Dict
 
-import configuration.config as config
+from configuration import operation as config
 from operation.operation_status import Status
 from operation.operation_controller import OperationController
 from structures.structures import Point2D

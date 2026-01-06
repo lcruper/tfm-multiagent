@@ -8,7 +8,7 @@ It generates (x, y) coordinates following an Archimedean spiral:
     r = rg * theta
 """
 
-import configuration.config as config
+from configuration import spiral_movement_simulator as config  
 import logging
 from math import cos, sin
 from random import uniform

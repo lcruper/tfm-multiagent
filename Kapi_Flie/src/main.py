@@ -13,7 +13,7 @@ from utils.logs import ColoredFormatter, LoggerNameFilter
 from planners.nearest_neighbor_planner import NearestNeighborPlanner
 import logging
 
-import configuration.config as config
+import configuration
 
 handler = logging.StreamHandler()
 handler.setFormatter(ColoredFormatter("[%(levelname)s] %(name)s: %(message)s"))
@@ -24,25 +24,25 @@ logging.basicConfig(
 )
 
 telemetry = DroneTelemetry(
-    config.DRONE_IP, 
-    config.DRONE_PORT, 
-    config.LOCAL_PORT, 
+    configuration.drone_telemetry.DRONE_IP, 
+    configuration.drone_telemetry.DRONE_PORT, 
+    configuration.drone_telemetry.LOCAL_PORT, 
     SpiralMovementSimulator(
-        config.SPIRAL_SIMULATOR_RADIAL_GROWTH, 
-        config.SPIRAL_SIMULATOR_LINEAR_SPEED
+        configuration.spiral_movement_simulator.SPIRAL_SIMULATOR_RADIAL_GROWTH, 
+        configuration.spiral_movement_simulator.SPIRAL_SIMULATOR_LINEAR_SPEED
     )
 )
 
 camera = CameraCapture(
-    config.CAMERA_STREAM_URL, 
-    config.CAMERA_FLASH_URL
+    configuration.camera_capture.CAMERA_STREAM_URL, 
+    configuration.camera_capture.CAMERA_FLASH_URL
 )
 
 cameraSimulator = CameraSimulator(None,None)
 
 matcher = Matcher(telemetry, cameraSimulator)
 
-color_detector = ColorDetection(config.COLOR_DETECTION_COLOR, config.YOLO_MODEL_PATH)
+color_detector = ColorDetection(configuration.color_detection.COLOR_DETECTION_COLOR, configuration.color_detection.YOLO_MODEL_PATH)
 
 viewer = Viewer()
 
@@ -54,7 +54,7 @@ explorer = Drone(
     viewer=viewer
 ) 
 
-inspector = RobotDog(config.ROBOT_DOG_SPEED)
+inspector = RobotDog(configuration.robot_dog.ROBOT_DOG_SPEED)
 
 planner = NearestNeighborPlanner()
 
@@ -62,7 +62,7 @@ controller = OperationController(
     explorer_robot=explorer, 
     inspector_robot=inspector, 
     planner=planner, 
-    base_positions_path=config.BASE_POSITIONS_PATH
+    base_positions_path=configuration.operation.BASE_POSITIONS_PATH
 )
 
 visualizer = OperationVisualizer(controller)

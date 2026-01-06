@@ -20,6 +20,7 @@ from operation.operation_events import OperationEvents
 from operation.operation_status import Status
 from interfaces.interfaces import IPathPlanner, IRobot
 from structures.structures import Point2D
+from configuration import operation as config
 
 
 class OperationController:
@@ -177,8 +178,8 @@ class OperationController:
             })
 
         timestamp = datetime.fromtimestamp(self.start_time).strftime("%Y_%m_%d_%H_%M_%S")
-        os.makedirs("results", exist_ok=True)
-        path = f"results/{timestamp}.json"
+        os.makedirs(config.METRICS_OUTPUT_FOLDER, exist_ok=True)
+        path = f"{config.METRICS_OUTPUT_FOLDER}/{timestamp}.json"
 
         with open(path, "w") as f:
             json.dump(operation_data, f, indent=4)

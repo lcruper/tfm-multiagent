@@ -17,7 +17,8 @@ from typing import Optional
 import threading
 from copy import deepcopy
 
-import configuration.config as config
+from configuration import camera_simulator as config
+from configuration import color_detection as config_color_detection
 from interfaces.interfaces import ICamera
 from structures.structures import Frame
 
@@ -106,7 +107,7 @@ class CameraSimulator(ICamera):
         size = np.random.randint(config.CAMERA_SIMULATOR_MIN_RADIUS, config.CAMERA_SIMULATOR_MAX_RADIUS)
         center = (np.random.randint(size, 640 - size), np.random.randint(size, 480 - size))
         if np.random.rand() < config.CAMERA_SIMULATOR_COLOR_PROBABILITY:
-            color = config.CAMERA_SIMULATOR_COLOR_DICT[config.COLOR_DETECTION_COLOR]
+            color = config.CAMERA_SIMULATOR_COLOR_DICT[config_color_detection.COLOR_DETECTION_COLOR]
         else:
             color = tuple(np.random.randint(0, 256, size=3).tolist())
         self._draw_stop_sign(image, center, size, color)

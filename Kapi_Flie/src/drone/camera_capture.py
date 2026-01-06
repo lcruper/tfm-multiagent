@@ -7,7 +7,7 @@ the latest frame in a thread-safe. It also allows turning the camera flash on an
 """
 
 from typing import Optional
-import configuration.config as config
+from configuration import camera_capture as config
 import cv2
 import threading
 import logging

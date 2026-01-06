@@ -13,7 +13,7 @@ from math import hypot
 from typing import Dict, List, Optional, Callable
 from numpy.random import normal
 
-import configuration.config as config
+from configuration import robot_dog as config
 from interfaces.interfaces import IRobot
 from structures.structures import Point2D
 

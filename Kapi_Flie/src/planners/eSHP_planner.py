@@ -1,74 +1,38 @@
 """
-eSHP Planner Module
+ILP Planner Module
 ------------------
 
-Euclidean Shortest Hamiltonian Path (eSHP) solver with fixed start point.
+Integer Linear Programming (ILP) solver with fixed start point.
 
 This module implements an optimization-based path planner using Gurobi,
-solving a Hamiltonian path problem with lazy subtour elimination constraints.
+solving the Integer Linear Programming formulation.
 """
 
 import gurobipy as gp
-from collections import deque
 from typing import List, Tuple, Dict
 
 from structures.structures import Point2D
 from interfaces.interfaces import IPathPlanner
 
 
-class eSHPPlanner(IPathPlanner):
+class ILPPlanner(IPathPlanner):
     """
-    Euclidean Shortest Hamiltonian Path planner.
+    Integer Linear Programming formulation solver with fixed start point.
 
-    This planner computes the minimum-length Hamiltonian path that:
+    This planner computes the minimum-length path that:
     - starts from a fixed start point
     - visits all remaining points exactly once
     - minimizes the total Euclidean distance
 
-    The problem is solved using Gurobi with lazy subtour elimination.
+    The problem is solved using Gurobi.
     """
 
     # ---------------------------------------------------
     # Internal methods
     # ---------------------------------------------------
-    def _find_components(self, n: int, edges: List[Tuple[int, int]]) -> List[List[int]]:
-        """
-        Finds connected components induced by a set of edges.
-
-        Args:
-            n (int): Number of nodes.
-            edges (List[Tuple[int, int]]): Active edges.
-
-        Returns:
-            List[List[int]]: List of connected components.
-        """
-        adj = [[] for _ in range(n)]
-        for i, j in edges:
-            adj[i].append(j)
-            adj[j].append(i)
-
-        visited = [False] * n
-        components = []
-
-        for v in range(n):
-            if not visited[v]:
-                comp = []
-                dq = deque([v])
-                visited[v] = True
-                while dq:
-                    u = dq.popleft()
-                    comp.append(u)
-                    for w in adj[u]:
-                        if not visited[w]:
-                            visited[w] = True
-                            dq.append(w)
-                components.append(comp)
-
-        return components
-
     def _extract_path(self, n: int, edges: List[Tuple[int, int]], start: int) -> List[int]:
         """
-        Reconstructs a Hamiltonian path starting from the fixed start node.
+        Reconstructs path starting from the fixed start node.
 
         Args:
             n (int): Number of nodes.
@@ -99,42 +63,10 @@ class eSHPPlanner(IPathPlanner):
             prev, cur = cur, nxt
 
         return path
-    
-    def _subtour_elimination_callback(self, model: gp.Model, where: int) -> None:
-        """
-        Lazy constraint callback for subtour elimination.
-
-        This callback prevents the formation of disconnected subtours
-        that do not include the fixed start node.
-
-        Args:
-            model (gp.Model): Gurobi optimization model.
-            where (int): Callback execution context.
-        """
-        if where == gp.GRB.Callback.MIPSOL:
-            vals = {
-                (i, j): model.cbGetSolution(var)
-                for (i, j), var in model._xvars.items()
-            }
-
-            active_edges = [(i, j) for (i, j), v in vals.items() if v > 0.5]
-
-            components = self._find_components(model._n, active_edges)
-            for comp in components:
-                if len(comp) == model._n:
-                    continue
-                if model._start in comp:
-                    continue
-                if len(comp) > 1:
-                    expr = gp.quicksum(
-                        model._xvars[(i, j)]
-                        for i in comp for j in comp if i < j
-                    )
-                    model.cbLazy(expr <= len(comp) - 1)
 
     def _solve(self, points: List[Point2D], start_point: int) -> Dict:
         """
-        Solves the eSHP problem with a fixed start point.
+        Solves the ILP formulation.
 
         Args:
             points (List[Point2D]): List of 2D points.
@@ -152,9 +84,7 @@ class eSHPPlanner(IPathPlanner):
             for i in range(n) for j in range(i + 1, n)
         }
 
-        m = gp.Model("eSHP")
-        m.Params.LazyConstraints = 1
-        m.Params.PreCrush = 1
+        m = gp.Model()
 
         x = {
             (i, j): m.addVar(vtype=gp.GRB.BINARY, obj=d, name=f"x_{i}_{j}")
@@ -172,14 +102,13 @@ class eSHPPlanner(IPathPlanner):
             else:
                 m.addConstr(deg_expr <= 2)
 
-        m.addConstr(gp.quicksum(x.values()) == n - 1)
         m.modelSense = gp.GRB.MINIMIZE
 
         m._xvars = x
         m._n = n
         m._start = start_point
-
-        m.optimize(self._subtour_elimination_callback)
+        
+        m.optimize()
 
         sol_edges = [(i, j) for (i, j), var in x.items() if var.x > 0.5]
         path = self._extract_path(n, sol_edges, start_point)

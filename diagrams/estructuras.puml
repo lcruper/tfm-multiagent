@@ -1,0 +1,52 @@
+@startuml
+
+skinparam classBackgroundColor white
+
+dataclass Battery {
+    + voltage: float
+}
+
+dataclass Position {
+    + x: float
+    + y: float
+    + z: float
+}
+
+dataclass Orientation {
+    + roll: float
+    + pitch: float
+    + yaw: float
+}
+
+dataclass Pose {
+    + position: Position
+    + orientation: Orientation
+}
+
+dataclass TelemetryData {
+    + pose: Pose
+    + battery: Battery
+}
+
+dataclass Frame {
+    + data: np.ndarray
+}
+
+dataclass FrameWithTelemetry {
+    + frame: Frame
+    + telemetry: TelemetryData
+}
+
+dataclass Point2D {
+    + x: float
+    + y: float
+}
+
+
+Pose *-- Position
+Pose *-- Orientation
+TelemetryData *-- Pose
+TelemetryData *-- Battery
+FrameWithTelemetry *-- Frame
+FrameWithTelemetry *-- TelemetryData
+@enduml

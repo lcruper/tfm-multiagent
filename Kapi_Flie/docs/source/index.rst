@@ -1,11 +1,8 @@
-Kapi_Flie Documentation
-=======================
-
-Welcome to the Kapi_Flie documentation.
+Multiagent Drone and Robot Dog System Documentation
+===================================================
 
 .. toctree::
    :maxdepth: 2
-   :caption: Sections:
 
    configuration/index
    structures/index

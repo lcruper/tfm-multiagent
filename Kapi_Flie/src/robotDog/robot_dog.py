@@ -172,4 +172,4 @@ class RobotDog(IRobot):
                 self._logger.error("Callback onFinish failed: %s", e)
 
         self._logger.info("Finished all target positions.")
-        self._running = False
+        self.stop_inspection()

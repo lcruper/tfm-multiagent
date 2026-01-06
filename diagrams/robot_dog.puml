@@ -1,0 +1,33 @@
+@startuml
+
+skinparam classBackgroundColor white
+
+interface IRobot {
+    - _callback_onPoint: Callable<[Point2D], void>
+    - _callback_onFinish: Callable<[], void>
+    + start_inspection(positions: List<Point2D>): void
+    + stop_inspection(): List<Point2D>
+    + set_callback_onPoint(callback: Callable<[Point2D], void>): void
+    + set_callback_onFinish(callback: Callable<[], void>): void
+    + get_current_position(): Point2D
+    + get_telemetry(): Dict<String, float>
+}
+
+class RobotDog {
+    + speed: float
+    - _current_position: Point2D
+    - _waypoints: List<Point2D>
+
+    + RobotDog(speed: float)
+    - _move(): void
+    - _get_temperature(): float
+}
+
+dataclass Point2D {
+    + x: float
+    + y: float
+}
+
+IRobot <|.. RobotDog
+RobotDog -> Point2D
+@enduml

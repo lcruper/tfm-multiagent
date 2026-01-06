@@ -38,9 +38,6 @@ class RobotDog(IRobot):
         self._current_position: Point2D = Point2D(0.0, 0.0)
         self._waypoints: List[Point2D] = []
 
-        self._callback_on_point: Optional[Callable[[Point2D], None]] = None
-        self._callback_on_finish: Optional[Callable[[], None]] = None
-
         self._running: bool = False
         self._thread: Optional[threading.Thread] = None
 
@@ -89,7 +86,7 @@ class RobotDog(IRobot):
         Args:
             callback (Callable[[Point2D], None]): Function called with the reached point.
         """
-        self._callback_on_point = callback
+        self._callback_onPoint = callback
 
     def set_callback_onFinish(self, callback: Callable[[], None]) -> None:
         """
@@ -98,7 +95,7 @@ class RobotDog(IRobot):
         Args:
             callback (Callable[[], None]): Function called when movement finishes.  
         """
-        self._callback_on_finish = callback
+        self._callback_onFinish = callback
 
     def get_current_position(self) -> Point2D:
         """
@@ -153,11 +150,11 @@ class RobotDog(IRobot):
                     self._current_position = Point2D(tx, ty)
                     self._logger.info("Reached (%.2f, %.2f)", tx, ty)
 
-                    if self._callback_on_point:
+                    if self._callback_onPoint:
                         try:
-                            self._callback_on_point(Point2D(tx, ty))
+                            self._callback_onPoint(Point2D(tx, ty))
                         except Exception as e:
-                            self._logger.error("Callback on_point failed: %s", e)
+                            self._logger.error("Callback onPoint failed: %s", e)
                     break
 
                 step = min(dist, self.speed * config.ROBOT_SLEEP_TIME)
@@ -168,11 +165,11 @@ class RobotDog(IRobot):
 
                 time.sleep(config.ROBOT_SLEEP_TIME)
 
-        if self._callback_on_finish:
+        if self._callback_onFinish:
             try:
-                self._callback_on_finish()
+                self._callback_onFinish()
             except Exception as e:
-                self._logger.error("Callback on_finish failed: %s", e)
+                self._logger.error("Callback onFinish failed: %s", e)
 
         self._logger.info("Finished all target positions.")
         self._running = False

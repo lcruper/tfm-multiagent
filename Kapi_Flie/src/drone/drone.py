@@ -49,9 +49,6 @@ class Drone(IRobot):
         self._detected_points: List[Point2D] = []
         self._active: bool = False
 
-        self._callback_on_point: Optional[Callable[[Point2D], None]] = None
-        self._callback_on_finish: Optional[Callable[[], None]] = None
-
         self._logger = logging.getLogger("Drone")
 
         self.color_detector.set_callback(self._on_color_detected)
@@ -107,9 +104,9 @@ class Drone(IRobot):
             simulator.stop()
         self.telemetry.stop()
 
-        if self._callback_on_finish:
+        if self._callback_onFinish:
             try:
-                self._callback_on_finish()
+                self._callback_onFinish()
             except Exception as e:
                 self._logger.error("Callback onFinish failed: %s", e)
 
@@ -157,7 +154,7 @@ class Drone(IRobot):
         Args:
             callback (Callable[[Point2D], None]): Function to call with detected point.
         """
-        self._callback_on_point = callback
+        self._callback_onPoint = callback
 
     def set_callback_onFinish(self, callback: Callable[[], None]) -> None:
         """
@@ -166,7 +163,7 @@ class Drone(IRobot):
         Args:
             callback (Callable[[], None]): Function to call at inspection end.
         """
-        self._callback_on_finish = callback
+        self._callback_onFinish = callback
 
     # ---------------------------------------------------
     # Internal methods
@@ -192,8 +189,8 @@ class Drone(IRobot):
 
         self._detected_points.append(Point2D(position.x, position.y))
 
-        if self._callback_on_point:
+        if self._callback_onPoint:
             try:
-                self._callback_on_point(Point2D(position.x, position.y))
+                self._callback_onPoint(Point2D(position.x, position.y))
             except Exception as e:
                 self._logger.error("Callback onPoint failed: %s", e)

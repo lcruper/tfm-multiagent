@@ -131,6 +131,9 @@ class IMovementSimulator(ABC):
 class IRobot(ABC):
     """Interface for robot classes."""
 
+    _callback_onPoint: Optional[Callable[[Point2D], None]] = None
+    _callback_onFinish: Optional[Callable[[], None]] = None
+
     @abstractmethod
     def start_inspection(self, positions: Optional[List[Point2D]]) -> None:
         """

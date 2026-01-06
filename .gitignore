@@ -50,18 +50,9 @@ build/
 # ========================
 # Project specific
 # ========================
-# YOLO models and large binaries
 yoloModels/
 results/
 input/
-*.pt
-*.weights
+diagrams/
 
-# src cache
 src/__pycache__/
-src/**/*.pyc
-
-# Temporary / backup files
-*~
-*.bak
-*.swp

@@ -13,7 +13,7 @@ from math import hypot
 from typing import Dict, List, Optional, Callable
 from numpy.random import normal
 
-import config
+import configuration.config as config
 from interfaces.interfaces import IRobot
 from structures.structures import Point2D
 
@@ -172,4 +172,4 @@ class RobotDog(IRobot):
                 self._logger.error("Callback onFinish failed: %s", e)
 
         self._logger.info("Finished all target positions.")
-        self.stop_inspection()
+        self._running = False

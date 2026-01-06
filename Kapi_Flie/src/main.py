@@ -13,7 +13,7 @@ from utils.logs import ColoredFormatter, LoggerNameFilter
 from planners.nearest_neighbor_planner import NearestNeighborPlanner
 import logging
 
-import config
+import configuration.config as config
 
 handler = logging.StreamHandler()
 handler.setFormatter(ColoredFormatter("[%(levelname)s] %(name)s: %(message)s"))

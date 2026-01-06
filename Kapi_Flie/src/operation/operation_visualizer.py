@@ -13,7 +13,7 @@ from numpy import array
 from time import time
 from typing import List, Dict
 
-import config
+import configuration.config as config
 from operation.operation_status import Status
 from operation.operation_controller import OperationController
 from structures.structures import Point2D

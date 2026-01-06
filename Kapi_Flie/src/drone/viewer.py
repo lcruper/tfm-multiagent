@@ -6,7 +6,7 @@ Displays camera frames with telemetry overlay from a queue of FrameWithTelemetry
 """
 
 from typing import Optional
-import config
+import configuration.config as config
 import cv2
 import threading
 import logging

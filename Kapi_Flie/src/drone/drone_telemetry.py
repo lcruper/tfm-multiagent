@@ -7,7 +7,7 @@ It handles battery and pose packets, maintains the latest telemetry state, and
 optionally integrates with a movement simulator.
 """
 
-import config
+import configuration.config as config
 import socket
 import struct
 import threading

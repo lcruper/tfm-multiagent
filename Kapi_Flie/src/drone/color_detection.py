@@ -7,7 +7,7 @@ received from a camera/telemetry pipeline.
 """
 
 from typing import Optional, Callable
-import config
+import configuration.config as config
 import threading
 import logging
 import cv2

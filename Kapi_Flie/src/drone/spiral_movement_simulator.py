@@ -8,7 +8,7 @@ It generates (x, y) coordinates following an Archimedean spiral:
     r = rg * theta
 """
 
-import config
+import configuration.config as config
 import logging
 from math import cos, sin
 from random import uniform

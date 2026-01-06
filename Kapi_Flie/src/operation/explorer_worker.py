@@ -15,7 +15,7 @@ import logging
 from time import time
 import winsound
 
-import config
+import configuration.config as config
 from operation.operation_status import Status
 from operation.operation_events import OperationEvents
 from interfaces.interfaces import IRobot

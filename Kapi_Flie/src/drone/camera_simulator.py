@@ -17,7 +17,7 @@ from typing import Optional
 import threading
 from copy import deepcopy
 
-import config
+import configuration.config as config
 from interfaces.interfaces import ICamera
 from structures.structures import Frame
 

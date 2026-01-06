@@ -1,0 +1,37 @@
+@startuml
+skinparam participantBackgroundColor white
+
+actor "Agente coordinador" as User
+participant "RobotDog" as Robot
+participant "Hilo de movimiento" as Thread
+participant "Callback onPoint" as CBPoint
+participant "Callback onFinish" as CBFinish
+
+User -> Robot: start_inspection(positions)
+Robot -> Thread: _move()
+
+activate Thread
+loop Para cada p en _waypoints
+    Thread -> Thread: calcular distancia a p
+    alt p no alcanzado\n(distancia > tolerancia)
+        Thread -> Thread: actualizar _current_position según _speed
+    else p alcanzado\n(distancia <= tolerancia)
+        Thread -> Robot: _current_position = p
+        Thread -> CBPoint: _callback_onPoint(p)
+    end
+end
+
+Thread -> CBFinish: _callback_onFinish()
+deactivate Thread
+
+== Consultas asíncronas ==
+
+User -> Robot: get_current_position()
+Robot --> Robot: pos = _current_position
+Robot --> User: pos.copy()
+
+User -> Robot: get_telemetry()
+Robot --> Robot: temp = _get_temperature()
+Robot --> User: { temperature: temp }
+
+@enduml

@@ -9,14 +9,14 @@ Provides a unified API to start/stop inspections and set callbacks for points de
 import logging
 from typing import Dict, List, Optional, Callable
 
-from interfaces.interfaces import ICamera, ITelemetry, IRobot
+from interfaces.interfaces import ICamera, ITelemetry, ARobot
 from drone.matcher import Matcher
 from drone.color_detection import ColorDetection
 from drone.viewer import Viewer
 from structures.structures import Position, Point2D
 
 
-class Drone(IRobot):
+class Drone(ARobot):
     """
     Aggregates all drone components.
 

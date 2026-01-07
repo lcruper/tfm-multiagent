@@ -82,8 +82,8 @@ class ICamera(ABC):
         """Turns off the camera flash (if available)."""
         pass
 
-class IFrameConsumer(ABC):
-    """Interface for components that process frames with telemetry."""
+class AFrameConsumer(ABC):
+    """Abstract class for components that process frames with telemetry."""
     
     _queue: Queue
 
@@ -126,9 +126,9 @@ class IFrameConsumer(ABC):
         """
         pass
 
-class IRobot(ABC):
+class ARobot(ABC):
     """
-    Interface for robots.
+    Abstract class for robots.
     
     Attributes:
         _callback_onPoint (Optional[Callable[[Point2D], None]]): Callback for when a point is reached.
@@ -198,19 +198,6 @@ class IRobot(ABC):
 
 class IPathPlanner(ABC):
     """Interface for path planning algorithms."""
-
-    def euclidean_distance(self, p1: Point2D, p2: Point2D) -> float:
-        """
-        Computes the Euclidean distance between two points.
-
-        Args:
-            p1 (Point2D): First point.
-            p2 (Point2D): Second point.
-
-        Returns:
-            float: Euclidean distance between p1 and p2.
-        """
-        return ((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2) ** 0.5
 
     @abstractmethod
     def plan_path(self, start: Point2D, points: List[Point2D]) -> List[Point2D]:

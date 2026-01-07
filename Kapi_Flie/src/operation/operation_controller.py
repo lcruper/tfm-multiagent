@@ -18,7 +18,7 @@ from operation.explorer_worker import ExplorerWorker
 from operation.inspector_worker import InspectorWorker
 from operation.operation_events import OperationEvents
 from operation.operation_status import Status
-from interfaces.interfaces import IPathPlanner, IRobot
+from interfaces.interfaces import IPathPlanner, ARobot
 from structures.structures import Point2D
 from configuration import operation as config
 
@@ -28,7 +28,7 @@ class OperationController:
     Controller for coordinating explorer and inspector threads.
     """
 
-    def __init__(self, explorer_robot: IRobot, inspector_robot: IRobot, planner: IPathPlanner, base_positions_path: str) -> None:
+    def __init__(self, explorer_robot: ARobot, inspector_robot: ARobot, planner: IPathPlanner, base_positions_path: str) -> None:
         """
         Creates an OperationController instance.
 
@@ -44,8 +44,8 @@ class OperationController:
         self.all_points: Dict[Point2D, (int, bool, time, time)] = {}
         self._events: OperationEvents = OperationEvents()
     
-        self.explorer_robot: IRobot = explorer_robot
-        self.inspector_robot: IRobot = inspector_robot
+        self.explorer_robot: ARobot = explorer_robot
+        self.inspector_robot: ARobot = inspector_robot
 
         self.status: Status = Status.NOT_STARTED
         self.start_time: float = None

@@ -18,7 +18,7 @@ import winsound
 from configuration import operation as config
 from operation.operation_status import Status
 from operation.operation_events import OperationEvents
-from interfaces.interfaces import IRobot
+from interfaces.interfaces import ARobot
 from structures.structures import Point2D
 
 
@@ -30,7 +30,7 @@ class ExplorerWorker(threading.Thread):
     recording detected points, and synchronizing with operation events.
     """
 
-    def __init__(self, robot: IRobot, base_positions: List[Point2D], points_queue: Queue[Point2D], all_points: Dict[Point2D, (int, bool, float, float)], events: OperationEvents) -> None:
+    def __init__(self, robot: ARobot, base_positions: List[Point2D], points_queue: Queue[Point2D], all_points: Dict[Point2D, (int, bool, float, float)], events: OperationEvents) -> None:
         """
         Creates a ExplorerWorker instance.
 
@@ -42,7 +42,7 @@ class ExplorerWorker(threading.Thread):
             events (OperationEvents): Shared operation synchronization events.
         """
         super().__init__(daemon=True)
-        self._robot: IRobot = robot
+        self._robot: ARobot = robot
         self._base_positions: List[Point2D] = base_positions
         self._points_queue: Queue[Point2D] = points_queue
         self._all_points: Dict[Point2D, (int, bool, float, float)] = all_points

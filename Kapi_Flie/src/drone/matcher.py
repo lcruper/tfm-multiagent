@@ -13,7 +13,7 @@ import logging
 from time import sleep
 from typing import List, Optional
 
-from interfaces.interfaces import ICamera, IFrameConsumer, ITelemetry
+from interfaces.interfaces import ICamera, AFrameConsumer, ITelemetry
 from structures.structures import FrameWithTelemetry
 
 
@@ -37,7 +37,7 @@ class Matcher:
         self.telemetry: ITelemetry = telemetry
         self.camera: ICamera = camera
 
-        self._consumers: List[IFrameConsumer] = []
+        self._consumers: List[AFrameConsumer] = []
 
         self._running: bool = False
         self._thread: Optional[threading.Thread] = None
@@ -72,7 +72,7 @@ class Matcher:
             self._thread = None
         self._logger.info("Stopped.")
 
-    def register_consumer(self, consumer: IFrameConsumer) -> None:
+    def register_consumer(self, consumer: AFrameConsumer) -> None:
         """
         Registers a consumer to receive FrameWithTelemetry objects.
 

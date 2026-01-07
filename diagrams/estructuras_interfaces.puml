@@ -51,7 +51,7 @@ FrameWithTelemetry *-- Frame
 FrameWithTelemetry *-- TelemetryData
 
 
-interface ITelemetry {
+interface ITelemetry  {
     +start(): void
     +stop(): void
     +get_telemetry(): TelemetryData
@@ -71,35 +71,34 @@ interface ICamera {
     +turn_off_flash(): void
 }
 
-interface IFrameConsumer {
+abstract class AFrameConsumer <<(A, LightCoral)>> {
     +queue : Queue<FrameWithTelemetry>
-    +start(): void
-    +stop(): void
+    {abstract} +start(): void
+    {abstract} +stop(): void
     +enqueue(fwt: FrameWithTelemetry): void
-    -_process_frame(fwt: FrameWithTelemetry): Any
+    {abstract}-_process_frame(fwt: FrameWithTelemetry): Any
 }
 
-interface IRobot {
+abstract class ARobot <<(A, LightCoral)>> {
     - _callback_onPoint: Callable<[Point2D], void>
     - _callback_onFinish: Callable<[], void>
-    + start_inspection(positions: List<Point2D>): void
-    + stop_inspection(): List<Point2D>
+    {abstract}+ start_inspection(positions: List<Point2D>): void
+    {abstract}+ stop_inspection(): List<Point2D>
     + set_callback_onPoint(callback: Callable<[Point2D], void>): void
     + set_callback_onFinish(callback: Callable<[], void>): void
-    + get_current_position(): Point2D
-    + get_telemetry(): Dict<String, float>
+    {abstract}+ get_current_position(): Point2D
+    {abstract}+ get_telemetry(): Dict<String, float>
 }
 
 interface IPathPlanner {
-    +euclidean_distance(p1: Point2D, p2: Point2D): float
-    +plan_path(start: Point2D, points: List<Point2D>): List<Point2D>
+    {abstract}+plan_path(start: Point2D, points: List<Point2D>): List<Point2D>
 }
 
 ITelemetry ----> TelemetryData
-IMovementSimulator ---> Point2D
+IMovementSimulator ----> Point2D
 ICamera ----> Frame
-IFrameConsumer --> FrameWithTelemetry
-IRobot ---> Point2D
-IRobot ---> TelemetryData
+AFrameConsumer --> FrameWithTelemetry
+ARobot ---> Point2D
+ARobot ---> TelemetryData
 IPathPlanner ----> Point2D
 @enduml

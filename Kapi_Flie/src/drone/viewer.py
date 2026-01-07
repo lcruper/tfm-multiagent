@@ -14,11 +14,11 @@ from queue import Empty, Full, Queue
 from numpy import ndarray
 from time import sleep
 
-from interfaces.interfaces import IFrameConsumer
+from interfaces.interfaces import AFrameConsumer
 from structures.structures import FrameWithTelemetry
 
 
-class Viewer(IFrameConsumer):
+class Viewer(AFrameConsumer):
     """
     Displays camera frames with telemetry overlay.
 

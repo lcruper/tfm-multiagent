@@ -18,7 +18,7 @@ from time import time
 from operation.operation_status import Status
 from operation.operation_events import OperationEvents
 from structures.structures import Point2D
-from interfaces.interfaces import IPathPlanner, IRobot
+from interfaces.interfaces import IPathPlanner, ARobot
 
 
 class InspectorWorker(threading.Thread):
@@ -26,7 +26,7 @@ class InspectorWorker(threading.Thread):
     Threaded worker executing missions for a robot.
     """
 
-    def __init__(self, robot: IRobot, planner: IPathPlanner, n_missions: int, points_queue: Queue[Point2D], all_points: Dict[Point2D, (int, bool, float, float)], events: OperationEvents) -> None:
+    def __init__(self, robot: ARobot, planner: IPathPlanner, n_missions: int, points_queue: Queue[Point2D], all_points: Dict[Point2D, (int, bool, float, float)], events: OperationEvents) -> None:
         """
         Creates an InspectorWorker instance.
 
@@ -39,7 +39,7 @@ class InspectorWorker(threading.Thread):
             events (OperationEvents): Shared operation synchronization events.
         """
         super().__init__(daemon=True)
-        self._robot: IRobot = robot
+        self._robot: ARobot = robot
         self._planner: IPathPlanner = planner
         self._n_missions: int = n_missions
         self._points_queue: Queue[Dict[Point2D, bool]] = points_queue

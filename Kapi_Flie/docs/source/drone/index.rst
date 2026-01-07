@@ -4,7 +4,7 @@ Drone Package
 This section documents all components of the `drone` package.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    drone_telemetry
    spiral_movement_simulator

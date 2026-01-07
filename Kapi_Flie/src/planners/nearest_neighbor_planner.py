@@ -42,9 +42,23 @@ class NearestNeighborPlanner(IPathPlanner):
         path: List[Point2D] = []
 
         while remaining:
-            next_point = min(remaining, key=lambda p: self.euclidean_distance(current, p))
+            next_point = min(remaining, key=lambda p: self._euclidean_distance(current, p))
             path.append(next_point)
             remaining.remove(next_point)
             current = next_point
 
         return path
+
+
+    def _euclidean_distance(self, p1: Point2D, p2: Point2D) -> float:
+        """
+        Computes the Euclidean distance between two points.
+
+        Args:
+            p1 (Point2D): First point.
+            p2 (Point2D): Second point.
+
+        Returns:
+            float: Euclidean distance between p1 and p2.
+        """
+        return ((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2) ** 0.5

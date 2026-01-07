@@ -16,11 +16,11 @@ from queue import Full, Queue, Empty
 from ultralytics import YOLO
 from time import sleep
 
-from interfaces.interfaces import IFrameConsumer
+from interfaces.interfaces import AFrameConsumer
 from structures.structures import FrameWithTelemetry, Position
 
 
-class ColorDetection(IFrameConsumer):
+class ColorDetection(AFrameConsumer):
     """
     Detects a specified color in frames with telemetry.
 

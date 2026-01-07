@@ -6,11 +6,11 @@ from typing import Dict, List, Optional, Callable
 from numpy.random import normal
 
 from configuration import robot_dog as config
-from interfaces.interfaces import IRobot
+from interfaces.interfaces import ARobot
 from structures.structures import Point2D
 
 
-class RobotDog(IRobot):
+class RobotDog(ARobot):
     """
     Simulated robot dog.
 

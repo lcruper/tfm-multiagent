@@ -80,7 +80,7 @@ class ILPPlanner(IPathPlanner):
         nodes = list(range(n))
 
         dist = {
-            (i, j): self.euclidean_distance(points[i], points[j])
+            (i, j): self._euclidean_distance(points[i], points[j])
             for i in range(n) for j in range(i + 1, n)
         }
 
@@ -119,6 +119,19 @@ class ILPPlanner(IPathPlanner):
             "ordered_points": [points[i] for i in path]
         }
 
+    def _euclidean_distance(self, p1: Point2D, p2: Point2D) -> float:
+        """
+        Computes the Euclidean distance between two points.
+
+        Args:
+            p1 (Point2D): First point.
+            p2 (Point2D): Second point.
+
+        Returns:
+            float: Euclidean distance between p1 and p2.
+        """
+        return ((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2) ** 0.5
+    
     # ---------------------------------------------------
     # Public methods
     # ---------------------------------------------------

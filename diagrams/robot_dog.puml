@@ -14,7 +14,7 @@ abstract class ARobot <<(A, LightCoral)>> {
 }
 
 class RobotDog {
-    + speed: float
+    - _speed: float
     - _current_position: Point2D
     - _waypoints: List<Point2D>
 

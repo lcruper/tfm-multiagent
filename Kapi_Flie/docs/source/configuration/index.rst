@@ -1,8 +1,6 @@
 Configuration Package
 ======================
 
-Centralized Configuration Module for the Multiagent Drone and Robot Dog System.
-
 This package defines all configuration parameters and global constants used across the project.
 All values are read-only and should not be modified at runtime.
 

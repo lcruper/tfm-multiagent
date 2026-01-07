@@ -65,25 +65,6 @@ class Viewer(IFrameConsumer):
         cv2.destroyAllWindows()
         self._logger.info("Stopped.")
 
-    def enqueue(self, fwt: FrameWithTelemetry) -> None:
-        """
-        Adds a FrameWithTelemetry to the display queue.
-
-        Args:
-            fwt (FrameWithTelemetry): Frame with telemetry to display.
-        """
-        while True:
-            try:
-                self._queue.put_nowait(fwt)
-                self._logger.debug("Enqueued frame of shape %s", fwt.frame.data.shape)
-                break
-            except Full:
-                try:
-                    self._queue.get_nowait()
-                    self._logger.debug("Queue full, dropped oldest frame.")
-                except Empty:
-                    break
-
     # ----------------------------------------------------------------------
     # Internal methods
     # ----------------------------------------------------------------------

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Callable, Any
-from queue import Queue
+from queue import Queue, Full, Empty
 from structures.structures import Frame, FrameWithTelemetry, Point2D, TelemetryData
 
 class ITelemetry(ABC):
@@ -97,7 +97,6 @@ class IFrameConsumer(ABC):
         """Stops consuming frames."""
         pass
 
-    @abstractmethod
     def enqueue(self, fwt: FrameWithTelemetry) -> None:
         """
         Enqueues a FrameWithTelemetry object for processing.
@@ -105,7 +104,17 @@ class IFrameConsumer(ABC):
         Args:
             fwt (FrameWithTelemetry): Frame data with associated telemetry to enqueue.
         """
-        pass
+        while True:
+            try:
+                self._queue.put_nowait(fwt)
+                self._logger.debug("Enqueued frame of shape %s", fwt.frame.data.shape)
+                break
+            except Full:
+                try:
+                    self._queue.get_nowait()
+                    self._logger.debug("Queue full, dropped oldest frame.")
+                except Empty:
+                    break
 
     @abstractmethod
     def _process_frame(self, fwt: FrameWithTelemetry) -> Any:
@@ -149,7 +158,6 @@ class IRobot(ABC):
         """
         pass
 
-    @abstractmethod
     def set_callback_onPoint(self, callback: Callable[[Point2D], None]) -> None:
         """
         Register a callback triggered when the robot reaches a target point.
@@ -157,9 +165,8 @@ class IRobot(ABC):
         Args:
             callback (Callable[[Point2D], None]): Function to call when reaching a point. 
         """
-        pass
+        self._callback_onPoint = callback
 
-    @abstractmethod
     def set_callback_onFinish(self, callback: Callable[[], None]) -> None:
         """
         Register a callback triggered when the inspection finishes.
@@ -167,7 +174,7 @@ class IRobot(ABC):
         Args:
             callback (Callable[[], None]): Function to call when inspection finishes.
         """
-        pass
+        self._callback_onFinish = callback
 
     @abstractmethod
     def get_current_position(self) -> Optional[Point2D]:
@@ -179,6 +186,7 @@ class IRobot(ABC):
         """
         pass
 
+    @abstractmethod 
     def get_telemetry(self) -> Optional[Dict[str, float]]:
         """
         Retrieves the current telemetry data of the robot.

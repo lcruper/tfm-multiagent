@@ -147,24 +147,6 @@ class Drone(IRobot):
         """
         return self._detected_points.copy()
 
-    def set_callback_onPoint(self, callback: Callable[[Point2D], None]) -> None:
-        """
-        Sets a callback to be called when a color object is detected.
-
-        Args:
-            callback (Callable[[Point2D], None]): Function to call with detected point.
-        """
-        self._callback_onPoint = callback
-
-    def set_callback_onFinish(self, callback: Callable[[], None]) -> None:
-        """
-        Sets a callback to be called when the inspection finishes.
-
-        Args:
-            callback (Callable[[], None]): Function to call at inspection end.
-        """
-        self._callback_onFinish = callback
-
     # ---------------------------------------------------
     # Internal methods
     # ---------------------------------------------------

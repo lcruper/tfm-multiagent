@@ -1,11 +1,3 @@
-"""
-RobotDog Module
----------------
-
-Simulated robot dog that follows a list of 2D coordinates.
-Provides a unified API to start/stop movement and set callbacks for reached points and finish events.
-"""
-
 import logging
 import threading
 import time
@@ -78,24 +70,6 @@ class RobotDog(IRobot):
                 self._logger.warning("Did not stop in time.")
             self._thread = None
         self._logger.info("Stopped.")
-
-    def set_callback_onPoint(self, callback: Callable[[Point2D], None]) -> None:
-        """
-        Set a callback to be called when a point is reached.
-
-        Args:
-            callback (Callable[[Point2D], None]): Function called with the reached point.
-        """
-        self._callback_onPoint = callback
-
-    def set_callback_onFinish(self, callback: Callable[[], None]) -> None:
-        """
-        Set a callback to be called when all points are reached.
-
-        Args:
-            callback (Callable[[], None]): Function called when movement finishes.  
-        """
-        self._callback_onFinish = callback
 
     def get_current_position(self) -> Point2D:
         """

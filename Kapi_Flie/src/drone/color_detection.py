@@ -83,25 +83,6 @@ class ColorDetection(IFrameConsumer):
             self._thread = None
         self._logger.info("Stopped.")
 
-    def enqueue(self, fwt: FrameWithTelemetry) -> None:
-        """
-        Enqueues a FrameWithTelemetry for color detection.
-
-        Args:
-            fwt (FrameWithTelemetry): Frame with telemetry to process.
-        """
-        while True:
-            try:
-                self._queue.put_nowait(fwt)
-                self._logger.debug("Enqueued frame of shape %s", fwt.frame.data.shape)
-                break
-            except Full:
-                try:
-                    self._queue.get_nowait()
-                    self._logger.debug("Queue full, dropped oldest frame.")
-                except Empty:
-                    break
-
     def set_callback(self, callback: Callable[[Position], None]) -> None:
         """
         Sets the callback function to be called when the color is detected.

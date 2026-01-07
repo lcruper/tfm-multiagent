@@ -66,7 +66,7 @@ class Viewer(AFrameConsumer):
         self._logger.info("Stopped.")
 
     # ----------------------------------------------------------------------
-    # Internal methods
+    # Private methods
     # ----------------------------------------------------------------------
     def _process_frame(self, fwt: FrameWithTelemetry) -> ndarray:
         """

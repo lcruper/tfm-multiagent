@@ -1,14 +1,13 @@
 Drone Package
 =============
 
-This section documents all components of the `drone` package.
-
 .. toctree::
    :maxdepth: 1
 
    drone_telemetry
    spiral_movement_simulator
    camera_capture
+   camera_simulator
    matcher
    color_detection
    viewer

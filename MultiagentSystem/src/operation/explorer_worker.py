@@ -65,7 +65,7 @@ class ExplorerWorker(threading.Thread):
         self._robot.set_callback_onFinish(self._on_finish)
 
     # -------------------
-    # Internal methods
+    # Private methods
     # -------------------
     def _on_point(self, point: Point2D) -> None:
         """

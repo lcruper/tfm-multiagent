@@ -1,5 +1,5 @@
-Color Detection
-===============
+Color Detection Module
+=======================
 
 .. automodule:: drone.color_detection
    :members:

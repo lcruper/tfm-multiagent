@@ -1,7 +1,7 @@
-Viewer
-======
+Drone Module
+=============
 
-.. automodule:: drone.viewer
+.. automodule:: drone.drone
    :members:
    :undoc-members:
    :show-inheritance:

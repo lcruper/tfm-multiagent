@@ -93,7 +93,7 @@ class ColorDetection(AFrameConsumer):
         self._callback = callback
 
     # ----------------------------------------------------------------------
-    # Internal methods
+    # Private methods
     # ----------------------------------------------------------------------
     def _process_frame(self, fwt: FrameWithTelemetry) -> None:
         """

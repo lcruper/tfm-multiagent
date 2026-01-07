@@ -1,5 +1,5 @@
-Spiral Movement Simulator
-=========================
+Spiral Movement Simulator Module
+=================================
 
 .. automodule:: drone.spiral_movement_simulator
    :members:

@@ -1,12 +1,3 @@
-"""
-Drone Telemetry Module
-----------------------
-
-This module implements a UDP listener that receives telemetry packets from a drone.
-It handles battery and pose packets, maintains the latest telemetry state, and
-optionally integrates with a movement simulator.
-"""
-
 from configuration import drone_telemetry as config
 import socket 
 import struct
@@ -134,7 +125,7 @@ class DroneTelemetry(ITelemetry):
         return telemetry_copy
 
     # ----------------------------------------------------------------------
-    # Internal methods
+    # Private methods
     # ----------------------------------------------------------------------
     def _send_handshake(self) -> None:
         """Send handshake packet to the drone to start telemetry."""

@@ -148,7 +148,7 @@ class Drone(ARobot):
         return self._detected_points.copy()
 
     # ---------------------------------------------------
-    # Internal methods
+    # Private methods
     # ---------------------------------------------------
     def _on_color_detected(self, position: Position) -> None:
         """

@@ -89,7 +89,7 @@ class OperationController:
         self._events.trigger_stop_inspection()
 
     # -------------------
-    # Internal methods
+    # Private methods
     # -------------------
     def _load_base_positions(self, path: str) -> List[Point2D]:
         """

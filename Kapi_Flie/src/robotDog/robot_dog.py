@@ -2,30 +2,35 @@ import logging
 import threading
 import time
 from math import hypot
-from typing import Dict, List, Optional, Callable
+from typing import Dict, List, Optional
 from numpy.random import normal
 
 from configuration import robot_dog as config
 from interfaces.interfaces import ARobot
 from structures.structures import Point2D
 
-
 class RobotDog(ARobot):
     """
-    Simulated robot dog.
+    Simulated ground robot that follows a list of 2D waypoints.
 
-    Moves sequentially along a list of 2D coordinates at a fixed speed. 
-    Supports callbacks for reached points and when the full path is completed.
+    The robot moves sequentially through the provided positions at a fixed
+    linear speed once an inspection routine is explicitly started. Movement
+    is executed in a background thread, allowing the main program to continue
+    running while the robot advances. During motion, callbacks are triggered
+    when a waypoint is reached and when all waypoints have been processed.
     """
 
     def __init__(self, speed: float) -> None:
         """
-        Create a RobotDog instance.
+        Creates a RobotDog instance.
+
+        The robot starts at position (0, 0) and remains idle until an
+        inspection routine is started.
 
         Args:
-            speed (float): Movement speed of the robot dog (in m/s).
+            speed (float): Linear movement speed of the robot dog (in m/s).
         """
-        self.speed = speed
+        self._speed: float = speed
 
         self._current_position: Point2D = Point2D(0.0, 0.0)
         self._waypoints: List[Point2D] = []
@@ -40,10 +45,14 @@ class RobotDog(ARobot):
     # ---------------------------------------------------
     def start_inspection(self, positions: List[Point2D]) -> None:
         """
-        Start moving along the given list of positions.
+        Starts the inspection routine.
 
-        Args: 
-            positions (List[Point2D]): List of target positions.
+        This method assigns the list of target positions and launches a
+        background thread that moves the robot sequentially toward each
+        waypoint. If the robot is already running, the request is ignored.
+
+        Args:
+            positions (List[Point2D]): Ordered list of target positions to visit.
         """
         if self._running:
             self._logger.warning("Already running.")
@@ -57,7 +66,10 @@ class RobotDog(ARobot):
 
     def stop_inspection(self) -> None:
         """
-        Stop the movement.
+        Stops the inspection routine.
+
+        This method signals the movement thread to stop and waits briefly for
+        it to terminate. If the robot is not running, the call has no effect.
         """
         if not self._running:
             self._logger.warning("Already stopped.")
@@ -73,40 +85,53 @@ class RobotDog(ARobot):
 
     def get_current_position(self) -> Point2D:
         """
-        Get the current 2D position.
+        Returns the current position of the robot.
 
-        Returns:   
-            Point2D: Current position as Point2D.   
+        A copy of the internal position is returned to avoid external
+        modification of the robot state.
+
+        Returns:
+            Point2D: Current 2D position of the robot.
         """
         return Point2D(self._current_position.x, self._current_position.y)  
     
     def get_telemetry(self) -> Optional[Dict[str, float]]:
         """
-        Retrieves the current telemetry data of the robot. In this case, it returns the current temperature.
+        Returns the current telemetry data of the robot.
+
+        In this simulated implementation, telemetry consists only of a
+        temperature reading generated from a normal distribution.
 
         Returns:
-            Optional[Dict[str, float]]: Current telemetry data, or None if unavailable.
+            Optional[Dict[str, float]]: Dictionary containing the current
+            temperature value.
         """
         return {"temperature": self._get_temperature()}
 
     # ---------------------------------------------------
-    # Internal methods
+    # Private methods
     # ---------------------------------------------------
     def _get_temperature(self) -> float:
         """
-        Get the current temperature of the ambient environment.
-    
-        It simulates temperature readings using a normal distribution.
+        Generates a simulated ambient temperature reading.
+
+        The temperature value is sampled from a normal distribution defined
+        by configuration parameters.
+
         Returns:
-            float: Current temperature in Celsius.
+            float: Simulated temperature (in degrees Celsius).
         """
         return normal(config.ROBOT_DOG_MEAN_TEMPERATURE, config.ROBOT_DOG_TEMPERATURE_STDDEV)
     
     def _move(self) -> None:
         """
-        Internal movement loop.
+        Executes the movement loop.
 
-        Moves sequentially through the waypoints, triggering callbacks as needed.
+        This method runs in a background thread. The robot moves toward each
+        waypoint incrementally, updating its position at fixed time intervals.
+        When a waypoint is reached within a configured tolerance, the
+        corresponding callback is triggered. Once all waypoints are processed,
+        the finish callback is executed.
         """
         for target in self._waypoints:
             if not self._running:
@@ -131,7 +156,7 @@ class RobotDog(ARobot):
                             self._logger.error("Callback onPoint failed: %s", e)
                     break
 
-                step = min(dist, self.speed * config.ROBOT_SLEEP_TIME)
+                step = min(dist, self._speed * config.ROBOT_SLEEP_TIME)
                 ratio = step / dist
                 nx = cx + (tx - cx) * ratio
                 ny = cy + (ty - cy) * ratio

@@ -1,38 +1,52 @@
-"""
-Nearest Neighbor Planner Module
--------------------------------
-
-Path planner based on the Nearest Neighbor heuristic.
-
-This module implements a simple greedy algorithm that constructs a path
-by iteratively visiting the closest unvisited point.
-"""
 
 from typing import List
-
 from structures.structures import Point2D
 from interfaces.interfaces import IPathPlanner
-
 
 class NearestNeighborPlanner(IPathPlanner):
     """
     Nearest Neighbor path planner.
 
     This planner builds a path starting from a fixed start point and
-    repeatedly selects the closest unvisited point until all points
-    have been visited.
+    repeatedly selects the closest unvisited point.
     """
+    
+    # ----------------------------------------------------------------
+    # Private Methods
+    # ----------------------------------------------------------------
+    def _euclidean_distance(self, p1: Point2D, p2: Point2D) -> float:
+        """
+        Computes the Euclidean distance between two 2D points.
+
+        Args:
+            p1 (Point2D): First point.
+            p2 (Point2D): Second point.
+
+        Returns:
+            float: Euclidean distance between the two points.
+        """
+        return ((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2) ** 0.5
+
+    # ----------------------------------------------------------------
+    # Public Methods
+    # ----------------------------------------------------------------
 
     def plan_path(self, start_point: Point2D, points: List[Point2D]) -> List[Point2D]:
         """
-        Plans a path using the Nearest Neighbor heuristic.
+        Computes an ordered path using the Nearest Neighbor heuristic.
+
+        The algorithm starts at the given start point and repeatedly selects
+        the closest point from the set of remaining unvisited points. Each
+        selected point is appended to the path. The process ends when no points remain.
 
         Args:
-            start_point (Point2D): Starting (x, y) coordinates.
-            points (List[Point2D]): List of points to visit.
+            start_point (Point2D): Initial position from which the path is built.
+            points (List[Point2D]): Set of target points to be visited.
 
         Returns:
-            List[Point2D]: Ordered list of points representing the planned path.
+            List[Point2D]: Ordered list of points representing the visiting
+            sequence computed by the heuristic. If the input list is empty,
+            an empty list is returned.
         """
         if not points:
             return []
@@ -49,16 +63,3 @@ class NearestNeighborPlanner(IPathPlanner):
 
         return path
 
-
-    def _euclidean_distance(self, p1: Point2D, p2: Point2D) -> float:
-        """
-        Computes the Euclidean distance between two points.
-
-        Args:
-            p1 (Point2D): First point.
-            p2 (Point2D): Second point.
-
-        Returns:
-            float: Euclidean distance between p1 and p2.
-        """
-        return ((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2) ** 0.5

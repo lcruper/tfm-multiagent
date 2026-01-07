@@ -1,46 +1,32 @@
-"""
-ILP Planner Module
-------------------
-
-Integer Linear Programming (ILP) solver with fixed start point.
-
-This module implements an optimization-based path planner using Gurobi,
-solving the Integer Linear Programming formulation.
-"""
-
 import gurobipy as gp
 from typing import List, Tuple, Dict
 
 from structures.structures import Point2D
 from interfaces.interfaces import IPathPlanner
 
-
 class ILPPlanner(IPathPlanner):
     """
-    Integer Linear Programming formulation solver with fixed start point.
+    Path planner based on an Integer Linear Programming (ILP) formulation.
 
-    This planner computes the minimum-length path that:
-    - starts from a fixed start point
-    - visits all remaining points exactly once
-    - minimizes the total Euclidean distance
-
-    The problem is solved using Gurobi.
+    This planner computes an optimal visiting order for a set of 2D points,
+    starting from a fixed initial point. The objective is to minimize the
+    total traveled Euclidean distance while visiting each point exactly once.
     """
 
     # ---------------------------------------------------
-    # Internal methods
+    # Private methods
     # ---------------------------------------------------
     def _extract_path(self, n: int, edges: List[Tuple[int, int]], start: int) -> List[int]:
         """
-        Reconstructs path starting from the fixed start node.
+        Reconstructs an ordered path from the selected edges of the solution.
 
         Args:
-            n (int): Number of nodes.
-            edges (List[Tuple[int, int]]): Edges in the solution.
-            start (int): Index of the start node.
+            n (int): Total number of points in the problem.
+            edges (List[Tuple[int, int]]): Edges selected in the solution.
+            start (int): Index of the start point.
 
         Returns:
-            List[int]: Ordered list of node indices.
+            List[int]: Ordered list of point indices representing the path.
         """
         adj = [[] for _ in range(n)]
         for i, j in edges:
@@ -66,16 +52,22 @@ class ILPPlanner(IPathPlanner):
 
     def _solve(self, points: List[Point2D], start_point: int) -> Dict:
         """
-        Solves the ILP formulation.
+        Builds and solves the ILP model for the path planning problem.
+
+        This method formulates the routing problem as an integer linear program
+        where binary variables indicate whether an edge between two points is
+        selected.
 
         Args:
-            points (List[Point2D]): List of 2D points.
-            start_point (int): Index of the fixed start point.
+            points (List[Point2D]): List of all points, including the start point.
+            start_point (int): Index of the fixed start point in the list.
 
         Returns:
-            Dict: Solution dictionary containing status, objective value
-                  and ordered points.
-        """
+            Dict: Dictionary containing:
+                - status: Solver termination status.
+                - obj: Objective value (total distance), if optimal.
+                - ordered_points: List of points in visiting order.
+        """    
         n = len(points)
         nodes = list(range(n))
 
@@ -121,14 +113,14 @@ class ILPPlanner(IPathPlanner):
 
     def _euclidean_distance(self, p1: Point2D, p2: Point2D) -> float:
         """
-        Computes the Euclidean distance between two points.
+        Computes the Euclidean distance between two 2D points.
 
         Args:
             p1 (Point2D): First point.
             p2 (Point2D): Second point.
 
         Returns:
-            float: Euclidean distance between p1 and p2.
+            float: Euclidean distance between the two points.
         """
         return ((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2) ** 0.5
     
@@ -137,14 +129,17 @@ class ILPPlanner(IPathPlanner):
     # ---------------------------------------------------
     def plan_path(self, start_point: Point2D, points: List[Point2D]) -> List[Point2D]:
         """
-        Plans a path using the eSHP solver.
+        Computes an optimal visiting order for a set of target points.
+
+        The path always starts from the provided start point. The start point
+        itself is not included in the returned list.
 
         Args:
-            start_point (Point2D): Starting point.
-            points (List[Point2D]): Points to visit.
+            start_point (Point2D): Starting point of the path.
+            points (List[Point2D]): Target points to be visited.
 
         Returns:
-            List[Point2D]: Ordered path.
+            List[Point2D]: Ordered list of points representing the planned path.
         """
         if not points:
             return []

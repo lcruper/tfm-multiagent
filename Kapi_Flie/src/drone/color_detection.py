@@ -48,7 +48,7 @@ class ColorDetection(IFrameConsumer):
         if self._colorLimits is None:
             raise ValueError(f"Color '{color}' not defined in configuration.")
 
-        self._queue: Queue = Queue(maxsize=config.COLOR_DETECTION_MAX_QUEUE_SIZE)
+        self._queue = Queue(maxsize=config.COLOR_DETECTION_MAX_QUEUE_SIZE)
 
         self._running: bool = False
         self._thread: Optional[threading.Thread] = None
@@ -114,7 +114,7 @@ class ColorDetection(IFrameConsumer):
     # ----------------------------------------------------------------------
     # Internal methods
     # ----------------------------------------------------------------------
-    def _detect_color(self, fwt: FrameWithTelemetry) -> None:
+    def _process_frame(self, fwt: FrameWithTelemetry) -> None:
         """
         Detects the configured color in a given frame using YOLO-detected objects.
 
@@ -176,7 +176,7 @@ class ColorDetection(IFrameConsumer):
                 continue
 
             try:
-                self._detect_color(fwt)
+                self._process_frame(fwt)
             except Exception as e:
                 self._logger.error("Error processing frame: %s", e)
 

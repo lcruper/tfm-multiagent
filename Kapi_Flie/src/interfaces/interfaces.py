@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Callable
+from typing import Dict, List, Optional, Callable, Any
+from queue import Queue
 from structures.structures import Frame, FrameWithTelemetry, Point2D, TelemetryData
 
 class ITelemetry(ABC):
@@ -83,6 +84,8 @@ class ICamera(ABC):
 
 class IFrameConsumer(ABC):
     """Interface for components that process frames with telemetry."""
+    
+    _queue: Queue
 
     @abstractmethod
     def start(self) -> None:
@@ -101,6 +104,16 @@ class IFrameConsumer(ABC):
 
         Args:
             fwt (FrameWithTelemetry): Frame data with associated telemetry to enqueue.
+        """
+        pass
+
+    @abstractmethod
+    def _process_frame(self, fwt: FrameWithTelemetry) -> Any:
+        """
+        Processes a FrameWithTelemetry object.
+
+        Args:
+            fwt (FrameWithTelemetry): Frame data with associated telemetry to process.
         """
         pass
 

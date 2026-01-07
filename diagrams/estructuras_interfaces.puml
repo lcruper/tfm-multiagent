@@ -72,9 +72,11 @@ interface ICamera {
 }
 
 interface IFrameConsumer {
+    +queue : Queue<FrameWithTelemetry>
     +start(): void
     +stop(): void
     +enqueue(fwt: FrameWithTelemetry): void
+    -_process_frame(fwt: FrameWithTelemetry): Any
 }
 
 interface IRobot {

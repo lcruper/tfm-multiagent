@@ -29,7 +29,7 @@ class Viewer(IFrameConsumer):
 
     def __init__(self) -> None:
         """Creates a Viewer instance."""
-        self._queue: Queue = Queue(maxsize=config.VIEWER_MAX_QUEUE_SIZE)
+        self._queue = Queue(maxsize=config.VIEWER_MAX_QUEUE_SIZE)
 
         self._running: bool = False
         self._thread: Optional[threading.Thread] = None
@@ -87,7 +87,7 @@ class Viewer(IFrameConsumer):
     # ----------------------------------------------------------------------
     # Internal methods
     # ----------------------------------------------------------------------
-    def _draw_overlay(self, fwt: FrameWithTelemetry) -> ndarray:
+    def _process_frame(self, fwt: FrameWithTelemetry) -> ndarray:
         """
         Draws telemetry overlay on the frame.
 
@@ -132,7 +132,7 @@ class Viewer(IFrameConsumer):
                 continue
 
             try:
-                frame_display = self._draw_overlay(fwt)
+                frame_display = self._process_frame(fwt)
                 cv2.imshow("Drone Camera Live", frame_display)
                 # ESC key to exit
                 if cv2.waitKey(1) & 0xFF == 27:

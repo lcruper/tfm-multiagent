@@ -18,7 +18,7 @@ sys.path.insert(0, str(SRC_DIR))
 # Project information
 # ============================================================
 
-project = "Kapi_Flie"
+project = "Multiagent Drone and Robot Dog System"
 author = "lidia"
 copyright = "2025, lidia"
 

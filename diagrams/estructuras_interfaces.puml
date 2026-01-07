@@ -1,0 +1,103 @@
+@startuml
+
+skinparam classBackgroundColor white
+
+dataclass Battery <<(D, lightblue)>>{
+    + voltage: float
+}
+
+dataclass Position <<(D, lightblue)>> {
+    + x: float
+    + y: float
+    + z: float
+}
+
+dataclass Orientation  <<(D, lightblue)>> {
+    + roll: float
+    + pitch: float
+    + yaw: float
+}
+
+dataclass Pose <<(D, lightblue)>> {
+    + position: Position
+    + orientation: Orientation
+}
+
+dataclass TelemetryData <<(D, lightblue)>> {
+    + pose: Pose
+    + battery: Battery
+}
+
+dataclass Frame <<(D, lightblue)>> {
+    + data: np.ndarray
+}
+
+dataclass FrameWithTelemetry <<(D, lightblue)>> {
+    + frame: Frame
+    + telemetry: TelemetryData
+}
+
+dataclass Point2D <<(D, lightblue)>> {
+    + x: float
+    + y: float
+}
+
+
+Pose *-- Position
+Pose *-- Orientation
+TelemetryData *-- Pose
+TelemetryData *-- Battery
+FrameWithTelemetry *-- Frame
+FrameWithTelemetry *-- TelemetryData
+
+
+interface ITelemetry {
+    +start(): void
+    +stop(): void
+    +get_telemetry(): TelemetryData
+}
+
+interface IMovementSimulator {
+    +start(): void
+    +stop(): void
+    +get_xy(): Point2D
+}
+
+interface ICamera {
+    +start(): void
+    +stop(): void
+    +get_frame(): Frame
+    +turn_on_flash(): void
+    +turn_off_flash(): void
+}
+
+interface IFrameConsumer {
+    +start(): void
+    +stop(): void
+    +enqueue(fwt: FrameWithTelemetry): void
+}
+
+interface IRobot {
+    - _callback_onPoint: Callable<[Point2D], void>
+    - _callback_onFinish: Callable<[], void>
+    + start_inspection(positions: List<Point2D>): void
+    + stop_inspection(): List<Point2D>
+    + set_callback_onPoint(callback: Callable<[Point2D], void>): void
+    + set_callback_onFinish(callback: Callable<[], void>): void
+    + get_current_position(): Point2D
+    + get_telemetry(): Dict<String, float>
+}
+
+interface IPathPlanner {
+    +euclidean_distance(p1: Point2D, p2: Point2D): float
+    +plan_path(start: Point2D, points: List<Point2D>): List<Point2D>
+}
+
+ITelemetry ----> TelemetryData
+IMovementSimulator ---> Point2D
+ICamera ----> Frame
+IFrameConsumer --> FrameWithTelemetry
+IRobot ---> Point2D
+IRobot ---> TelemetryData
+IPathPlanner ----> Point2D
+@enduml

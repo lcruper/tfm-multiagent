@@ -23,7 +23,7 @@ class RobotDog {
     - _get_temperature(): float
 }
 
-dataclass Point2D {
+dataclass Point2D <<(D, lightblue)>> {
     + x: float
     + y: float
 }

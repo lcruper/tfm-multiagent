@@ -1,57 +1,9 @@
-"""
-Core Interfaces for the Drone and Robot Dog System
---------------------------------------------------
-
-This module defines the abstract interfaces for the system. It provides standardized contracts for 
-key components.
-"""
-
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Callable
-
 from structures.structures import Frame, FrameWithTelemetry, Point2D, TelemetryData
 
-# -------------------------------
-# Camera Interface
-# -------------------------------
-class ICamera(ABC):
-    """Interface for camera classes."""
-
-    @abstractmethod
-    def start(self) -> None:
-        """Starts the camera."""
-        pass
-
-    @abstractmethod
-    def stop(self) -> None:
-        """Stops the camera."""
-        pass
-
-    @abstractmethod
-    def get_frame(self) -> Optional[Frame]:
-        """
-        Retrieves a single camera frame.
-
-        Returns:
-            Optional[Frame]: The current camera frame, or None if unavailable.
-        """
-        pass
-
-    @abstractmethod
-    def turn_on_flash(self) -> None:
-        """Turns on the camera flash."""
-        pass    
-
-    @abstractmethod
-    def turn_off_flash(self) -> None:
-        """Turns off the camera flash."""
-        pass
-
-# -------------------------------
-# Telemetry Interface
-# -------------------------------
 class ITelemetry(ABC):
-    """Interface for telemetry classes."""
+    """Interface for telemetry providers."""
 
     @abstractmethod
     def start(self) -> None:
@@ -73,37 +25,8 @@ class ITelemetry(ABC):
         """
         pass
 
-# ----------------------------------------
-# FrameWithTelemetry Consumer Interface
-# ----------------------------------------
-class IFrameConsumer(ABC):
-    """Interface for classes consuming FrameWithTelemetry objects."""
-
-    @abstractmethod
-    def start(self) -> None:
-        """Starts the frame processing."""
-        pass
-
-    @abstractmethod
-    def stop(self) -> None:
-        """Stops the frame processing."""
-        pass
-
-    @abstractmethod
-    def enqueue(self, fwt: FrameWithTelemetry) -> None:
-        """
-        Enqueues a FrameWithTelemetry object for processing.
-
-        Args:
-            fwt (FrameWithTelemetry): Frame data with telemetry.
-        """
-        pass
-
-# -------------------------------
-# Movement Simulator Interface
-# -------------------------------
 class IMovementSimulator(ABC):
-    """Interface for movement simulator classes."""
+    """Interface for movement simulators."""
 
     @abstractmethod
     def start(self) -> None:
@@ -121,15 +44,74 @@ class IMovementSimulator(ABC):
         Retrieves the current position.
 
         Returns:
-            Optional[Point2D]: Current position, or None if unavailable.
+            Optional[Point2D]: The current position, or None if unavailable.
         """
         pass
 
-# -------------------------------
-# Robot Interface
-# -------------------------------
+class ICamera(ABC):
+    """Interface for frames providers."""
+
+    @abstractmethod
+    def start(self) -> None:
+        """Starts the frame acquisition."""
+        pass
+
+    @abstractmethod
+    def stop(self) -> None:
+        """Stops the frame acquisition."""
+        pass
+
+    @abstractmethod
+    def get_frame(self) -> Optional[Frame]:
+        """
+        Retrieves the current frame.
+
+        Returns:
+            Optional[Frame]: The current frame, or None if unavailable.
+        """
+        pass
+
+    @abstractmethod
+    def turn_on_flash(self) -> None:
+        """Turns on the camera flash (if available)."""
+        pass    
+
+    @abstractmethod
+    def turn_off_flash(self) -> None:
+        """Turns off the camera flash (if available)."""
+        pass
+
+class IFrameConsumer(ABC):
+    """Interface for components that process frames with telemetry."""
+
+    @abstractmethod
+    def start(self) -> None:
+        """Starts consuming frames."""
+        pass
+
+    @abstractmethod
+    def stop(self) -> None:
+        """Stops consuming frames."""
+        pass
+
+    @abstractmethod
+    def enqueue(self, fwt: FrameWithTelemetry) -> None:
+        """
+        Enqueues a FrameWithTelemetry object for processing.
+
+        Args:
+            fwt (FrameWithTelemetry): Frame data with associated telemetry to enqueue.
+        """
+        pass
+
 class IRobot(ABC):
-    """Interface for robot classes."""
+    """
+    Interface for robots.
+    
+    Attributes:
+        _callback_onPoint (Optional[Callable[[Point2D], None]]): Callback for when a point is reached.
+        _callback_onFinish (Optional[Callable[[], None]]): Callback for when inspection finishes.
+    """
 
     _callback_onPoint: Optional[Callable[[Point2D], None]] = None
     _callback_onFinish: Optional[Callable[[], None]] = None
@@ -137,17 +119,17 @@ class IRobot(ABC):
     @abstractmethod
     def start_inspection(self, positions: Optional[List[Point2D]]) -> None:
         """
-        Starts the robot inspection.
+        Starts the inspection routine.
 
         Args:
-            positions (Optional[List[Point2D]]): List of target positions to inspect. If None, no targets are set.
+            positions (Optional[List[Point2D]]): List of target points to inspect. If None, no targets are set.
         """
         pass
 
     @abstractmethod
     def stop_inspection(self) -> Optional[List[Point2D]]:
         """
-        Stops the robot inspection.
+        Stops the inspection routine.
 
         Returns:
             Optional[List[Point2D]]: List of detected points, or None if unavailable.
@@ -157,17 +139,17 @@ class IRobot(ABC):
     @abstractmethod
     def set_callback_onPoint(self, callback: Callable[[Point2D], None]) -> None:
         """
-        Sets a callback to be called when reaching each point.
+        Register a callback triggered when the robot reaches a target point.
 
         Args:
-            callback (Callable[[Point2D], None]): Function to call when reaching each point. 
+            callback (Callable[[Point2D], None]): Function to call when reaching a point. 
         """
         pass
 
     @abstractmethod
     def set_callback_onFinish(self, callback: Callable[[], None]) -> None:
         """
-        Sets a callback to be called when the inspection finishes.
+        Register a callback triggered when the inspection finishes.
 
         Args:
             callback (Callable[[], None]): Function to call when inspection finishes.
@@ -180,7 +162,7 @@ class IRobot(ABC):
         Retrieves the current position of the robot.
 
         Returns:
-            Optional[Point2D]: Current position, or None if unavailable.
+            Optional[Point2D]: the current position, or None if unavailable.
         """
         pass
 
@@ -189,16 +171,12 @@ class IRobot(ABC):
         Retrieves the current telemetry data of the robot.
 
         Returns:
-            Optional[Dict[str, float]]: Current telemetry data, or None if unavailable.
+            Optional[Dict[str, float]]: the current telemetry data as a dictionary of sensor names to values, or None if unavailable.
         """
         pass
 
-
-# -------------------------------
-# Path Planner Interface
-# -------------------------------
 class IPathPlanner(ABC):
-    """Interface for path planner classes."""
+    """Interface for path planning algorithms."""
 
     def euclidean_distance(self, p1: Point2D, p2: Point2D) -> float:
         """
@@ -216,13 +194,13 @@ class IPathPlanner(ABC):
     @abstractmethod
     def plan_path(self, start: Point2D, points: List[Point2D]) -> List[Point2D]:
         """
-        Plans a path from start to multiple points.
-
+        Plans a path from a starting position through a list of target points.
+        
         Args:
             start (Point2D): Starting position.
-            points (List[Point2D]): Target positions.
+            points (List[Point2D]): Target points.
 
         Returns:
-            List[Point2D]: Planned path as a list of waypoints.
+            List[Point2D]: Ordered list of points representing the planned path.
         """
         pass

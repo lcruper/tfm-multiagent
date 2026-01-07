@@ -1,7 +1,7 @@
 eSHP Planner
 ============
 
-.. automodule:: planners.eSHP_planner
+.. automodule:: planners.ilp_planner
    :members:
    :undoc-members:
    :show-inheritance:

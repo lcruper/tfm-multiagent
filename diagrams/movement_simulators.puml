@@ -17,7 +17,7 @@ class SpiralMovementSimulator {
     - _radial_growth: float
     - _linear_speed: float
     - _last_t: float
-    - _theta: float
+    - _last_theta: float
     + SpiralMovementSimulator(radial_growth: float, linear_speed: float)
 }
 

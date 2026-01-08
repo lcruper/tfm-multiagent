@@ -31,7 +31,7 @@ class SpiralMovementSimulator(IMovementSimulator):
 
         self._active: bool = False
         self._last_t: Optional[float] = None
-        self._theta: float = 0.0
+        self._last_theta: float = 0.0
 
         self._logger: logging.Logger = logging.getLogger("SpiralMovementSimulator")
 
@@ -47,9 +47,9 @@ class SpiralMovementSimulator(IMovementSimulator):
         if self._active:
             self._logger.warning("Already started.")
             return
-        self._theta = 0.0
+        self._last_theta = 0.0
         self._last_t = time()
-        self._theta = 0.0
+        self._last_theta = 0.0
         self._active = True
         self._logger.info("Started.")
 
@@ -64,7 +64,7 @@ class SpiralMovementSimulator(IMovementSimulator):
             return
         self._active = False
         self._last_t = None
-        self._theta = 0.0   
+        self._last_theta = 0.0   
         self._logger.info("Stopped.")
 
     def get_xy(self) -> Optional[Point2D]:
@@ -88,12 +88,12 @@ class SpiralMovementSimulator(IMovementSimulator):
 
         dr_dtheta = self._radial_growth / (2 * pi)
 
-        r = dr_dtheta * self._theta
+        r = dr_dtheta * self._last_theta
         dtheta = ds / sqrt(r**2 + dr_dtheta**2)
-        self._theta += dtheta
+        self._last_theta += dtheta
 
-        r = dr_dtheta * self._theta
-        x = r * cos(self._theta)
-        y = r * sin(self._theta)
+        r = dr_dtheta * self._last_theta
+        x = r * cos(self._last_theta)
+        y = r * sin(self._last_theta)
 
         return Point2D(x, y)

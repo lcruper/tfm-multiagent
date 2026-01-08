@@ -1,5 +1,7 @@
 @startuml
 
+skinparam classBackgroundColor white
+
 interface ITelemetry  {
     +start(): void
     +stop(): void

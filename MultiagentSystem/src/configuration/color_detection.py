@@ -52,7 +52,7 @@ COLOR_DETECTION_COLORS: Final[dict] = {
 """HSV color ranges used for color segmentation."""
 
 COLOR_DETECTION_IMG_SIZE: Final[int] = 256
-"""Input image size used for YOLO inference."""
+"""Input image size (in pixels) used for YOLO inference."""
 
 COLOR_DETECTION_CONF_THRESH: Final[float] = 0.35
 """Confidence threshold for YOLO detections."""
@@ -61,7 +61,7 @@ COLOR_DETECTION_IOU_THRESH: Final[float] = 0.45
 """Intersection-over-Union threshold for non-maximum suppression."""
 
 COLOR_DETECTION_MIN_BOX_AREA: Final[int] = 100
-"""Minimum acceptable bounding box area for detected objects."""
+"""Minimum acceptable bounding box area (in pixels) for detected objects."""
 
 COLOR_DETECTION_THRESH: Final[float] = 0.30
 """Final threshold for color-based decision making."""

@@ -5,10 +5,11 @@ from drone.camera_capture import CameraCapture
 from drone.camera_simulator import CameraSimulator
 from drone.viewer import Viewer
 from drone.color_detection import ColorDetection
-from drone.spiral_movement_simulator import SpiralMovementSimulator
+from drone.movementSimulator.spiral_movement_simulator import SpiralMovementSimulator
 from robotDog.robot_dog_simulator import RobotDogSimulator
 from operation.operation_controller import OperationController
 from operation.operation_visualizer import OperationVisualizer
+from drone.movementSimulator.zigzag_movement_simulator import ZigzagMovementSimulator
 from utils.logs import ColoredFormatter, LoggerNameFilter
 from planners.nearest_neighbor_planner import NearestNeighborPlanner
 import logging
@@ -23,14 +24,21 @@ logging.basicConfig(
     handlers=[handler]
 )
 
+spiralMovement = SpiralMovementSimulator(
+    configuration.movement_simulator.SPIRAL_SIMULATOR_RADIAL_GROWTH,
+    configuration.movement_simulator.SPIRAL_SIMULATOR_LINEAR_SPEED
+)
+
+zigzagMovement = ZigzagMovementSimulator(
+    configuration.movement_simulator.ZIGZAG_SIMULATOR_MAX_HORIZONTAL_DISTANCE,
+    configuration.movement_simulator.ZIGZAG_SIMULATOR_LINEAR_SPEED
+)
+
 telemetry = DroneTelemetry(
     configuration.drone_telemetry.DRONE_IP, 
     configuration.drone_telemetry.DRONE_PORT, 
     configuration.drone_telemetry.LOCAL_PORT, 
-    SpiralMovementSimulator(
-        configuration.spiral_movement_simulator.SPIRAL_SIMULATOR_RADIAL_GROWTH, 
-        configuration.spiral_movement_simulator.SPIRAL_SIMULATOR_LINEAR_SPEED
-    )
+    zigzagMovement
 )
 
 camera = CameraCapture(

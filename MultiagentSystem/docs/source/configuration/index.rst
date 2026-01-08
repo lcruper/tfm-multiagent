@@ -8,7 +8,7 @@ They are organized into several modules, each focusing on a component of the sys
    :maxdepth: 2
 
    drone_telemetry
-   spiral_movement_simulator
+   movement_simulator
    camera_capture
    camera_simulator
    matcher

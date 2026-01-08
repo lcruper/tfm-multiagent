@@ -1,6 +1,4 @@
 """
-inspector Worker
----------------
 
 Threaded inspector worker of a mission.  
 

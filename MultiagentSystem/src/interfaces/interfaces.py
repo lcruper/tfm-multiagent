@@ -27,11 +27,11 @@ class ITelemetry(ABC):
         pass
 
 class IMovementSimulator(ABC):
-    """Interface for movement simulators."""
+    """Interface for 2D movement simulators."""
 
     @abstractmethod
     def start(self) -> None:
-        """Starts the movement simulator."""
+        """Starts the movement simulator from the origin."""
         pass
 
     @abstractmethod

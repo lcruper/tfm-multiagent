@@ -22,9 +22,6 @@ project = "Multiagent Drone and Robot Dog System"
 author = "lidia"
 copyright = "2025, lidia"
 
-version = "0.1.0"
-release = version
-
 # ============================================================
 # General configuration
 # ============================================================

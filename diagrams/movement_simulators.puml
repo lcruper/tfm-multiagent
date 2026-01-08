@@ -1,0 +1,37 @@
+@startuml
+
+skinparam classBackgroundColor white
+
+dataclass Point2D <<(D, lightblue)>> {
+    + x: float
+    + y: float
+}
+
+interface IMovementSimulator {
+    +start(): void
+    +stop(): void
+    +get_xy(): Point2D
+}
+
+class SpiralMovementSimulator {
+    - _radial_growth: float
+    - _linear_speed: float
+    - _last_t: float
+    - _theta: float
+    + SpiralMovementSimulator(radial_growth: float, linear_speed: float)
+}
+
+class ZigzagMovementSimulator {
+    - _max_horizontal_distance: float
+    - _speed: float
+    - _start_t: float
+    + ZigzagMovementSimulator(max_horizontal_distance: float, speed: float)
+}
+
+IMovementSimulator <|.. SpiralMovementSimulator
+IMovementSimulator <|.. ZigzagMovementSimulator
+SpiralMovementSimulator --> Point2D
+ZigzagMovementSimulator --> Point2D
+
+
+@enduml

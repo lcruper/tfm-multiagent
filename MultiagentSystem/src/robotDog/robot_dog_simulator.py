@@ -28,7 +28,7 @@ class RobotDogSimulator(ARobot):
         inspection routine is started by calling start_inspection().
 
         Args:
-            speed (float): Linear movement speed of the robot dog (in m/s).
+            speed (float): Linear movement speed of the robot dog (m/s).
         """
         self._speed: float = speed
 
@@ -119,7 +119,7 @@ class RobotDogSimulator(ARobot):
         by configuration parameters.
 
         Returns:
-            float: Simulated temperature (in degrees Celsius).
+            float: Simulated temperature (degrees Celsius).
         """
         return normal(config.ROBOT_DOG_MEAN_TEMPERATURE, config.ROBOT_DOG_TEMPERATURE_STDDEV)
     

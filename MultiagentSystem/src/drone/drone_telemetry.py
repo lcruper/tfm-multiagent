@@ -10,7 +10,6 @@ from typing import Optional
 from interfaces.interfaces import ITelemetry, IMovementSimulator
 from structures.structures import Battery, Position, Orientation, Pose, TelemetryData
 
-
 class DroneTelemetry(ITelemetry):
     """
     UDP telemetry listener for a drone.
@@ -86,8 +85,8 @@ class DroneTelemetry(ITelemetry):
         """
         Stops the telemetry listener.
 
-        Signals the background thread to terminate, closes the UDP socket, and
-        resets telemetry to default values (position 0, battery 0V). 
+        Signals the background thread to terminate and closes the UDP socket. 
+        No telemetry internal state is updated
         """
         if not self._running:
             self._logger.warning("Already stopped.")
@@ -106,15 +105,6 @@ class DroneTelemetry(ITelemetry):
             if self._thread.is_alive():
                 self._logger.warning("Did not stop in time.")
             self._thread = None
-
-        with self._lock:
-            self._telemetry = TelemetryData(
-                pose=Pose(
-                    position=Position(0, 0, 0),
-                    orientation=Orientation(0, 0, 0)
-                ),
-                battery=Battery(voltage=0)
-            )
 
         self._logger.info("Stopped.")
 

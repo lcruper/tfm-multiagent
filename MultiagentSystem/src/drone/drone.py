@@ -73,7 +73,6 @@ class Drone(ARobot):
 
         self.telemetry.start()
         simulator = self.telemetry.get_simulator()
-        print(simulator)
         if simulator:
             simulator.start()
         self.camera.start()

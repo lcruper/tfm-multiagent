@@ -8,7 +8,7 @@ This section documents all components of the `operation` package.
 
    operation_status
    operation_events
+   explorer_worker
    inspector_worker
-   executor_worker
    operation_controller
    operation_visualizer

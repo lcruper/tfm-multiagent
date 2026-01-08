@@ -1,5 +1,5 @@
 Camera Simulator Module
-======================
+=========================
 
 .. automodule:: drone.camera_simulator
    :members:

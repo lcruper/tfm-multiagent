@@ -13,7 +13,7 @@ These points are later passed to the inspector agent for detailed inspection.
    :maxdepth: 1
 
    drone_telemetry
-   spiral_movement_simulator
+   movement_simulator/index
    camera_capture
    camera_simulator
    matcher

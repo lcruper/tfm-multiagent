@@ -1,5 +1,5 @@
-Robot Dog Module
-=================
+Robot Dog Simulator Module
+===========================
 
 .. automodule:: robotDog.robot_dog_simulator
    :members:

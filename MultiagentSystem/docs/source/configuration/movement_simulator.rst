@@ -1,7 +1,7 @@
-Spiral Movement Simulator Parameters
+Movement Simulator Parameters
 =======================================
 
-.. automodule:: configuration.spiral_movement_simulator
+.. automodule:: configuration.movement_simulator
    :members:
    :undoc-members:
    :show-inheritance:

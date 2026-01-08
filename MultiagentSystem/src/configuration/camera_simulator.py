@@ -1,7 +1,12 @@
 from typing import Final
+from configuration.color_detection import COLOR_DETECTION_COLOR
 
+CAMERA_SIMULATOR_TARGET_COLOR: Final[str] = COLOR_DETECTION_COLOR
+"""Target color for objects generated in the camera simulator.
+It matches the color `COLOR_DETECTION_COLOR` used in the color detection module.
+"""
 CAMERA_SIMULATOR_COLOR_PROBABILITY: Final[float] = 0.3
-"""Probability of generating a `COLOR_DETECTION_COLOR` object in the simulated camera frame."""
+"""Probability of generating a `CAMERA_SIMULATOR_TARGET_COLOR` object in the simulated camera frame."""
 
 CAMERA_SIMULATOR_COLOR_DICT: Final[dict] = {
     "red": [0, 0, 255],
@@ -16,10 +21,10 @@ CAMERA_SIMULATOR_COLOR_DICT: Final[dict] = {
 """BGR color values for different target colors used in the camera simulator."""
 
 CAMERA_SIMULATOR_MIN_RADIUS: Final[int] = 50
-"""Minimum radius of objects generated in the simulated camera frame."""
+"""Minimum radius (in pixels) of objects generated in the simulated camera frame."""
 
 CAMERA_SIMULATOR_MAX_RADIUS: Final[int] = 100
-"""Maximum radius of objects generated in the simulated camera frame."""
+"""Maximum radius (in pixels) of objects generated in the simulated camera frame."""
 
 CAMERA_SIMULATOR_FRAME_PERIOD: Final[float] = 2.0
 """Time period (in seconds) between frames in the camera simulator."""

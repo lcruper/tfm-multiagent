@@ -1,5 +1,5 @@
 Camera Capture Module
-======================
+=======================
 
 .. automodule:: drone.camera_capture
    :members:

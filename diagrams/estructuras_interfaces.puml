@@ -91,7 +91,7 @@ abstract class ARobot <<(A, LightCoral)>> {
 }
 
 interface IPathPlanner {
-    {abstract}+plan_path(start: Point2D, points: List<Point2D>): List<Point2D>
+    +plan_path(start: Point2D, points: List<Point2D>): List<Point2D>
 }
 
 ITelemetry ----> TelemetryData

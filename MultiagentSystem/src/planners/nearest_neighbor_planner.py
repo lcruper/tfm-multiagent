@@ -5,10 +5,10 @@ from interfaces.interfaces import IPathPlanner
 
 class NearestNeighborPlanner(IPathPlanner):
     """
-    Nearest Neighbor path planner.
+    Heuristic path planner.
 
-    This planner builds a path starting from a fixed start point and
-    repeatedly selects the closest unvisited point.
+    This class implements a heuristic path planner based on the nearest neighbor
+    strategy.
     """
     
     # ----------------------------------------------------------------

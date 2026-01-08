@@ -1,0 +1,29 @@
+@startuml
+
+skinparam classBackgroundColor white
+
+interface IPathPlanner {
+    +plan_path(start: Point2D, points: List<Point2D>): List<Point2D>
+}
+
+class ILPPlanner {
+    - _extract_path(edges: List<Tuple<int, int>>): List<int>
+    - _solve_gurobi(points: List<Point2D>): Dict
+    -  _euclidean_distance(p1: Point2D, p2: Point2D): float
+}
+
+class NearestNeighborPlanner {
+    - _euclidean_distance(p1: Point2D, p2: Point2D): float
+}
+
+
+dataclass Point2D <<(D, lightblue)>> {
+    + x: float
+    + y: float
+}
+
+IPathPlanner <|.. ILPPlanner
+IPathPlanner <|.. NearestNeighborPlanner
+ILPPlanner --> Point2D
+NearestNeighborPlanner --> Point2D
+@enduml

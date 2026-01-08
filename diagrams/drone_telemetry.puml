@@ -1,0 +1,66 @@
+@startuml
+
+interface ITelemetry  {
+    +start(): void
+    +stop(): void
+    +get_telemetry(): TelemetryData
+}
+
+interface IMovementSimulator {
+    +start(): void
+    +stop(): void
+    +get_xy(): Point2D
+}
+
+dataclass Battery <<(D, lightblue)>>{
+    + voltage: float
+}
+
+dataclass Position <<(D, lightblue)>> {
+    + x: float
+    + y: float
+    + z: float
+}
+
+dataclass Orientation  <<(D, lightblue)>> {
+    + roll: float
+    + pitch: float
+    + yaw: float
+}
+
+dataclass Pose <<(D, lightblue)>> {
+    + position: Position
+    + orientation: Orientation
+}
+
+dataclass TelemetryData <<(D, lightblue)>> {
+    + pose: Pose
+    + battery: Battery
+}
+
+
+class DroneTelemetry {
+    - _drone_ip: str
+    - _drone_port: int
+    - _local_port: int
+    - _simulator: IMovementSimulator
+    - _telemetry: TelemetryData
+
+    + DroneTelemetry(drone_ip: str, drone_port: int, local_port: int, simulator: IMovementSimulator)
+    + get_ simulator(): IMovementSimulator
+    - _send_handshake(): void
+    - _start_communication(): void
+    - _process_battery_packet(payload: bytes): void
+    - _process_pose_packet(payload: bytes): void
+    - _listen(): void
+}
+
+ITelemetry <|.. DroneTelemetry
+DroneTelemetry o-> TelemetryData
+IMovementSimulator <-* DroneTelemetry
+Pose *-- Position
+Pose *-- Orientation
+TelemetryData *-- Pose
+TelemetryData *-- Battery
+@enduml
+

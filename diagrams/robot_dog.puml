@@ -29,5 +29,5 @@ dataclass Point2D <<(D, lightblue)>> {
 }
 
 ARobot <|.. RobotDogSimulator
-RobotDogSimulator -> Point2D
+RobotDogSimulator o-> Point2D
 @enduml

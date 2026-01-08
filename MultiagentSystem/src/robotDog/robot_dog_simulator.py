@@ -25,7 +25,7 @@ class RobotDogSimulator(ARobot):
         Creates a RobotDogSimulator instance.
 
         The robot starts at position (0, 0) and remains idle until an
-        inspection routine is started.
+        inspection routine is started by calling start_inspection().
 
         Args:
             speed (float): Linear movement speed of the robot dog (in m/s).
@@ -69,7 +69,7 @@ class RobotDogSimulator(ARobot):
         Stops the inspection routine.
 
         This method signals the movement thread to stop and waits briefly for
-        it to terminate. If the robot is not running, the call has no effect.
+        it to terminate.
         """
         if not self._running:
             self._logger.warning("Already stopped.")

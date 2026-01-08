@@ -72,7 +72,8 @@ class Drone(ARobot):
         self._detected_points.clear()
 
         self.telemetry.start()
-        simulator = getattr(self.telemetry, "simulator", None)
+        simulator = self.telemetry.get_simulator()
+        print(simulator)
         if simulator:
             simulator.start()
         self.camera.start()
@@ -99,7 +100,7 @@ class Drone(ARobot):
         self.color_detector.stop()
         self.matcher.stop()
         self.camera.stop()
-        simulator = getattr(self.telemetry, "simulator", None)
+        simulator = self.telemetry.get_simulator()
         if simulator:
             simulator.stop()
         self.telemetry.stop()

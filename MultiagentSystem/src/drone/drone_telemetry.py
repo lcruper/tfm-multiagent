@@ -13,12 +13,16 @@ from structures.structures import Battery, Position, Orientation, Pose, Telemetr
 
 class DroneTelemetry(ITelemetry):
     """
-    UDP telemetry listener for a drone. Maintains the latest telemetry state.
+    UDP telemetry listener for a drone.
 
-    This class receives two types of UDP packets:
-        - Battery packets
-        - Pose packets
+    This class receives real-time telemetry from a drone via UDP. It maintains
+    the latest telemetry snapshot including position, orientation, and battery
+    voltage. Optionally, a movement simulator can override x/y coordinates.
 
+    The listener runs in a background thread and updates internal telemetry safely. 
+    Two types of packets are processed:
+        - Battery packets: update voltage
+        - Pose packets: update position (x, y, z) and orientation (roll, pitch, yaw)
     """
 
     def __init__(self,
@@ -28,17 +32,20 @@ class DroneTelemetry(ITelemetry):
                  simulator: Optional[IMovementSimulator] = None) -> None:
         """
         Creates a DroneTelemetry instance.
-        
+
+        The instance starts with default telemetry (position 0,0,0 and voltage 0V)
+        and the telemetry listener is idle. It starts listening in a background thread by calling start().
+
         Args:
-            drone_ip (str): IP address of the drone sending UDP packets.
+            drone_ip (str): IP address of the drone sending UDP telemetry packets.
             drone_port (int): UDP port on the drone for handshake messages.
-            local_port (int): Local UDP port to listen for incoming telemetry.
-            simulator (Optional[IMovementSimulator]): Optional simulator for generating x/y coordinates of the drone.
+            local_port (int): Local UDP port to listen for incoming telemetry packages.
+            simulator (Optional[IMovementSimulator]): Optional simulator to provide x/y drone coordinates.
         """
-        self.drone_ip: str = drone_ip
-        self.drone_port: int = drone_port
-        self.local_port: int = local_port
-        self.simulator: Optional[IMovementSimulator] = simulator
+        self._drone_ip: str = drone_ip
+        self._drone_port: int = drone_port
+        self._local_port: int = local_port
+        self._simulator: Optional[IMovementSimulator] = simulator
 
         self._telemetry: TelemetryData = TelemetryData(
             pose=Pose(
@@ -57,10 +64,15 @@ class DroneTelemetry(ITelemetry):
         self._logger: logging.Logger  = logging.getLogger("DroneTelemetry")
         
     # ----------------------------------------------------------------------
-    # Public metodhs
+    # Public methods
     # ----------------------------------------------------------------------
     def start(self) -> None:
-        """Start the telemetry listener in a background thread."""
+        """
+        Starts the telemetry listener.
+
+        Launches a background thread that continuously receives UDP packets
+        and updates internal telemetry. 
+        """
         if self._running:
             self._logger.warning("Already running.")
             return
@@ -71,7 +83,12 @@ class DroneTelemetry(ITelemetry):
         self._logger.info("Started.")
 
     def stop(self) -> None:
-        """Stop the listener and close the UDP socket."""
+        """
+        Stops the telemetry listener.
+
+        Signals the background thread to terminate, closes the UDP socket, and
+        resets telemetry to default values (position 0, battery 0V). 
+        """
         if not self._running:
             self._logger.warning("Already stopped.")
             return
@@ -103,17 +120,20 @@ class DroneTelemetry(ITelemetry):
 
     def get_telemetry(self) -> TelemetryData:
         """
-        Get a thread-safe copy of the latest telemetry data.
+        Returns a copy of the latest telemetry data.
+
+        The returned telemetry includes position, orientation, and battery voltage.
+        If a simulator is active, the x/y coordinates are replaced with simulated
+        values while z and orientation remain from the last received packet.
 
         Returns:
-            TelemetryData: Latest telemetry snapshot. If a simulator is active,
-                the (x, y) position is overridden with simulated values.
+            TelemetryData: Thread-safe copy of the current telemetry.
         """
         with self._lock:
             telemetry_copy = deepcopy(self._telemetry)
 
-        if self.simulator and getattr(self.simulator, "_active", False):
-            xy = self.simulator.get_xy()
+        if self._simulator and getattr(self._simulator, "_active", False):
+            xy = self._simulator.get_xy()
             if xy is not None:
                 telemetry_copy = TelemetryData(
                     pose=Pose(
@@ -123,26 +143,45 @@ class DroneTelemetry(ITelemetry):
                     battery=deepcopy(telemetry_copy.battery)
                 )
         return telemetry_copy
+    
+    def get_simulator(self) -> Optional[IMovementSimulator]:
+        """
+        Returns the movement simulator.
+
+        Returns:
+            IMovementSimulator: The movement simulator if set, else None.
+        """
+        return self._simulator 
 
     # ----------------------------------------------------------------------
     # Private methods
     # ----------------------------------------------------------------------
+    
     def _send_handshake(self) -> None:
-        """Send handshake packet to the drone to start telemetry."""
+        """
+        Sends handshake packet to the drone to start telemetry.
+        
+        It assumes the UDP socket is already created and bound.
+        """
         if not self._sock:
             return
         try:
-            self._logger.info("Sending handshake to %s:%d", self.drone_ip, self.drone_port)
-            self._sock.sendto(config.HANDSHAKE_PACKET, (self.drone_ip, self.drone_port))
+            self._logger.info("Sending handshake to %s:%d", self._drone_ip, self._drone_port)
+            self._sock.sendto(config.HANDSHAKE_PACKET, (self._drone_ip, self._drone_port))
         except Exception as e:
             self._logger.error("Error sending handshake: %s", e)
 
     def _start_communication(self) -> None:
-        """Initialize UDP socket, bind, and perform handshake with drone."""
+        """
+        Initializes the UDP socket and perform handshake.
+
+        Binds the socket to the local listening port and sends handshake
+        packets multiple times to start telemetry from the drone.
+        """
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self._sock.bind(("0.0.0.0", self.local_port))
+        self._sock.bind(("0.0.0.0", self._local_port))
         self._sock.settimeout(config.DRONE_UDP_TIMEOUT)
-        self._logger.info("Listening UDP on port %d...", self.local_port)
+        self._logger.info("Listening UDP on port %d...", self._local_port)
 
         for _ in range(config.DRONE_UDP_HANDSHAKE_RETRIES):
             try:
@@ -153,10 +192,13 @@ class DroneTelemetry(ITelemetry):
 
     def _process_battery_packet(self, payload: bytes) -> None:
         """
-        Update internal battery state from a packet.
+        Processes a battery packet.
+
+        Extracts voltage from the payload and updates internal telemetry
+        in a thread-safe manner.
 
         Args:
-            payload (bytes): Raw payload of the battery packet.
+            payload (bytes): Raw UDP payload of the battery packet.
         """
         if len(payload) < config.STRUCT_BATTERY.size:
             self._logger.warning(
@@ -176,10 +218,13 @@ class DroneTelemetry(ITelemetry):
 
     def _process_pose_packet(self, payload: bytes) -> None:
         """
-        Update internal pose state from a packet.
+        Processes a pose packet.
+
+        Extracts position (x, y, z) and orientation (roll, pitch, yaw) from
+        the payload and updates internal telemetry in a thread-safe way.
 
         Args:
-            payload (bytes): Raw payload of the pose packet.
+            payload (bytes): Raw UDP payload of the pose packet.
         """
         if len(payload) < config.STRUCT_POSE.size:
             self._logger.warning(
@@ -201,7 +246,12 @@ class DroneTelemetry(ITelemetry):
         self._logger.debug("Updated pose: %s", self._telemetry.pose)
 
     def _listen(self) -> None:
-        """Background thread to receive and process UDP telemetry packets."""
+        """
+        Background thread that receives and processes UDP telemetry packets.
+        
+        This method runs in a loop, receiving packets and dispatching them
+        to the appropriate processing methods until stopped.
+        """
         try:
             self._start_communication()
             while self._running:

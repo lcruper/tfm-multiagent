@@ -2,7 +2,7 @@ Configuration Package
 ======================
 
 This package defines all configuration parameters and global constants used across the project.
-All values are read-only and should not be modified at runtime.
+They are organized into several modules, each focusing on a component of the system.
 
 .. toctree::
    :maxdepth: 2

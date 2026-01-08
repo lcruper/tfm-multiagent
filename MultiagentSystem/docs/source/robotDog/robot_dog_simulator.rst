@@ -6,7 +6,7 @@ following a sequence of target positions. The robot advances at a constant
 speed, updates its position periodically, and notifies external components
 when a target position is reached or when the inspection routine finishes.
 
-.. automodule:: robotDog.robot_dog
+.. automodule:: robotDog.robot_dog_simulator
    :members:
    :undoc-members:
    :show-inheritance:

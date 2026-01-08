@@ -9,4 +9,4 @@ notifying the system when it reaches each waypoint or finishes its path.
 .. toctree::
    :maxdepth: 1
 
-   robot_dog
+   robot_dog_simulator

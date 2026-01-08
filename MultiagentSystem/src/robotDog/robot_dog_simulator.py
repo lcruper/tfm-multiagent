@@ -9,7 +9,7 @@ from configuration import robot_dog as config
 from interfaces.interfaces import ARobot
 from structures.structures import Point2D
 
-class RobotDog(ARobot):
+class RobotDogSimulator(ARobot):
     """
     Simulated ground robot that follows a list of 2D waypoints.
 
@@ -22,7 +22,7 @@ class RobotDog(ARobot):
 
     def __init__(self, speed: float) -> None:
         """
-        Creates a RobotDog instance.
+        Creates a RobotDogSimulator instance.
 
         The robot starts at position (0, 0) and remains idle until an
         inspection routine is started.

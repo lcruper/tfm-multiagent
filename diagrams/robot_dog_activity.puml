@@ -2,7 +2,7 @@
 skinparam participantBackgroundColor white
 
 actor "Agente coordinador" as User
-participant "RobotDog" as Robot
+participant "RobotDogSimulator" as Robot
 participant "Hilo de movimiento" as Thread
 participant "Callback onPoint" as CBPoint
 participant "Callback onFinish" as CBFinish

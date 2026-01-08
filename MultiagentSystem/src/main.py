@@ -6,7 +6,7 @@ from drone.camera_simulator import CameraSimulator
 from drone.viewer import Viewer
 from drone.color_detection import ColorDetection
 from drone.spiral_movement_simulator import SpiralMovementSimulator
-from robotDog.robot_dog import RobotDog
+from robotDog.robot_dog_simulator import RobotDogSimulator
 from operation.operation_controller import OperationController
 from operation.operation_visualizer import OperationVisualizer
 from utils.logs import ColoredFormatter, LoggerNameFilter
@@ -54,7 +54,7 @@ explorer = Drone(
     viewer=viewer
 ) 
 
-inspector = RobotDog(configuration.robot_dog.ROBOT_DOG_SPEED)
+inspector = RobotDogSimulator(configuration.robot_dog.ROBOT_DOG_SPEED)
 
 planner = NearestNeighborPlanner()
 

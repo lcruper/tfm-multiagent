@@ -13,12 +13,12 @@ abstract class ARobot <<(A, LightCoral)>> {
     {abstract}+ get_telemetry(): Dict<String, float>
 }
 
-class RobotDog {
+class RobotDogSimulator {
     - _speed: float
     - _current_position: Point2D
     - _waypoints: List<Point2D>
 
-    + RobotDog(speed: float)
+    + RobotDogSimulator(speed: float)
     - _move(): void
     - _get_temperature(): float
 }
@@ -28,6 +28,6 @@ dataclass Point2D <<(D, lightblue)>> {
     + y: float
 }
 
-ARobot <|.. RobotDog
-RobotDog -> Point2D
+ARobot <|.. RobotDogSimulator
+RobotDogSimulator -> Point2D
 @enduml

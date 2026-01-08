@@ -72,7 +72,7 @@ interface ICamera {
 }
 
 abstract class AFrameConsumer <<(A, LightCoral)>> {
-    +queue : Queue<FrameWithTelemetry>
+    - _queue : Queue<FrameWithTelemetry>
     {abstract} +start(): void
     {abstract} +stop(): void
     +enqueue(fwt: FrameWithTelemetry): void

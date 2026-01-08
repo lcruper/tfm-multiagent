@@ -7,12 +7,15 @@ interface IPathPlanner {
 }
 
 class ILPPlanner {
+    + ILPPlanner()
     - _extract_path(edges: List<Tuple<int, int>>): List<int>
     - _solve_gurobi(points: List<Point2D>): Dict
     -  _euclidean_distance(p1: Point2D, p2: Point2D): float
+
 }
 
 class NearestNeighborPlanner {
+    + NearestNeighborPlanner()
     - _euclidean_distance(p1: Point2D, p2: Point2D): float
 }
 

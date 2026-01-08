@@ -1,11 +1,3 @@
-"""
-Camera Capture Module
----------------------
-
-This module implements a camera interface that captures frames from a stream URL and maintains
-the latest frame in a thread-safe. It also allows turning the camera flash on and off.
-"""
-
 from typing import Optional
 from configuration import camera_capture as config
 import cv2
@@ -19,10 +11,12 @@ from numpy import ndarray
 from interfaces.interfaces import ICamera
 from structures.structures import Frame
 
-
 class CameraCapture(ICamera):
     """
     Captures frames from a camera stream URL.
+
+    This module implements a camera interface that captures frames from a stream URL and maintains
+    the latest frame in a thread-safe. It also allows turning the camera flash on and off.
 
     Maintains the camera open, updates the last captured frame and supports flash control.
     """
@@ -35,8 +29,8 @@ class CameraCapture(ICamera):
             stream_url (str): URL of the camera stream.
             flash_url (str): URL to control the camera flash.
         """
-        self.stream_url: str = stream_url
-        self.flash_url: str = flash_url 
+        self._stream_url: str = stream_url
+        self._flash_url: str = flash_url 
 
         self._frame: Optional[Frame] = None
 
@@ -56,7 +50,6 @@ class CameraCapture(ICamera):
         if self._running:
             self._logger.warning("Already running.")
             return
-
         self._running = True
         self._thread = threading.Thread(target=self._capture, daemon=True)
         self._thread.start()
@@ -99,7 +92,7 @@ class CameraCapture(ICamera):
         """Turns on the camera flash if supported."""
         try:
             requests.get(
-                self.flash_url,
+                self._flash_url,
                 params={"var": "led_intensity", "val": config.CAMERA_FLASH_INTENSITY_ON},
                 timeout=config.CAMERA_REQUEST_TIMEOUT
             )
@@ -111,7 +104,7 @@ class CameraCapture(ICamera):
         """Turns off the camera flash if supported."""
         try:
             requests.get(
-                self.flash_url,
+                self._flash_url,
                 params={"var": "led_intensity", "val": config.CAMERA_FLASH_INTENSITY_OFF},
                 timeout=config.CAMERA_REQUEST_TIMEOUT
             )
@@ -122,7 +115,7 @@ class CameraCapture(ICamera):
     # ----------------------------------------------------------------------
     # Private methods
     # ----------------------------------------------------------------------
-    def _process_frame(self, data: ndarray) -> None:
+    def _update_frame(self, data: ndarray) -> None:
         """
         Processes a frame and updates the latest frame safely.
 
@@ -144,7 +137,7 @@ class CameraCapture(ICamera):
             self._cap.release()
             self._cap = None
 
-        cap = cv2.VideoCapture(self.stream_url)
+        cap = cv2.VideoCapture(self._stream_url)
         if cap.isOpened():
             self._cap = cap
             self._logger.info("Stream URL opened successfully.")
@@ -171,7 +164,7 @@ class CameraCapture(ICamera):
                 continue
 
             self._logger.debug("Frame captured of size %s", data.shape)
-            self._process_frame(data)
+            self._update_frame(data)
             sleep(config.CAMERA_SLEEP_TIME)
 
         if self._cap:

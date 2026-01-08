@@ -43,13 +43,13 @@ class DroneTelemetry {
     - _drone_ip: str
     - _drone_port: int
     - _local_port: int
-    - _simulator: IMovementSimulator
     - _telemetry: TelemetryData
+    - _simulator: IMovementSimulator
 
     + DroneTelemetry(drone_ip: str, drone_port: int, local_port: int, simulator: IMovementSimulator)
-    + get_ simulator(): IMovementSimulator
-    - _send_handshake(): void
+    + get_simulator(): IMovementSimulator
     - _start_communication(): void
+    - _send_handshake(): void
     - _process_battery_packet(payload: bytes): void
     - _process_pose_packet(payload: bytes): void
     - _listen(): void

@@ -13,12 +13,11 @@ from structures.structures import Frame
 
 class CameraCapture(ICamera):
     """
-    Captures frames from a camera stream URL.
+    Captures frames from a camera web server and provides access to the latest frame.
 
-    This module implements a camera interface that captures frames from a stream URL and maintains
-    the latest frame in a thread-safe. It also allows turning the camera flash on and off.
-
-    Maintains the camera open, updates the last captured frame and supports flash control.
+    This class connects to the camera via a HTTP-based stream, retrieves video frames continuously
+    in a background thread, and maintains the most recent frame in a thread-safe manner. Additionally,
+    it supports controlling the integrated camera flash through HTTP requests.
     """
 
     def __init__(self, stream_url: str, flash_url: str) -> None:
@@ -26,8 +25,8 @@ class CameraCapture(ICamera):
         Creates a CameraCapture instance.
 
         Args:
-            stream_url (str): URL of the camera stream.
-            flash_url (str): URL to control the camera flash.
+            stream_url (str): HTTP URL of the camera video stream.
+            flash_url (str):  HTTP URL for controlling the camera flash.
         """
         self._stream_url: str = stream_url
         self._flash_url: str = flash_url 
@@ -46,7 +45,12 @@ class CameraCapture(ICamera):
     # Public methods
     # ----------------------------------------------------------------------
     def start(self) -> None:
-        """Starts the background thread to capture frames."""
+        """
+        Starts the background thread to capture frames from the camera stream.
+
+        The thread creates an OpenCV VideoCapture object that continuously reads frames from the stream URL,
+        decodes them, and updates the last available frame in a thread-safe manner.
+        """
         if self._running:
             self._logger.warning("Already running.")
             return
@@ -56,7 +60,13 @@ class CameraCapture(ICamera):
         self._logger.info("Started.")
 
     def stop(self) -> None:
-        """Stops the background capture thread and releases the camera."""
+        """
+        Stops the background capture thread and releases resources.
+
+        Signals the thread to stop, waits briefly for termination, and releases the OpenCV
+        VideoCapture object. Ensures that the capture process is safely terminated even
+        in case of errors.
+        """
         if not self._running:
             self._logger.warning("Already stopped.")
             return
@@ -80,16 +90,22 @@ class CameraCapture(ICamera):
 
     def get_frame(self) -> Optional[Frame]:
         """
-        Returns a copy of the latest captured frame.
+        Returns a deep copy of the latest captured frame.
+
+        The returned frame is safe for concurrent access from multiple threads.
 
         Returns:
-            Frame: Latest frame captured from the camera. None if no frame is available.
+            Optional[Frame]: The latest captured frame, or None if unavailable.
         """
         with self._lock:
             return deepcopy(self._frame)
 
     def turn_on_flash(self) -> None:
-        """Turns on the camera flash if supported."""
+        """
+        Activates the camera's integrated flash.
+
+        Sends an HTTP GET request to the camera's flash control with a predefined intensity value.
+        """
         try:
             requests.get(
                 self._flash_url,
@@ -101,7 +117,11 @@ class CameraCapture(ICamera):
             self._logger.warning("Failed to turn on flash.")
 
     def turn_off_flash(self) -> None:
-        """Turns off the camera flash if supported."""
+        """
+        Deactivates the camera's integrated flash.
+
+        Sends an HTTP GET request to the camera's flash control endpoint with the intensity set to zero.
+        """
         try:
             requests.get(
                 self._flash_url,
@@ -117,10 +137,13 @@ class CameraCapture(ICamera):
     # ----------------------------------------------------------------------
     def _update_frame(self, data: ndarray) -> None:
         """
-        Processes a frame and updates the latest frame safely.
+        Updates the latest captured frame in a thread-safe manner.
+
+        Encapsulates the raw frame array into a Frame object and stores it as the
+        most recent frame.
 
         Args:
-            data (ndarray): Raw image frame captured from the camera.
+            data (ndarray): Raw frame data captured from the camera stream.
         """
         with self._lock:
             self._frame = Frame(data=data)
@@ -128,7 +151,11 @@ class CameraCapture(ICamera):
 
     def _open_stream(self) -> bool:
         """
-        Attempts to open the camera stream URL.
+        Opens a connection to the camera's video stream URL.
+
+        Uses OpenCV's VideoCapture to attempt opening the stream. If successful,
+        stores the VideoCapture object internally; otherwise releases resources
+        and returns False.
 
         Returns:
             bool: True if the stream was successfully opened, False otherwise.
@@ -149,7 +176,11 @@ class CameraCapture(ICamera):
 
     def _capture(self) -> None:
         """
-        Background thread that continuously captures frames from the stream.
+        Background thread that continuously captures and stores frames.
+
+        Repeatedly reads frames from the video stream. On failure to read or open
+        the stream, retries after a configurable delay. Successfully captured frames
+        are decoded, wrapped in a Frame object, and stored as the latest frame.
         """
         while self._running:
             if not self._cap or not self._cap.isOpened():

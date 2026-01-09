@@ -77,6 +77,8 @@ class DroneTelemetry(ITelemetry):
             return
 
         self._running = True
+        if self._simulator:
+            self._simulator.start()
         self._thread = threading.Thread(target=self._listen, daemon=True)
         self._thread.start()
         self._logger.info("Started.")
@@ -93,6 +95,8 @@ class DroneTelemetry(ITelemetry):
             return
 
         self._running = False
+        if self._simulator:
+            self._simulator.stop()
         if self._sock:
             try:
                 self._sock.close()

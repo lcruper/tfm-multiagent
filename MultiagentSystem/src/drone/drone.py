@@ -1,13 +1,5 @@
-"""
-Drone Module
-------------
-
-Aggregates drone components: telemetry, camera, matcher, color detector, and viewer.
-Provides a unified API to start/stop inspections and set callbacks for points detections and inspection finish.
-"""
-
 import logging
-from typing import Dict, List, Optional, Callable
+from typing import Dict, List, Optional
 
 from interfaces.interfaces import ICamera, ITelemetry, ARobot
 from drone.matcher import Matcher
@@ -15,20 +7,19 @@ from drone.color_detection import ColorDetection
 from drone.viewer import Viewer
 from structures.structures import Position, Point2D
 
-
 class Drone(ARobot):
     """
     Aggregates all drone components.
 
-    Provides a unified interface for inspection, detection and finish callbacks, and
-    retrieval of detected points..
+    Aggregates drone components: telemetry, camera, matcher, color detector, and viewer.
+    Provides a unified API to start/stop inspections and set callbacks for points detections and inspection finish.
     """
 
     def __init__(self,
                  telemetry: ITelemetry,
                  camera: ICamera,
                  matcher: Matcher,
-                 color_detector: ColorDetection,
+                 color_detection: ColorDetection,
                  viewer: Viewer) -> None:
         """
         Creates a Drone instance.
@@ -37,23 +28,23 @@ class Drone(ARobot):
             telemetry (ITelemetry): Telemetry interface for the drone.
             camera (ICamera): Camera interface for the drone.
             matcher (Matcher): Matcher instance for combining frames and telemetry.
-            color_detector (ColorDetection): Color detector instance.
+            color_detection (ColorDetection): Color detection instance.
             viewer (Viewer): Viewer instance for displaying frames with telemetry overlay.
         """
-        self.telemetry = telemetry
-        self.camera = camera
-        self.matcher = matcher
-        self.color_detector = color_detector
-        self.viewer = viewer
+        self._telemetry = telemetry
+        self._camera = camera
+        self._matcher = matcher
+        self._color_detection = color_detection
+        self._viewer = viewer
 
         self._detected_points: List[Point2D] = []
         self._active: bool = False
 
         self._logger = logging.getLogger("Drone")
 
-        self.color_detector.set_callback(self._on_color_detected)
-        self.matcher.register_consumer(self.color_detector)
-        self.matcher.register_consumer(self.viewer)
+        self._color_detection.set_callback(self._on_color_detected)
+        self._matcher.register_consumer(self._color_detection)
+        self._matcher.register_consumer(self._viewer)
 
     # ---------------------------------------------------
     # Public methods
@@ -71,14 +62,11 @@ class Drone(ARobot):
         self._active = True
         self._detected_points.clear()
 
-        self.telemetry.start()
-        simulator = self.telemetry.get_simulator()
-        if simulator:
-            simulator.start()
-        self.camera.start()
-        self.matcher.start()
-        self.color_detector.start()
-        self.viewer.start()
+        self._telemetry.start()
+        self._camera.start()
+        self._matcher.start()
+        self._color_detection.start()
+        self._viewer.start()
 
         self._logger.info("Started.")
 
@@ -95,14 +83,11 @@ class Drone(ARobot):
 
         self._active = False
 
-        self.viewer.stop()
-        self.color_detector.stop()
-        self.matcher.stop()
-        self.camera.stop()
-        simulator = self.telemetry.get_simulator()
-        if simulator:
-            simulator.stop()
-        self.telemetry.stop()
+        self._viewer.stop()
+        self._color_detection.stop()
+        self._matcher.stop()
+        self._camera.stop()
+        self._telemetry.stop()
 
         if self._callback_onFinish:
             try:
@@ -121,7 +106,7 @@ class Drone(ARobot):
             Optional[Point2D]: Current (x, y) coordinates. None if unavailable.
         """
         try:
-            telemetry = self.telemetry.get_telemetry()
+            telemetry = self._telemetry.get_telemetry()
             if telemetry:
                 pos = telemetry.pose.position
                 return Point2D(pos.x, pos.y)
@@ -164,8 +149,8 @@ class Drone(ARobot):
         )
 
         try:
-            self.camera.turn_on_flash()
-            self.camera.turn_off_flash()
+            self._camera.turn_on_flash()
+            self._camera.turn_off_flash()
         except Exception as e:
             self._logger.error("Failed to flash camera: %s", e)
 

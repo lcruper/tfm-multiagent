@@ -1,0 +1,74 @@
+@startuml
+
+skinparam classBackgroundColor white
+
+interface ITelemetry  {
+    +start(): void
+    +stop(): void
+    +get_telemetry(): TelemetryData
+}
+
+interface ICamera {
+    +start(): void
+    +stop(): void
+    +get_frame(): Frame
+    +turn_on_flash(): void
+    +turn_off_flash(): void
+}
+
+abstract class AFrameConsumer <<(A, LightCoral)>> {
+    - _queue : Queue<FrameWithTelemetry>
+    {abstract} +start(): void
+    {abstract} +stop(): void
+    +enqueue(fwt: FrameWithTelemetry): void
+    {abstract}-_process_frame(fwt: FrameWithTelemetry): Any
+}
+
+dataclass Battery <<(D, lightblue)>>{
+    + voltage: float
+}
+
+dataclass Position <<(D, lightblue)>> {
+    + x: float
+    + y: float
+    + z: float
+}
+
+dataclass Orientation  <<(D, lightblue)>> {
+    + roll: float
+    + pitch: float
+    + yaw: float
+}
+
+dataclass Pose <<(D, lightblue)>> {
+    + position: Position
+    + orientation: Orientation
+}
+
+dataclass TelemetryData <<(D, lightblue)>> {
+    + pose: Pose
+    + battery: Battery
+}
+
+
+class Matcher {
+    - _telemetry: ITelemetry
+    - _camera: ICamera
+    - _consumers: List<AFrameConsumer>
+    + Matcher(telemetry: ITelemetry, camera: ICamera)
+    + start(): void
+    + stop(): void
+    + register_consumer(consumer: AFrameConsumer): void
+    - _match(): void
+}
+
+Matcher *--> ITelemetry
+Matcher *--> ICamera
+Matcher *--> AFrameConsumer
+Matcher -> TelemetryData
+Pose *-- Position
+Pose *-- Orientation
+TelemetryData *-- Pose
+TelemetryData *-- Battery
+@enduml
+

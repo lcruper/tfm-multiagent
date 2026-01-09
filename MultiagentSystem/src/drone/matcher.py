@@ -9,13 +9,13 @@ from structures.structures import FrameWithTelemetry
 
 class Matcher:
     """
-    Associates frames from a camera with telemetry data.
+    Synchronizes camera frames with drone telemetry and distributes them to registered consumers.
 
-    This class retrieves frames from a camera
-    and telemetry data, combines them into FrameWithTelemetry objects, and
-    distributes them to all registered consumers.
+    The class continuously retrieves frames from a camera provider and telemetry data 
+    from a telemetry provider. Each frame is associated with the exact telemetry data at the 
+    moment of capture, forming a FrameWithTelemetry object. These objects are then distributed 
+    to all registered consumers (instances of AFrameConsumer).
     """
-
     def __init__(self, telemetry: ITelemetry, camera: ICamera) -> None:
         """
         Creates a Matcher instance.
@@ -24,8 +24,8 @@ class Matcher:
             telemetry (ITelemetry): Telemetry provider.
             camera (ICamera): Camera provider.
         """
-        self.telemetry: ITelemetry = telemetry
-        self.camera: ICamera = camera
+        self._telemetry: ITelemetry = telemetry
+        self._camera: ICamera = camera
 
         self._consumers: List[AFrameConsumer] = []
 
@@ -38,7 +38,12 @@ class Matcher:
     # Public methods
     # ----------------------------------------------------------------------
     def start(self) -> None:
-        """Starts the background matcher thread."""
+        """
+        Starts the background matcher thread.
+
+        The thread continuously retrieves frames and telemetry, creates FrameWithTelemetry objects,
+        and dispatches them to all registered consumers.
+        """
         if self._running:
             self._logger.warning("Already running.")
             return
@@ -49,7 +54,9 @@ class Matcher:
         self._logger.info("Started.")
 
     def stop(self) -> None:
-        """Stops the background matcher thread."""
+        """
+        Stops the background matcher thread.
+        """
         if not self._running:
             self._logger.warning("Already stopped.")
             return
@@ -64,10 +71,10 @@ class Matcher:
 
     def register_consumer(self, consumer: AFrameConsumer) -> None:
         """
-        Registers a consumer to receive FrameWithTelemetry objects.
+        Registers a new consumer to receive FrameWithTelemetry objects.
 
         Args:
-            consumer (IFrameConsumer): Consumer to receive matched frames.
+            consumer (IFrameConsumer): Consumer to register.
         """
         if consumer in self._consumers:
             self._logger.warning(
@@ -83,18 +90,19 @@ class Matcher:
     # ----------------------------------------------------------------------
     def _match(self) -> None:
         """
-        Background thread method to retrieve frames and telemetry,
-        combine them into FrameWithTelemetry objects, and distribute
-        them to all registered consumers.
+        Background thread method that combines frames with telemetry and sends them to consumers.
+
+        Retrieves a frame from the camera and telemetry from the telemetry provider,
+        creates a FrameWithTelemetry object, and enqueues it to all registered consumers. 
         """
         while self._running:
-            frame = self.camera.get_frame()
+            frame = self._camera.get_frame()
             if frame is None:
                 sleep(config.MATCHER_SLEEP_TIME)
                 continue
             self._logger.debug("Retrieved frame of shape %s", frame.data.shape)
 
-            telemetry = self.telemetry.get_telemetry()
+            telemetry = self._telemetry.get_telemetry()
             self._logger.debug("Retrieved telemetry: %s", telemetry)
 
             fwt = FrameWithTelemetry(frame, telemetry)

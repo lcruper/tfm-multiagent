@@ -137,15 +137,6 @@ class DroneTelemetry(ITelemetry):
                     battery=deepcopy(telemetry_copy.battery)
                 )
         return telemetry_copy
-    
-    def get_simulator(self) -> Optional[IMovementSimulator]:
-        """
-        Returns the movement simulator.
-
-        Returns:
-            IMovementSimulator: The movement simulator if set, else None.
-        """
-        return self._simulator 
 
     # ----------------------------------------------------------------------
     # Private methods

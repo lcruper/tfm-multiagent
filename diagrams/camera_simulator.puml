@@ -1,0 +1,28 @@
+@startuml
+
+skinparam classBackgroundColor white
+
+interface ICamera {
+    +start(): void
+    +stop(): void
+    +get_frame(): Frame
+    +turn_on_flash(): void
+    +turn_off_flash(): void
+}
+
+dataclass Frame <<(D, lightblue)>> {
+    + data: ndarray
+}
+
+class CameraSimulator {
+    - _frame: Frame
+    - _frame_time: float
+    - _cap: cv2.VideoCapture
+    + CameraSimulator()
+    - _generate_new_frame(): Frame
+}
+
+ICamera <|.. CameraSimulator
+CameraSimulator *-> Frame
+
+@enduml

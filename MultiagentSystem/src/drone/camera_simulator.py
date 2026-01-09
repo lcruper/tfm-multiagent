@@ -1,20 +1,9 @@
-"""
-Camera Simulator Module
------------------------
-
-This module simulates a camera that captures colored stop signs.
-
-The stop signs are octagons with "STOP" text at the center. Each frame is generated 
-with a random position, size, and color. The simulator can produce frames at a 
-configurable period, and can optionally generate stop signs of the configured target color.
-"""
-
 import logging
 import numpy as np
 import cv2
 import time
 from typing import Optional
-import threading
+from time import time
 from copy import deepcopy
 
 from configuration import camera_simulator as config
@@ -24,65 +13,71 @@ from structures.structures import Frame
 
 class CameraSimulator(ICamera):
     """
-    Simulated camera producing frames with stop signs.
+    Simulated camera producing synthetic frames with colored stop signs.
+
+    This class provides on-demand generation of frames containing a colored stop sign over a black background.  
+    The color can be forced to a target color with a specific probability 
+    to facilitate evaluation of color-based detection algorithms.
     """
 
-    def __init__(self, stream_url: str, flash_url: str) -> None:
+    def __init__(self) -> None:
         """
         Creates a CameraSimulator instance.
-
-        Args:
-            stream_url (str): Stream URL (not used in simulator).
-            flash_url (str): Flash control URL (not used in simulator).
         """
         self._frame: Optional[Frame] = None
         self._frame_time: float = 0.0
 
-        self._lock: threading.Lock = threading.Lock()
-        self._running: bool = False
-        self._thread: Optional[threading.Thread] = None
-
+        self._active: bool = False
         self._logger: logging.Logger = logging.getLogger("CameraSimulator")
 
     # ----------------------------------------------------------------------
     # Public methods
     # ----------------------------------------------------------------------
     def start(self) -> None:
-        """Starts the background thread to capture frames."""
-        if self._running:
+        """
+        Starts the simulator.
+        
+        Sets the simulator to an active state and resets the last generated frame and its timestamp.
+        """
+        if self._active:
             self._logger.warning("Already running.")
             return
-
-        self._running = True
         self._frame = None
         self._frame_time = 0.0
-        self._thread = threading.Thread(target=self._generate, daemon=True)
-        self._thread.start()
+        self._active = True
         self._logger.info("Started.")
 
     def stop(self) -> None:
-        """Stops the background capture thread and clears the last frame ."""
-        if not self._running:
+        """Stops the simulator.
+
+        Clears the last generated frame and its timestamp and marks the simulator as inactive.
+        """
+        if not self._active:
             self._logger.warning("Already stopped.")
             return
-
-        self._running = False
-        if self._thread:
-            self._thread.join(timeout=1.0)
-            if self._thread.is_alive():
-                self._logger.warning("Did not stop in time")
-            self._thread = None
+        self._active = False
+        self._frame = None
         self._frame = None
 
     def get_frame(self) -> Optional[Frame]:
         """
-        Returns a copy of the latest generated frame.
+        Returns a copy of a new generated frame or the last one if within the frame period.
+
+        Generates a new frame only if the minimum frame period has elapsed 
+        since the last generation. In that case, the generated frame is stored.
+        Otherwise, returns a copy of the previously generated frame.
 
         Returns:
-            Frame: Latest generated from the camera. None if no frame is available.
+            Frame: generated frame, or None if the simulator is not active.
         """
-        with self._lock:
-            return deepcopy(self._frame)
+        if not self._active:
+            return None
+        now = time()
+        if now - self._frame_time >= config.CAMERA_SIMULATOR_FRAME_PERIOD:
+            frame = self._generate_new_frame()
+            self._frame = frame
+            self._frame_time = now
+        return deepcopy(self._frame)
 
     def turn_on_flash(self) -> None:
         """Simulates turning on the camera flash (no-op)."""
@@ -97,10 +92,14 @@ class CameraSimulator(ICamera):
     # ----------------------------------------------------------------------
     def _generate_new_frame(self) -> Frame:
         """
-        Generates a new frame with a stop sign.
-        
+        Generates a frame containing a stop sign.
+
+        The stop sign is drawn as an octagon with the word "STOP" centered. 
+        The position and size are random within predefined ranges, and the color of the stop sign is randomized according 
+        to the configuration parameters.
+
         Returns:
-            Frame: Generated frame with a stop sign.
+            Frame: A  Frame instance containing the generated stop sign image.
         """
         image = np.zeros((480, 640, 3), dtype=np.uint8)
         size = np.random.randint(config.CAMERA_SIMULATOR_MIN_RADIUS, config.CAMERA_SIMULATOR_MAX_RADIUS)
@@ -109,19 +108,7 @@ class CameraSimulator(ICamera):
             color = config.CAMERA_SIMULATOR_COLOR_DICT[config.CAMERA_SIMULATOR_TARGET_COLOR]
         else:
             color = tuple(np.random.randint(0, 256, size=3).tolist())
-        self._draw_stop_sign(image, center, size, color)
-        return Frame(data=image)
 
-    def _draw_stop_sign(self, image: np.ndarray, center: tuple[int, int], size: int, color: tuple[int, int, int]) -> None:
-        """
-        Draws a stop sign (octagon with 'STOP') on the image.
-
-        Args:
-            image (np.ndarray): Image where the stop sign will be drawn.
-            center (tuple[int, int]): (x, y) coordinates of the stop sign center.
-            size (int): Approximate size/radius of the stop sign.
-            color (tuple[int, int, int]): BGR color of the stop sign.
-        """
         octagon = []
         for i in range(8):
             angle_deg = 22.5 + i * 45
@@ -136,16 +123,4 @@ class CameraSimulator(ICamera):
         text_x = center[0] - text_size[0] // 2
         text_y = center[1] + text_size[1] // 2
         cv2.putText(image, "STOP", (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 255, 255), thickness, cv2.LINE_AA)
-
-    def _generate(self) -> Frame:
-        """
-        Background thread that generates frames with stop signs if the frame is older than CAMERA_SIMULATOR_FRAME_PERIOD.
-        """
-        while self._running:
-            now = time.time()
-            if self._frame is None or now - self._frame_time >= config.CAMERA_SIMULATOR_FRAME_PERIOD:
-                frame = self._generate_new_frame()
-                with self._lock:
-                    self._frame = frame
-                    self._frame_time = now
-            time.sleep(config.CAMERA_SIMULATOR_SLEEP_TIME)
+        return Frame(data=image)

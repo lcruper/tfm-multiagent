@@ -46,7 +46,7 @@ camera = CameraCapture(
     configuration.camera_capture.CAMERA_FLASH_URL
 )
 
-cameraSimulator = CameraSimulator(None,None)
+cameraSimulator = CameraSimulator()
 
 matcher = Matcher(telemetry, cameraSimulator)
 

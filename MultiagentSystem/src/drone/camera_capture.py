@@ -54,6 +54,7 @@ class CameraCapture(ICamera):
         if self._running:
             self._logger.warning("Already running.")
             return
+        
         self._running = True
         self._thread = threading.Thread(target=self._capture, daemon=True)
         self._thread.start()

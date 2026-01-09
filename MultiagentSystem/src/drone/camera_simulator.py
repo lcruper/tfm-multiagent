@@ -42,6 +42,7 @@ class CameraSimulator(ICamera):
         if self._active:
             self._logger.warning("Already running.")
             return
+        
         self._frame = None
         self._frame_time = 0.0
         self._active = True
@@ -55,6 +56,7 @@ class CameraSimulator(ICamera):
         if not self._active:
             self._logger.warning("Already stopped.")
             return
+        
         self._active = False
         self._frame = None
         self._frame = None
@@ -72,6 +74,7 @@ class CameraSimulator(ICamera):
         """
         if not self._active:
             return None
+        
         now = time()
         if now - self._frame_time >= config.CAMERA_SIMULATOR_FRAME_PERIOD:
             frame = self._generate_new_frame()

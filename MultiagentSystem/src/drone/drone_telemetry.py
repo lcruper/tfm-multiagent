@@ -155,6 +155,7 @@ class DroneTelemetry(ITelemetry):
         """
         if not self._sock:
             return
+        
         try:
             self._logger.info("Sending handshake to %s:%d", self._drone_ip, self._drone_port)
             self._sock.sendto(config.HANDSHAKE_PACKET, (self._drone_ip, self._drone_port))

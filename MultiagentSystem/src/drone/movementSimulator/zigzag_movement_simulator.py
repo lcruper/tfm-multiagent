@@ -49,6 +49,7 @@ class ZigzagMovementSimulator(IMovementSimulator):
         if self._active:
             self._logger.warning("Already started.")
             return
+        
         self._start_t = time()
         self._active = True
         self._logger.info("Started.")

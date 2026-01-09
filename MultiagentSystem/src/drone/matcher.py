@@ -1,12 +1,3 @@
-# matcher.py
-"""
-Matcher Module
---------------
-
-Combines camera frames and telemetry into FrameWithTelemetry objects and
-distributes them to registered consumers.
-"""
-
 from configuration import matcher as config
 import threading
 import logging
@@ -15,7 +6,6 @@ from typing import List, Optional
 
 from interfaces.interfaces import ICamera, AFrameConsumer, ITelemetry
 from structures.structures import FrameWithTelemetry
-
 
 class Matcher:
     """

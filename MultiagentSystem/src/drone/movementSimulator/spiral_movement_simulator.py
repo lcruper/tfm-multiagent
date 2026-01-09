@@ -47,6 +47,7 @@ class SpiralMovementSimulator(IMovementSimulator):
         if self._active:
             self._logger.warning("Already started.")
             return
+        
         self._last_theta = 0.0
         self._last_t = time()
         self._last_theta = 0.0
@@ -62,6 +63,7 @@ class SpiralMovementSimulator(IMovementSimulator):
         if not self._active:
             self._logger.warning("Already stopped.")
             return
+        
         self._active = False
         self._last_t = None
         self._last_theta = 0.0   

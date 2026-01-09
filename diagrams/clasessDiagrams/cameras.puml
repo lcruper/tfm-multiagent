@@ -14,6 +14,17 @@ dataclass Frame <<(D, lightblue)>> {
     + data: ndarray
 }
 
+class CameraCapture {
+    - _stream_url: str
+    - _flash_url: str
+    - _frame: Frame
+    - _cap: cv2.VideoCapture
+    + CameraCapture(stream_url: str, flash_url: str)
+    - _update_frame(data: ndarray): void
+    - _open_stream(): bool
+    - _capture(): void
+}
+
 class CameraSimulator {
     - _frame: Frame
     - _frame_time: float
@@ -23,6 +34,8 @@ class CameraSimulator {
 }
 
 ICamera <|.. CameraSimulator
-CameraSimulator *-> Frame
+ICamera <|.. CameraCapture
+CameraCapture --> Frame
+CameraSimulator --> Frame
 
 @enduml

@@ -1,0 +1,31 @@
+@startuml
+
+skinparam classBackgroundColor white
+
+interface ICamera {
+    +start(): void
+    +stop(): void
+    +get_frame(): Frame
+    +turn_on_flash(): void
+    +turn_off_flash(): void
+}
+
+dataclass Frame <<(D, lightblue)>> {
+    + data: ndarray
+}
+
+class CameraCapture {
+    - _stream_url: str
+    - _flash_url: str
+    - _frame: Frame
+    - _cap: cv2.VideoCapture
+    + CameraCapture(stream_url: str, flash_url: str)
+    - _update_frame(data: ndarray): void
+    - _open_stream(): bool
+    - _capture(): void
+}
+
+ICamera <|.. CameraCapture
+CameraCapture -> Frame
+
+@enduml

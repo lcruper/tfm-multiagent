@@ -1,18 +1,10 @@
-"""
-Color Detection Module
-----------------------
-
-Detects configurable colors inside YOLO-detected objects in frames
-received from a camera/telemetry pipeline.
-"""
-
 from typing import Optional, Callable
 from configuration import color_detection as config
 import threading
 import logging
 import cv2
 import numpy as np
-from queue import Full, Queue, Empty
+from queue import Queue, Empty
 from ultralytics import YOLO
 from time import sleep
 
@@ -22,11 +14,14 @@ from structures.structures import FrameWithTelemetry, Position
 
 class ColorDetection(AFrameConsumer):
     """
-    Detects a specified color in frames with telemetry.
+    Detects a specific color in objects within frames that include telemetry data.
 
-    Reads FrameWithTelemetry objects from an internal queue, runs YOLO object
-    detection, and checks detected objects for the configured color. If the
-    color is detected, an optional callback is triggered with the current position.
+    This class consumes FrameWithTelemetry objects from an internal queue and processes each frame
+    in a background thread. For every frame, it applies a YOLO model to detect 
+    objects of an specified color.
+
+    When a detection occurs, an optional callback function can be invoked with the position associated 
+    with the frame.
     """
 
     def __init__(self,
@@ -35,12 +30,15 @@ class ColorDetection(AFrameConsumer):
         """
         Creates a ColorDetection instance.
 
+        It initializes the YOLO model, sets up the color limits based on the configuration,
+        and creates the internal queue. 
+
         Args:
             color (str): Name of the color to detect.
             yolo_model_path (str): Path to the YOLO model file.
         """
-        self.color: str = color
-        self.model: YOLO = YOLO(yolo_model_path)
+        self._color: str = color
+        self._model: YOLO = YOLO(yolo_model_path)
 
         self._callback: Optional[Callable[[Position], None]] = None
 
@@ -59,7 +57,12 @@ class ColorDetection(AFrameConsumer):
     # Public methods
     # ----------------------------------------------------------------------
     def start(self) -> None:
-        """Starts the background color detection thread."""
+        """
+        Starts the background thread that processes frames from the queue.
+        
+        It continously retrives FrameWithTelemetry objects for detection and color analysis. 
+        When the target color is detected, it triggers the registered callback.
+        """
         if self._running:
             self._logger.warning("Already running.")
             return
@@ -70,7 +73,9 @@ class ColorDetection(AFrameConsumer):
         self._logger.info("Started.")
 
     def stop(self) -> None:
-        """Stops the background color detection thread."""
+        """
+        Stops the background color detection thread.
+        """
         if not self._running:
             self._logger.warning("Already stopped.")
             return
@@ -85,10 +90,11 @@ class ColorDetection(AFrameConsumer):
 
     def set_callback(self, callback: Callable[[Position], None]) -> None:
         """
-        Sets the callback function to be called when the color is detected.
+        Registers a callback function to be called whenever the target color is detected
+        in a frame, passing the Position associated with the frame.
 
         Args:
-            callback (Callable[[Position], None]): Callback function.
+            callback (Callable[[Position], None]): Callback function with position as parameter.
         """
         self._callback = callback
 
@@ -97,7 +103,13 @@ class ColorDetection(AFrameConsumer):
     # ----------------------------------------------------------------------
     def _process_frame(self, fwt: FrameWithTelemetry) -> None:
         """
-        Detects the configured color in a given frame using YOLO-detected objects.
+        Processes a single frame.
+        
+        It runs YOLO to detect objects and extracts the corresponding
+        image regions, filtering by minimum area. 
+        For each region, it converts the region to HSV, applies color masks,
+        and computes the proportion of matching pixels.
+        If the color is detected, it triggers the callback.
 
         Args:
             fwt (FrameWithTelemetry): Frame with telemetry to analyze.
@@ -107,7 +119,7 @@ class ColorDetection(AFrameConsumer):
         self._logger.debug("Processing frame of shape %s at position %s", data.shape, position)
 
         try:
-            results = self.model.predict(
+            results = self._model.predict(
                 data,
                 device="cpu",
                 imgsz=config.COLOR_DETECTION_IMG_SIZE,
@@ -144,11 +156,14 @@ class ColorDetection(AFrameConsumer):
             if ratio >= config.COLOR_DETECTION_THRESH:
                 if self._callback:
                     self._callback(position)
-                self._logger.debug("%s object detected at position %s", self.color.capitalize(), position)
+                self._logger.debug("%s object detected at position %s", self._color.capitalize(), position)
                 return
 
     def _process(self) -> None:
-        """Background thread processing frames for color detection."""
+        """
+        Background thread method that continuously retrieves frames from the queue and
+        applies color detection processing.
+        """
         while self._running:
             try:
                 fwt = self._queue.get(timeout=0.1)

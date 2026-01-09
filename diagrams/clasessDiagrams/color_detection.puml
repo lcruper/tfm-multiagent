@@ -1,0 +1,30 @@
+
+skinparam classBackgroundColor white
+
+dataclass FrameWithTelemetry <<(D, lightblue)>> {
+    + frame: Frame
+    + telemetry: TelemetryData
+}
+
+abstract class AFrameConsumer <<(A, LightCoral)>> {
+    - _queue: Queue<FrameWithTelemetry>
+    {abstract} +start(): void
+    {abstract} +stop(): void
+    +enqueue(fwt: FrameWithTelemetry): void
+    {abstract}-_process_frame(fwt: FrameWithTelemetry): Any
+}
+
+class ColorDetection {
+    - _color: str
+    - _color_limits: Tuple<np.ndarray, np.ndarray>
+    - _model: YOLO.YOLO
+    - _callback: Callable<[FrameWithTelemetry], None>
+    + ColorDetection(color: str, yolo_model_path: str)
+    + set_callback(callback: Callable<[FrameWithTelemetry], None>): void
+    - _process(): void
+}
+
+AFrameConsumer <|.. ColorDetection
+ColorDetection -> FrameWithTelemetry
+
+@enduml

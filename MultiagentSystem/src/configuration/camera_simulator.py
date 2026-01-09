@@ -5,7 +5,7 @@ CAMERA_SIMULATOR_TARGET_COLOR: Final[str] = COLOR_DETECTION_COLOR
 """Target color for objects generated in the camera simulator.
 It matches the color `COLOR_DETECTION_COLOR` used in the color detection module.
 """
-CAMERA_SIMULATOR_COLOR_PROBABILITY: Final[float] = 0.3
+CAMERA_SIMULATOR_COLOR_PROBABILITY: Final[float] = 0.2
 """Probability of generating a `CAMERA_SIMULATOR_TARGET_COLOR` object in the simulated camera frame."""
 
 CAMERA_SIMULATOR_COLOR_DICT: Final[dict] = {

@@ -24,27 +24,6 @@ abstract class AFrameConsumer <<(A, LightCoral)>> {
     {abstract}-_process_frame(fwt: FrameWithTelemetry): Any
 }
 
-dataclass Battery <<(D, lightblue)>>{
-    + voltage: float
-}
-
-dataclass Position <<(D, lightblue)>> {
-    + x: float
-    + y: float
-    + z: float
-}
-
-dataclass Orientation  <<(D, lightblue)>> {
-    + roll: float
-    + pitch: float
-    + yaw: float
-}
-
-dataclass Pose <<(D, lightblue)>> {
-    + position: Position
-    + orientation: Orientation
-}
-
 dataclass TelemetryData <<(D, lightblue)>> {
     + pose: Pose
     + battery: Battery
@@ -62,13 +41,9 @@ class Matcher {
     - _match(): void
 }
 
-Matcher *--> ITelemetry
-Matcher *--> ICamera
-Matcher *--> AFrameConsumer
+ITelemetry <--* Matcher
+ICamera <--* Matcher
+AFrameConsumer <--* Matcher
 Matcher -> TelemetryData
-Pose *-- Position
-Pose *-- Orientation
-TelemetryData *-- Pose
-TelemetryData *-- Battery
 @enduml
 

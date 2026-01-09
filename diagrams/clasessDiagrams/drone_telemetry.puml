@@ -14,26 +14,11 @@ interface IMovementSimulator {
     +get_xy(): Point2D
 }
 
-dataclass Battery <<(D, lightblue)>>{
-    + voltage: float
-}
-
-dataclass Position <<(D, lightblue)>> {
+dataclass Point2D <<(D, lightblue)>> {
     + x: float
     + y: float
-    + z: float
 }
 
-dataclass Orientation  <<(D, lightblue)>> {
-    + roll: float
-    + pitch: float
-    + yaw: float
-}
-
-dataclass Pose <<(D, lightblue)>> {
-    + position: Position
-    + orientation: Orientation
-}
 
 dataclass TelemetryData <<(D, lightblue)>> {
     + pose: Pose
@@ -58,11 +43,9 @@ class DroneTelemetry {
 }
 
 ITelemetry <|.. DroneTelemetry
-DroneTelemetry o-> TelemetryData
+DroneTelemetry --> TelemetryData
+DroneTelemetry --> Point2D
 IMovementSimulator <-* DroneTelemetry
-Pose *-- Position
-Pose *-- Orientation
-TelemetryData *-- Pose
-TelemetryData *-- Battery
+
 @enduml
 

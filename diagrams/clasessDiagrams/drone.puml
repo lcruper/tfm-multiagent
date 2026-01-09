@@ -1,0 +1,89 @@
+@startuml
+
+skinparam classBackgroundColor white
+
+
+interface ITelemetry  {
+}
+
+interface IMovementSimulator {
+}
+
+interface ICamera {
+}
+
+abstract class AFrameConsumer <<(A, LightCoral)>> {
+}
+
+abstract class ARobot <<(A, LightCoral)>> {
+    - _callback_onPoint: Callable<[Point2D], void>
+    - _callback_onFinish: Callable<[], void>
+    {abstract}+ start_routine(positions: List<Point2D>): void
+    {abstract}+ stop_routine(): List<Point2D>
+    + set_callback_onPoint(callback: Callable<[Point2D], void>): void
+    + set_callback_onFinish(callback: Callable<[], void>): void
+    {abstract}+ get_current_position(): Point2D
+    {abstract}+ get_telemetry(): Dict<String, float>
+}
+
+
+class DroneTelemetry {
+}
+
+class SpiralMovementSimulator {
+}
+
+class ZigzagMovementSimulator {
+}
+
+class CameraCapture {
+}
+
+class CameraSimulator {
+}
+
+class Matcher {
+}
+
+class ColorDetection {
+}
+
+class Viewer {
+}
+
+class Drone {
+    - _telemetry: ITelemetry
+    - _camera: ICamera
+    - _matcher: Matcher
+    - _color_detection: ColorDetection
+    - _viewer: Viewer
+    - _detected_points: List<Point2D>
+    + Drone(telemetry: ITelemetry, camera: ICamera, color_detection: ColorDetection)
+    + get_detected_points(): List<Point2D>
+    - _on_color_detected(position: Position): void
+}
+
+ARobot <|.. Drone
+
+Drone *----> ITelemetry
+ITelemetry <|.. DroneTelemetry
+IMovementSimulator <-* DroneTelemetry
+IMovementSimulator <|.. SpiralMovementSimulator
+IMovementSimulator <|.. ZigzagMovementSimulator
+
+Drone *----> ICamera
+ICamera <|.. CameraSimulator
+ICamera <|.. CameraCapture
+
+Drone *--> Matcher
+Matcher *--> ITelemetry
+Matcher *--> ICamera
+Matcher *-> AFrameConsumer
+
+Drone *----> ColorDetection
+AFrameConsumer <|.. ColorDetection
+
+Drone *----> Viewer
+AFrameConsumer <|.. Viewer
+
+@enduml

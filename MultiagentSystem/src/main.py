@@ -1,9 +1,7 @@
-from drone.matcher import Matcher
 from drone.drone import Drone
 from drone.drone_telemetry import DroneTelemetry
 from drone.camera_capture import CameraCapture
 from drone.camera_simulator import CameraSimulator
-from drone.viewer import Viewer
 from drone.color_detection import ColorDetection
 from drone.movementSimulator.spiral_movement_simulator import SpiralMovementSimulator
 from robotDog.robot_dog_simulator import RobotDogSimulator
@@ -47,19 +45,12 @@ camera = CameraCapture(
 )
 
 cameraSimulator = CameraSimulator()
-
-matcher = Matcher(telemetry, cameraSimulator)
-
 color_detector = ColorDetection(configuration.color_detection.COLOR_DETECTION_COLOR, configuration.color_detection.YOLO_MODEL_PATH)
-
-viewer = Viewer()
 
 explorer = Drone(
     telemetry=telemetry,
     camera=cameraSimulator,
-    matcher=matcher,
-    color_detector=color_detector,
-    viewer=viewer
+    color_detection=color_detector,
 ) 
 
 inspector = RobotDogSimulator(configuration.robot_dog.ROBOT_DOG_SPEED)

@@ -9,33 +9,41 @@ from structures.structures import Position, Point2D
 
 class Drone(ARobot):
     """
-    Aggregates all drone components.
+    Central integration module of the drone.
 
-    Aggregates drone components: telemetry, camera, matcher, color detector, and viewer.
-    Provides a unified API to start/stop inspections and set callbacks for points detections and inspection finish.
+    The class acts as the core coordinator of the drone,
+    aggregating and managing all the main components of the exploration
+    agent: telemetry, camera, data synchronization, visual processing,
+    and visualization.
+
+    It provides a high-level unified API to start and stop the exploration
+    routine, as well as to notify user-defined callbacks when relevant
+    events occur, such as the detection of points of interest or the
+    completion of the exploration routine.
     """
 
     def __init__(self,
                  telemetry: ITelemetry,
                  camera: ICamera,
-                 matcher: Matcher,
-                 color_detection: ColorDetection,
-                 viewer: Viewer) -> None:
+                 color_detection: ColorDetection
+                 ) -> None:
         """
         Creates a Drone instance.
 
+        Initializes the different componentes: a Matcher and Viewer objects are created, 
+        the color detection and visualization modules are registered as frame consumers, 
+        and an internal callback is set to handle visual detections.
+
         Args:
-            telemetry (ITelemetry): Telemetry interface for the drone.
-            camera (ICamera): Camera interface for the drone.
-            matcher (Matcher): Matcher instance for combining frames and telemetry.
-            color_detection (ColorDetection): Color detection instance.
-            viewer (Viewer): Viewer instance for displaying frames with telemetry overlay.
+            telemetry (ITelemetry): Telemetry provider used to obtain the drone state.
+            camera (ICamera): Camera provider used to capture image frames.
+            color_detection (ColorDetection): Module responsible for visual color detection.
         """
         self._telemetry = telemetry
         self._camera = camera
-        self._matcher = matcher
+        self._matcher = Matcher(self._telemetry, self._camera)
         self._color_detection = color_detection
-        self._viewer = viewer
+        self._viewer = Viewer()
 
         self._detected_points: List[Point2D] = []
         self._active: bool = False
@@ -49,11 +57,15 @@ class Drone(ARobot):
     # ---------------------------------------------------
     # Public methods
     # ---------------------------------------------------
-    def start_inspection(self) -> None:
+    def start_routine(self) -> None:
         """
-        Starts telemetry, camera, matcher, color detector, and viewer.
+        Starts the exploration routine.
 
-        Initializes the system and clears previous detections.
+        This method initializes and starts all the system subcomponents in
+        a coordinated manner: telemetry acquisition, camera capture, frame/
+        telemetry synchronization, visual color detection, and visualization.
+
+        Before starting, the list of detected points is cleared.
         """
         if self._active:
             self._logger.warning("Already running.")
@@ -61,7 +73,6 @@ class Drone(ARobot):
 
         self._active = True
         self._detected_points.clear()
-
         self._telemetry.start()
         self._camera.start()
         self._matcher.start()
@@ -70,19 +81,22 @@ class Drone(ARobot):
 
         self._logger.info("Started.")
 
-    def stop_inspection(self) -> List[Point2D]:
+    def stop_routine(self) -> List[Point2D]:
         """
-        Stops all subsystems and returns detected points.
+        Stops the exploration routine and all associated subcomponents.
+
+        The subsystems are stopped in an orderly manner. Once the routine
+        finishes, the user-defined completion callback is invoked, if it
+        has been registered.
 
         Returns:
-            List[Point2D]: Detected 2D points during the inspection.
+            List[Point2D]: Detected 2D points during the exploration routine.
         """
         if not self._active:
             self._logger.warning("Already stopped.")
             return []
 
         self._active = False
-
         self._viewer.stop()
         self._color_detection.stop()
         self._matcher.stop()
@@ -116,16 +130,13 @@ class Drone(ARobot):
     
     def get_telemetry(self) -> Optional[Dict[str, float]]:
         """
-        Retrieves the current telemetry data of the drone. Not implemented.
-        
-        Returns:
-            Optional[Dict[str, float]]: Current telemetry data, or None if unavailable.
+        Retrieves the current telemetry data of the drone (no-op).
         """
         return None
 
     def get_detected_points(self) -> List[Point2D]:
         """
-        Returns the list of detected 2D points.
+        Returns a list of the detected 2D points during the exploration routine.
 
         Returns:
             List[Point2D]: List of detected (x, y) coordinates.
@@ -137,12 +148,18 @@ class Drone(ARobot):
     # ---------------------------------------------------
     def _on_color_detected(self, position: Position) -> None:
         """
-        Internal callback invoked by ColorDetection when a color object is detected.
+        Internal callback invoked when a target-colored object is detected.
 
-        Stores the detection, flashes the camera, and triggers user callback.
+        This method is automatically called by the ColorDetection 
+        module when a visual detection is confirmed. Its responsibilities are:
+
+        - Briefly activating the camera flash as a visual signal.
+        - Storing the detected position as a 2D point.
+        - Invoking the user-defined point-detection callback, if present.
 
         Args:
-            position (Position): 3D position of detected object.
+            position (Position): 3D position associated with the frame where the
+            detection occurred.
         """
         self._logger.debug(
             "Color detected at (%.2f, %.2f, %.2f)", position.x, position.y, position.z

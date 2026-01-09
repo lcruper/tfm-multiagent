@@ -20,18 +20,18 @@ class OperationEvents:
         """
         Initializes all operation-level synchronization events.
         """
-        self._stop_inspection: threading.Event = threading.Event()
+        self._stop_routine: threading.Event = threading.Event()
         """Event to signal stopping the inspection process."""
         self._next_mission: threading.Event = threading.Event()
         """Event to signal starting the next mission."""
         self._inspector_done: threading.Event = threading.Event()
         """Event to signal that the inspector has finished its mission."""
 
-    def trigger_stop_inspection(self) -> None:
+    def trigger_stop_routine(self) -> None:
         """
         Triggers the stop inspection event.
         """
-        self._stop_inspection.set()
+        self._stop_routine.set()
 
     def trigger_next_mission(self) -> None:
         """
@@ -45,11 +45,11 @@ class OperationEvents:
         """
         self._inspector_done.set()
 
-    def clear_stop_inspection(self) -> None:
+    def clear_stop_routine(self) -> None:
         """
         Clears the stop inspection event.
         """
-        self._stop_inspection.clear()
+        self._stop_routine.clear()
 
     def clear_next_mission(self) -> None:
         """
@@ -63,11 +63,11 @@ class OperationEvents:
         """
         self._inspector_done.clear() 
 
-    def wait_for_stop_inspection(self) -> None:
+    def wait_for_stop_routine(self) -> None:
         """
         Blocks until the stop inspection event is set.
         """
-        self._stop_inspection.wait()    
+        self._stop_routine.wait()    
 
     def wait_for_next_mission(self) -> None:
         """

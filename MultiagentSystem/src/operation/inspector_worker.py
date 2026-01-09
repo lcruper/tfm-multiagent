@@ -103,7 +103,7 @@ class InspectorWorker(threading.Thread):
         Main thread loop executing missions.
 
         Waits for the next_mission event, plans the path, starts inspection, 
-        and waits for the stop_inspection event before finishing the mission.
+        and waits for the stop_routine event before finishing the mission.
         """
         while self.mission_id < self._n_missions - 1:
             points = self._points_queue.get()
@@ -114,9 +114,9 @@ class InspectorWorker(threading.Thread):
             self.status = Status.RUNNING
             self._events.clear_inspector_done()
             path = self._planner.plan_path(self._robot.get_current_position(), list(points))
-            self._robot.start_inspection(path)
+            self._robot.start_routine(path)
             self._events.wait_for_inspector_done()
-            self._robot.stop_inspection()
+            self._robot.stop_routine()
 
         self.status = Status.ALL_FINISHED
         self._logger.info("All missions finished.")

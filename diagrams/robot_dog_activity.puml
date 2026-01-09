@@ -20,7 +20,7 @@ loop Para cada p en _waypoints
         Thread -> CBPoint: _callback_onPoint(p)
     end
 end
-
+s
 Thread -> CBFinish: _callback_onFinish()
 deactivate Thread
 
@@ -31,7 +31,7 @@ Robot --> Robot: pos = _current_position
 Robot --> User: pos.copy()
 
 User -> Robot: get_telemetry()
-Robot --> Robot: temp = _get_temperature()
+Robot --> Robot: temp = _get_stemperature()
 Robot --> User: { temperature: temp }
 
 @enduml

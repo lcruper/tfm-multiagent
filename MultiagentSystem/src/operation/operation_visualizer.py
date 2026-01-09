@@ -110,7 +110,7 @@ class OperationVisualizer:
 
         ax_stop = plt.axes([0.55, 0.01, 0.1, 0.05])
         stop_button = Button(ax_stop, "Stop Dron")
-        stop_button.on_clicked(lambda event: self.controller.stop_inspection())
+        stop_button.on_clicked(lambda event: self.controller.stop_routine())
         ax_stop.set_visible(False)
 
         ax_next = plt.axes([0.65, 0.01, 0.1, 0.05])

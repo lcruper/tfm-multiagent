@@ -33,8 +33,8 @@ class OperationController:
         Creates an OperationController instance.
 
         Args:
-            explorer_robot (IRobot): Robot for inspection.
-            inspector_robot (IRobot): Robot for executing points.
+            explorer_robot (IRobot): Robot for exploration phase.
+            inspector_robot (IRobot): Robot for inspection phase.
             planner (IPathPlanner): Path planner for inspector robot.
             base_positions (List[Point2D]): Base positions for each mission.
         """        
@@ -81,12 +81,12 @@ class OperationController:
         self._logger.info("Triggering next mission...")
         self.explorer_worker.start_next_mission()
 
-    def stop_inspection(self) -> None:
+    def stop_routine(self) -> None:
         """
         Signals the explorer to stop the current mission.
         """
         self._logger.info("Stopping current inspection...")
-        self._events.trigger_stop_inspection()
+        self._events.trigger_stop_routine()
 
     # -------------------
     # Private methods

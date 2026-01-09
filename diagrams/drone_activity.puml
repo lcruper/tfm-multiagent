@@ -1,0 +1,83 @@
+@startuml
+skinparam participantBackgroundColor white
+skinparam NoteBackgroundColor lightgrey
+
+actor "Agente coordinador" as User
+participant "Drone" as Drone
+participant "Hilo Telemetry" as Telemetry
+participant "Hilo Camera" as Camera
+note over Camera
+CameraSimulator no crea hilo propio.
+end note
+participant "Hilo Matcher" as Matcher
+participant "Hilo ColorDetection" as ColorDet
+participant "Hilo Viewer" as Viewer
+participant "Callback onPoint" as CBPoint
+participant "Callback onFinish" as CBFinish
+
+== Inicio de la rutina ==
+
+User -> Drone: start_routine()
+activate Drone
+
+Drone -> Drone: resetear _detected_points
+
+Drone -> Telemetry: start()
+Drone -> Camera: start()
+Drone -> Matcher: start()
+Drone -> ColorDet: start()
+Drone -> Viewer: start()
+
+deactivate Drone
+
+== Sincronización y procesamiento continuo ==
+
+loop Mientras la rutina está activa
+    Matcher -> Camera: get_frame()
+    Camera --> Matcher: frame: Frame
+    Matcher -> Telemetry: get_telemetry()
+    Telemetry --> Matcher: telemetry: TelemetryData
+    Matcher -> Matcher: fwt = FrameWithTelemetry(frame, telemetry)
+    Matcher -> ColorDet: enqueue(fwt)
+    Matcher -> Viewer: enqueue(fwt)
+    ColorDet -> ColorDet: obtener fwt de la cola\ny procesar
+    alt Color detectado
+        ColorDet -> Drone: _callback(pos: Position)
+        activate Drone
+        Drone -> Camera: turn_on_flash()
+        Drone -> Camera: turn_off_flash()
+        Drone -> Drone: point = Point2D(pos.x, pos.y)
+        Drone -> Drone: guardar point.copy() en _detected_points
+        Drone -> CBPoint: _callback_onPoint(point.copy())
+        deactivate Drone
+    end
+
+    Viewer -> Viewer: obtener fwt de la cola\ny mostrar
+end
+
+== Finalización de la rutina ==
+
+User -> Drone: stop_routine()
+activate Drone
+
+Drone -> Viewer: stop()
+Drone -> ColorDet: stop()
+Drone -> Matcher: stop()
+Drone -> Camera: stop()
+Drone -> Telemetry: stop()
+
+Drone -> CBFinish: _callback_onFinish()
+Drone --> User: _detected_points.copy()
+
+deactivate Drone
+
+== Consultas asíncronas ==
+
+User -> Drone: get_current_position()
+Drone -> Telemetry: get_telemetry()
+Telemetry --> Drone: tel: TelemetryData
+Drone --> User:  Point2D(tel.pose.position.x, tel.pose.position.y)
+
+User -> Drone: get_detected_points()
+Drone --> User: _detected_points.copy()
+@enduml

@@ -26,7 +26,7 @@ class ExplorerWorker(threading.Thread):
     """
     Threaded worker controlling missions for a robot explorer.
 
-    The worker handles mission execution by starting the robot inspection, 
+    The worker handles mission execution by starting the robot exploration, 
     recording detected points, and synchronizing with operation events.
     """
 
@@ -93,7 +93,7 @@ class ExplorerWorker(threading.Thread):
 
     def _on_finish(self) -> None:
         """
-        Callback triggered when the robot finishes the current inspection.
+        Callback triggered when the robot finishes the current exploration.
 
         Stores collected points into the queue and clears the internal buffer.
         """
@@ -114,7 +114,7 @@ class ExplorerWorker(threading.Thread):
             new_point (Point2D): Candidate point to check.
 
         Returns:
-            bool: True if the point is closer than INSPECTION_POINT_MIN_DIST to any existing point.
+            bool: True if the point is closer than DRONE_VISIBILITY to any existing point.
         """
         for pt in self._actual_points:
             dist = ((pt.x - new_point.x) ** 2 + (pt.y - new_point.y) ** 2) ** 0.5
@@ -129,8 +129,8 @@ class ExplorerWorker(threading.Thread):
         """
         Main thread loop for mission execution.
 
-        Waits for the next_mission event, starts inspection, and blocks until
-        the stop_inspection event is triggered. The robot is then stopped, and
+        Waits for the next_mission event, starts exploration, and blocks until
+        the stop_routine event is triggered. The robot is then stopped, and
         the worker waits for the next mission.
         """
         while self.mission_id < len(self._base_positions) - 1:
@@ -139,10 +139,10 @@ class ExplorerWorker(threading.Thread):
             self._logger.info("Starting mission %d", self.mission_id)
             self.status = Status.RUNNING
             self._start_time_actual_mission = time() 
-            self._events.clear_stop_inspection()
-            self._robot.start_inspection()
-            self._events.wait_for_stop_inspection()
-            self._robot.stop_inspection()
+            self._events.clear_stop_routine()
+            self._robot.start_routine()
+            self._events.wait_for_stop_routine()
+            self._robot.stop_routine()
             
         self.status = Status.ALL_FINISHED
         self._logger.info("All missions finished.")

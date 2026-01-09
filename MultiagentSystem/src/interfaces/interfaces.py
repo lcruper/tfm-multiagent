@@ -132,16 +132,16 @@ class ARobot(ABC):
     
     Attributes:
         _callback_onPoint (Optional[Callable[[Point2D], None]]): Callback for when a point is reached.
-        _callback_onFinish (Optional[Callable[[], None]]): Callback for when inspection finishes.
+        _callback_onFinish (Optional[Callable[[], None]]): Callback for when routine finishes.
     """
 
     _callback_onPoint: Optional[Callable[[Point2D], None]] = None
     _callback_onFinish: Optional[Callable[[], None]] = None
 
     @abstractmethod
-    def start_inspection(self, positions: Optional[List[Point2D]]) -> None:
+    def start_routine(self, positions: Optional[List[Point2D]]) -> None:
         """
-        Starts the inspection routine.
+        Starts the routine.
 
         Args:
             positions (Optional[List[Point2D]]): List of target points to inspect. If None, no targets are set.
@@ -149,9 +149,9 @@ class ARobot(ABC):
         pass
 
     @abstractmethod
-    def stop_inspection(self) -> Optional[List[Point2D]]:
+    def stop_routine(self) -> Optional[List[Point2D]]:
         """
-        Stops the inspection routine.
+        Stops the routine.
 
         Returns:
             Optional[List[Point2D]]: List of detected points, or None if unavailable.
@@ -169,10 +169,10 @@ class ARobot(ABC):
 
     def set_callback_onFinish(self, callback: Callable[[], None]) -> None:
         """
-        Register a callback triggered when the inspection finishes.
+        Register a callback triggered when the routine finishes.
 
         Args:
-            callback (Callable[[], None]): Function to call when inspection finishes.
+            callback (Callable[[], None]): Function to call when routine finishes.
         """
         self._callback_onFinish = callback
 

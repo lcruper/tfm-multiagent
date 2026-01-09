@@ -25,7 +25,7 @@ class RobotDogSimulator(ARobot):
         Creates a RobotDogSimulator instance.
 
         The robot starts at position (0, 0) and remains idle until an
-        inspection routine is started by calling start_inspection().
+        inspection routine is started by calling start_routine().
 
         Args:
             speed (float): Linear movement speed of the robot dog (m/s).
@@ -43,7 +43,7 @@ class RobotDogSimulator(ARobot):
     # ---------------------------------------------------
     # Public methods
     # ---------------------------------------------------
-    def start_inspection(self, positions: List[Point2D]) -> None:
+    def start_routine(self, positions: List[Point2D]) -> None:
         """
         Starts the inspection routine.
 
@@ -64,7 +64,7 @@ class RobotDogSimulator(ARobot):
         self._thread.start()
         self._logger.info("Started.")
 
-    def stop_inspection(self) -> None:
+    def stop_routine(self) -> None:
         """
         Stops the inspection routine.
 

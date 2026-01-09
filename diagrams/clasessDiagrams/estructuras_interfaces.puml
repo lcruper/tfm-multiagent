@@ -82,8 +82,8 @@ abstract class AFrameConsumer <<(A, LightCoral)>> {
 abstract class ARobot <<(A, LightCoral)>> {
     - _callback_onPoint: Callable<[Point2D], void>
     - _callback_onFinish: Callable<[], void>
-    {abstract}+ start_inspection(positions: List<Point2D>): void
-    {abstract}+ stop_inspection(): List<Point2D>
+    {abstract}+ start_routine(positions: List<Point2D>): void
+    {abstract}+ stop_routine(): List<Point2D>
     + set_callback_onPoint(callback: Callable<[Point2D], void>): void
     + set_callback_onFinish(callback: Callable<[], void>): void
     {abstract}+ get_current_position(): Point2D

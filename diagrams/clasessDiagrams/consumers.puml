@@ -20,7 +20,7 @@ class ColorDetection {
     - _model: YOLO.YOLO
     - _callback: Callable<[FrameWithTelemetry], None>
     + ColorDetection(color: str, yolo_model_path: str)
-    + set_callback(callback: Callable<[FrameWithTelemetry], None>): void
+    + set_callback(callback: Callable<[Position], None>): void
     - _process(): void
 }
 

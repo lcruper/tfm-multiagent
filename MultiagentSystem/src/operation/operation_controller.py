@@ -14,8 +14,8 @@ from typing import List, Dict
 import threading
 from datetime import datetime
 
-from operation.explorer_worker import ExplorerWorker
-from operation.inspector_worker import InspectorWorker
+from operation.exploration_controller import ExplorationController
+from operation.inspection_controller import InspectionController
 from operation.operation_events import OperationEvents
 from operation.operation_status import OperationStatus
 from interfaces.interfaces import IPathPlanner, ARobot
@@ -52,8 +52,8 @@ class OperationController:
         self.start_time: float = None
         self.finished_time: float = None
 
-        self.explorer_worker: ExplorerWorker = ExplorerWorker(explorer_robot, self.base_positions, self._queue, self.all_points, self._events)
-        self.inspector_worker: InspectorWorker = InspectorWorker(inspector_robot, planner, len(self.base_positions), self._queue, self.all_points, self._events)
+        self.explorer_worker: ExplorationController = ExplorationController(explorer_robot, self.base_positions, self._queue, self.all_points, self._events)
+        self.inspector_worker: InspectionController = InspectionController(inspector_robot, planner, len(self.base_positions), self._queue, self.all_points, self._events)
 
         self._lock: threading.Lock = threading.Lock()
 
@@ -80,7 +80,7 @@ class OperationController:
         Signals to start the next mission.
         """
         self._logger.info("Triggering next mission...")
-        self.explorer_worker.start_next_mission()
+        self.explorer_worker.start_next_exploration()
 
     def stop_routine(self) -> None:
         """
@@ -111,7 +111,7 @@ class OperationController:
         Callback triggered when all missions are finished.
         """
         with self._lock:
-            if self.explorer_worker.mission_id == self._n_missions-1 and self.explorer_worker.status == OperationStatus.FINISHED and self.inspector_worker.mission_id == self._n_missions-1 and self.inspector_worker.status == OperationStatus.FINISHED:
+            if self.explorer_worker.current_mission_id == self._n_missions-1 and self.explorer_worker.status == OperationStatus.FINISHED and self.inspector_worker.mission_id == self._n_missions-1 and self.inspector_worker.status == OperationStatus.FINISHED:
                 self.finished_time = time()
                 self.status = OperationStatus.FINISHED
                 self._logger.info("Operation finished.")
@@ -136,7 +136,7 @@ class OperationController:
         }
 
         for mission_id, base_pos in enumerate(self.base_positions):
-            explorer_start, explorer_finish = self.explorer_worker.times[mission_id]
+            explorer_start, explorer_finish = self.explorer_worker.start_finish_times[mission_id]
             inspector_start, inspector_finish = self.inspector_worker.times[mission_id]
 
             operation_data["missions"].append({

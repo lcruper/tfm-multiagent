@@ -77,7 +77,7 @@ class OperationVisualizer:
         # Base stations
         base_markers = []
         for idx, bp in enumerate(base_positions):
-            color = 'lightblue' if idx == self.controller.explorer_worker.mission_id else 'k'
+            color = 'lightblue' if idx == self.controller.explorer_worker.current_mission_id else 'k'
             marker, = ax_map.plot(bp.x, bp.y, 's', color=color, markersize=8)
             ax_map.text(bp.x + 0.3, bp.y + 0.3, str(idx), fontsize=12)
             base_markers.append(marker)
@@ -122,7 +122,7 @@ class OperationVisualizer:
         # Animation update
         # ----------------------------
         def update(frame):
-            mission_id = self.controller.explorer_worker.mission_id
+            mission_id = self.controller.explorer_worker.current_mission_id
             base_position = base_positions[mission_id]
 
             # Update base markers

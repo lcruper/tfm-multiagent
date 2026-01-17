@@ -12,7 +12,7 @@ synchronizing the agents through events, controlling the explorer and inspector 
 
    operation_status
    operation_events
-   explorer_worker
-   inspector_worker
+   exploration_controller
+   inspection_controller
    operation_controller
    operation_visualizer

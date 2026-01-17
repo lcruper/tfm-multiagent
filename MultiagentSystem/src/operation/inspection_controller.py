@@ -19,7 +19,7 @@ from structures.structures import Point2D
 from interfaces.interfaces import IPathPlanner, ARobot
 
 
-class InspectorWorker(threading.Thread):
+class InspectionController(threading.Thread):
     """
     Threaded worker executing missions for a robot.
     """

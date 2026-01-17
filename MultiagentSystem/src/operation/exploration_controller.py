@@ -16,7 +16,7 @@ class ExplorationController(threading.Thread):
     Controller for managing the exploration phases of missions in a the multi-agent operation.
 
     This class runs as a separate thread and orchestrates the execution of exploration
-    missions performed by a explorer agent. It handles starting and stopping the
+    phases performed by a explorer agent. It handles starting and stopping the
     exploration routine, recording detected points, and synchronizing with the operation-level
     events to ensure safe and ordered execution.
     """
@@ -32,14 +32,14 @@ class ExplorationController(threading.Thread):
             robot (ARobot): Robot instance that performs the exploration.
             base_positions (List[Point2D]): List of positions corresponding to the base stations from which exploration phases start.
             points_queue (Queue[Point2D]): Queue for sending detected points during exploration to the inspection controller.
-            all_points (Dict[Point2D, Tuple[int, bool, float, float]]):Dictionary storing all detected points across missions, including:
+            all_points (Dict[Point2D, Tuple[int, bool, float, float]]): Dictionary storing all detected points across missions, including:
                            (mission_id, processed_flag, detection_time, inspection_time)
             events (OperationEvents): Shared operation events for synchronizing exploration and inspection phases.
         """
         super().__init__(daemon=True)
         self._robot: ARobot = robot
         self._base_positions: List[Point2D] = base_positions
-        self._n_base_positions: int = len(base_positions)
+        self._n_missions: int = len(base_positions)
         self._points_queue: Queue[Point2D] = points_queue
         self._all_points: Dict[Point2D, Tuple[int, bool, float, float]] = all_points
         self._events: OperationEvents = events
@@ -69,7 +69,7 @@ class ExplorationController(threading.Thread):
         For each phase, it:
             1. Sets the status to RUNNING.
             2. Records the start time.
-            3. Starts the robot exploration routine.
+            3. Starts the robot's exploration routine.
             4. Waits for the `stop_exploration` event to stop the routine.
             5. Records the finish time.
             6. Sets status to FINISHED.
@@ -78,7 +78,7 @@ class ExplorationController(threading.Thread):
         Once all missions have been completed, the controller marks itself as FINISHED
         and triggers the optional completion callback.
         """
-        while self.current_mission_id < self._n_base_positions - 1:
+        while self.current_mission_id < self._n_missions - 1:
             self._events.wait_for_start_next_exploration()
             self._events.clear_start_next_exploration()
             self._logger.info("Starting mission %d", self.current_mission_id)
@@ -109,7 +109,7 @@ class ExplorationController(threading.Thread):
         Signals the controller to start the next exploration only if there are remaining missions and the current mission is not running.
         """
         with self._lock:
-            if self.current_mission_id >= self._n_base_positions-1:
+            if self.current_mission_id >= self._n_missions-1:
                 self._logger.warning("All exploration missions have already been completed.")
                 return
             if self.status == OperationStatus.RUNNING:

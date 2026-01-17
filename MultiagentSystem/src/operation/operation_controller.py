@@ -111,7 +111,7 @@ class OperationController:
         Callback triggered when all missions are finished.
         """
         with self._lock:
-            if self.explorer_worker.current_mission_id == self._n_missions-1 and self.explorer_worker.status == OperationStatus.FINISHED and self.inspector_worker.mission_id == self._n_missions-1 and self.inspector_worker.status == OperationStatus.FINISHED:
+            if self.explorer_worker.current_mission_id == self._n_missions-1 and self.explorer_worker.status == OperationStatus.FINISHED and self.inspector_worker.current_mission_id == self._n_missions-1 and self.inspector_worker.status == OperationStatus.FINISHED:
                 self.finished_time = time()
                 self.status = OperationStatus.FINISHED
                 self._logger.info("Operation finished.")
@@ -137,7 +137,7 @@ class OperationController:
 
         for mission_id, base_pos in enumerate(self.base_positions):
             explorer_start, explorer_finish = self.explorer_worker.start_finish_times[mission_id]
-            inspector_start, inspector_finish = self.inspector_worker.times[mission_id]
+            inspector_start, inspector_finish = self.inspector_worker.start_finish_times[mission_id]
 
             operation_data["missions"].append({
                 "mission_id": mission_id,

@@ -222,7 +222,7 @@ DRONE:
 - Drone Distance: {ins_dist:.2f}
 
 ROBOT DOG:
-- Robot Dog Mission: {self.controller.inspector_worker.mission_id}
+- Robot Dog Mission: {self.controller.inspector_worker.current_mission_id}
 - Robot Dog Mission Status: {self.controller.inspector_worker.status.name}
 - Robot Dog Position: x={exe_abs.x:.2f}, y={exe_abs.y:.2f}
 - Robot Dog Distance: {exe_dist:.2f}

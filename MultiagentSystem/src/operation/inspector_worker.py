@@ -13,7 +13,7 @@ from queue import Queue
 import winsound
 from time import time
 
-from operation.operation_status import Status
+from operation.operation_status import OperationStatus
 from operation.operation_events import OperationEvents
 from structures.structures import Point2D
 from interfaces.interfaces import IPathPlanner, ARobot
@@ -46,7 +46,7 @@ class InspectorWorker(threading.Thread):
         self._events: OperationEvents = events
 
         self.mission_id: int = 0
-        self.status: Status = Status.NOT_STARTED
+        self.status: OperationStatus = OperationStatus.NOT_STARTED
 
         self._start_time_actual_mission: float = None
         self.times: List[(float, float)] = []
@@ -90,7 +90,7 @@ class InspectorWorker(threading.Thread):
             finish_time = time()
             self.times.append((self._start_time_actual_mission, finish_time))  
             self._logger.info("Finished mission %d", self.mission_id)
-            self.status = Status.FINISHED
+            self.status = OperationStatus.FINISHED
             self._start_time_actual_mission = None
             self._events.trigger_inspector_done()
             self._points_queue.task_done()
@@ -107,18 +107,18 @@ class InspectorWorker(threading.Thread):
         """
         while self.mission_id < self._n_missions - 1:
             points = self._points_queue.get()
-            if self.status == Status.FINISHED:
+            if self.status == OperationStatus.FINISHED:
                 self.mission_id += 1
             self._logger.info("Starting mission %d with %d points", self.mission_id, len(points))
             self._start_time_actual_mission = time()
-            self.status = Status.RUNNING
+            self.status = OperationStatus.RUNNING
             self._events.clear_inspector_done()
             path = self._planner.plan_path(self._robot.get_current_position(), list(points))
             self._robot.start_routine(path)
             self._events.wait_for_inspector_done()
             self._robot.stop_routine()
 
-        self.status = Status.ALL_FINISHED
+        self.status = OperationStatus.FINISHED
         self._logger.info("All missions finished.")
         if self._callback_onFinishAll:
             self._callback_onFinishAll()

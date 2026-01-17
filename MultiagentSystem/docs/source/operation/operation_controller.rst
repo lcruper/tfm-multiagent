@@ -1,5 +1,5 @@
-Operation Controller
-====================
+Operation Controller Module
+=============================
 
 .. automodule:: operation.operation_controller
    :members:

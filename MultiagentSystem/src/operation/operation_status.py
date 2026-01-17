@@ -1,21 +1,15 @@
-"""
-Operation Status
-----------------
-
-Defines enums representing the execution status of robots and operations.
-"""
-
 from enum import Enum, auto
 
-class Status(Enum):
+class OperationStatus(Enum):
     """
-    Status of an entity.
+    Enumeration representing the execution status of the operation or the mission's phases.
     """
+
     NOT_STARTED = auto()
-    """Not started yet."""
+    """The operation/phase has not started yet."""
+
     RUNNING = auto()
-    """Currently running."""
+    """The operation/phase is currently executing."""
+
     FINISHED = auto()
-    """Finished successfully."""
-    ALL_FINISHED = auto()
-    """All finished."""
+    """The operation/phase has finished."""

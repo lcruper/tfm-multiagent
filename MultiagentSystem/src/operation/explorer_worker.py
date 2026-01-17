@@ -16,7 +16,7 @@ from time import time
 import winsound
 
 from configuration import operation as config
-from operation.operation_status import Status
+from operation.operation_status import OperationStatus
 from operation.operation_events import OperationEvents
 from interfaces.interfaces import ARobot
 from structures.structures import Point2D
@@ -50,7 +50,7 @@ class ExplorerWorker(threading.Thread):
 
         self._actual_points: List[Point2D] = []
         self.mission_id: int = 0
-        self.status: Status = Status.NOT_STARTED
+        self.status: OperationStatus = OperationStatus.NOT_STARTED
 
         self._start_time_actual_mission: float = None
         self.times: List[(float, float)] = []
@@ -101,7 +101,7 @@ class ExplorerWorker(threading.Thread):
             finish_time = time()
             self.times.append((self._start_time_actual_mission, finish_time))
             self._logger.info("Finished mission %d with %d points", self.mission_id, len(self._actual_points))
-            self.status = Status.FINISHED
+            self.status = OperationStatus.FINISHED
             self._start_time_actual_mission = None
             self._points_queue.put(list(self._actual_points))
             self._actual_points.clear()
@@ -134,17 +134,17 @@ class ExplorerWorker(threading.Thread):
         the worker waits for the next mission.
         """
         while self.mission_id < len(self._base_positions) - 1:
-            self._events.wait_for_next_mission()
-            self._events.clear_next_mission()
+            self._events.wait_for_start_next_exploration()
+            self._events.clear_start_next_exploration()
             self._logger.info("Starting mission %d", self.mission_id)
-            self.status = Status.RUNNING
+            self.status = OperationStatus.RUNNING
             self._start_time_actual_mission = time() 
-            self._events.clear_stop_routine()
+            self._events.clear_stop_exploration()
             self._robot.start_routine()
-            self._events.wait_for_stop_routine()
+            self._events.wait_for_stop_exploration()
             self._robot.stop_routine()
             
-        self.status = Status.ALL_FINISHED
+        self.status = OperationStatus.FINISHED
         self._logger.info("All missions finished.")
         
         if self._callback_onFinishAll:
@@ -155,4 +155,4 @@ class ExplorerWorker(threading.Thread):
         Signals the operation to start the next mission.
         """
         self.mission_id += 1
-        self._events.trigger_next_mission()
+        self._events.trigger_start_next_exploration()

@@ -14,7 +14,7 @@ from time import time
 from typing import List, Dict
 
 from configuration import operation as config
-from operation.operation_status import Status
+from operation.operation_status import OperationStatus
 from operation.operation_controller import OperationController
 from structures.structures import Point2D
 
@@ -167,16 +167,16 @@ class OperationVisualizer:
                 detected_scatter.set_color(colors)
 
             # Buttons visibility
-            start_button.ax.set_visible(self.controller.status == Status.NOT_STARTED)
-            stop_button.ax.set_visible(self.controller.explorer_worker.status == Status.RUNNING)
-            next_button.ax.set_visible(self.controller.status == Status.RUNNING and 
-                                       self.controller.explorer_worker.status == Status.FINISHED and
+            start_button.ax.set_visible(self.controller.status == OperationStatus.NOT_STARTED)
+            stop_button.ax.set_visible(self.controller.explorer_worker.status == OperationStatus.RUNNING)
+            next_button.ax.set_visible(self.controller.status == OperationStatus.RUNNING and 
+                                       self.controller.explorer_worker.status == OperationStatus.FINISHED and
                                        mission_id + 1 < len(base_positions))
 
             # Info panel
-            if self.controller.status == Status.NOT_STARTED:
+            if self.controller.status == OperationStatus.NOT_STARTED:
                 elapsed = 0.0
-            elif self.controller.status == Status.RUNNING:
+            elif self.controller.status == OperationStatus.RUNNING:
                 elapsed = time() - self.controller.start_time
             else: 
                 elapsed = self.controller.finished_time - self.controller.start_time 

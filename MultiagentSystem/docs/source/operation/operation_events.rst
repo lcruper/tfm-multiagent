@@ -1,5 +1,5 @@
-Operation Events
-================
+Operation Events Module
+========================
 
 .. automodule:: operation.operation_events
    :members:

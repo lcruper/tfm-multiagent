@@ -17,7 +17,7 @@ from datetime import datetime
 from operation.explorer_worker import ExplorerWorker
 from operation.inspector_worker import InspectorWorker
 from operation.operation_events import OperationEvents
-from operation.operation_status import Status
+from operation.operation_status import OperationStatus
 from interfaces.interfaces import IPathPlanner, ARobot
 from structures.structures import Point2D
 from configuration import operation as config
@@ -39,6 +39,7 @@ class OperationController:
             base_positions (List[Point2D]): Base positions for each mission.
         """        
         self.base_positions: List[Point2D] = self._load_base_positions(base_positions_path)
+        self._n_missions: int = len(self.base_positions)
     
         self._queue: Queue[Dict[Point2D, bool]] = Queue(maxsize=len(self.base_positions))
         self.all_points: Dict[Point2D, (int, bool, time, time)] = {}
@@ -47,7 +48,7 @@ class OperationController:
         self.explorer_robot: ARobot = explorer_robot
         self.inspector_robot: ARobot = inspector_robot
 
-        self.status: Status = Status.NOT_STARTED
+        self.status: OperationStatus = OperationStatus.NOT_STARTED
         self.start_time: float = None
         self.finished_time: float = None
 
@@ -68,11 +69,11 @@ class OperationController:
         self.start_time = time()
         self.explorer_worker._callback_onFinishAll = self._on_all_missions_finished
         self.inspector_worker._callback_onFinishAll = self._on_all_missions_finished
-        self.status = Status.RUNNING
+        self.status = OperationStatus.RUNNING
         self.explorer_worker.start()
         self.inspector_worker.start()
         self._logger.info("Operation started. Triggering first mission...")
-        self._events.trigger_next_mission()
+        self._events.trigger_start_next_exploration()
 
     def next_mission(self) -> None:
         """
@@ -86,7 +87,7 @@ class OperationController:
         Signals the explorer to stop the current mission.
         """
         self._logger.info("Stopping current inspection...")
-        self._events.trigger_stop_routine()
+        self._events.trigger_stop_exploration()
 
     # -------------------
     # Private methods
@@ -110,9 +111,9 @@ class OperationController:
         Callback triggered when all missions are finished.
         """
         with self._lock:
-            if self.explorer_worker.status == Status.ALL_FINISHED and self.inspector_worker.status == Status.ALL_FINISHED:
+            if self.explorer_worker.mission_id == self._n_missions-1 and self.explorer_worker.status == OperationStatus.FINISHED and self.inspector_worker.mission_id == self._n_missions-1 and self.inspector_worker.status == OperationStatus.FINISHED:
                 self.finished_time = time()
-                self.status = Status.FINISHED
+                self.status = OperationStatus.FINISHED
                 self._logger.info("Operation finished.")
                 self._save_metrics()
 

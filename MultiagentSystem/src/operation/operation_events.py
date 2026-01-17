@@ -1,61 +1,59 @@
-"""
-Operation Events
-----------------
-
-Thread-safe synchronization primitives used to coordinate the execution
-of missions.
-"""
-
 import threading
 
 class OperationEvents:
     """
-    Container for threading events used during an operation execution.
+    Container class for all synchronization events used during the execution
+    of an operation.
 
-    These events allow safe synchronization between the operation controller and 
-    mission inspectors.
+    This class encapsulates the threading events that coordinate the interaction
+    between the explorer agent, the inspector agent, and the operation controller.
+    It provides a thread-safe signaling mechanism to control the execution flow
+    of exploration and inspection phases without introducing direct dependencies
+    between threads.
     """
 
     def __init__(self) -> None:
         """
-        Initializes all operation-level synchronization events.
+        Creates all operation-level synchronization events.
         """
-        self._stop_routine: threading.Event = threading.Event()
-        """Event to signal stopping the inspection process."""
-        self._next_mission: threading.Event = threading.Event()
-        """Event to signal starting the next mission."""
+        self._stop_exploration: threading.Event = threading.Event()
+        """Event used to signal the explorer agent to stop the current exploration phase."""
+
+        self._start_next_exploration: threading.Event = threading.Event()
+        """Event used to signal the explorer agent to start the next exploration phase."""
+
         self._inspector_done: threading.Event = threading.Event()
-        """Event to signal that the inspector has finished its mission."""
+        """Event used to signal that the inspector agent has completed the current inspection phase."""
 
-    def trigger_stop_routine(self) -> None:
+    def trigger_stop_exploration(self) -> None:
         """
-        Triggers the stop inspection event.
+        Activates the stop exploration event.
         """
-        self._stop_routine.set()
+        self._stop_exploration.set()
 
-    def trigger_next_mission(self) -> None:
+    def trigger_start_next_exploration(self) -> None:
         """
-        Triggers the next mission event.
+        Activates the start next exploration event.
         """
-        self._next_mission.set()
+        self._start_next_exploration.set()
 
     def trigger_inspector_done(self) -> None:
         """
-        Triggers the inspector done event.
+        Activates the inspector done event.
         """
         self._inspector_done.set()
 
-    def clear_stop_routine(self) -> None:
+    def clear_stop_exploration(self) -> None:
         """
-        Clears the stop inspection event.
+        Clears the stop exploration event.
         """
-        self._stop_routine.clear()
+        self._stop_exploration.clear()
 
-    def clear_next_mission(self) -> None:
+    def clear_start_next_exploration(self) -> None:
         """
-        Clears the next mission event.
+        Clears the start next exploration event.
         """
-        self._next_mission.clear()  
+        self._start_next_exploration.clear()  
 
     def clear_inspector_done(self) -> None:
         """
@@ -63,23 +61,21 @@ class OperationEvents:
         """
         self._inspector_done.clear() 
 
-    def wait_for_stop_routine(self) -> None:
+    def wait_for_stop_exploration(self) -> None:
         """
-        Blocks until the stop inspection event is set.
+        Blocks the calling thread until the stop exploration event is set.
         """
-        self._stop_routine.wait()    
+        self._stop_exploration.wait()    
 
-    def wait_for_next_mission(self) -> None:
+    def wait_for_start_next_exploration(self) -> None:
         """
-        Blocks until the next mission event is set.
+        Blocks the calling thread until the start next exploration event is set.
         """
-        self._next_mission.wait()
+        self._start_next_exploration.wait()
 
     def wait_for_inspector_done(self) -> None:
         """
-        Blocks until the inspector done event is set.
+        Blocks the calling thread until the inspector done event is set.
         """
         self._inspector_done.wait()
-
-
     

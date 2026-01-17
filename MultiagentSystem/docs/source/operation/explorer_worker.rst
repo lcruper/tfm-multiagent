@@ -1,5 +1,5 @@
-Explorer Worker
-================
+Explorer Worker Module
+=======================
 
 .. automodule:: operation.explorer_worker
    :members:

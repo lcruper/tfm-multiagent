@@ -95,6 +95,8 @@ class ILPPlanner(IPathPlanner):
             else:
                 m.addConstr(deg_expr <= 2)
 
+        m.addConstr(gp.quicksum(x.values()) == n - 1, name ="total_edges")
+
         m.modelSense = gp.GRB.MINIMIZE
         m.optimize()
 

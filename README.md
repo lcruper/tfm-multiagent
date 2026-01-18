@@ -102,8 +102,8 @@ tfm-multiagent/
    3. Flash firmware to the camera using Arduino IDE.
    4. Connect the PC to the drone's Wi-Fi AP.
 6. Configure parameters: edit the configuration files in `MultiagentSystem/src/configuration/` to set:
-     - Input file path of the operation to execute
-      - Camera IP address (if using hardware)
+    - Input file path of the operation to execute
+    - Camera IP address (if using hardware)
 7. Run the system `python MultiagentSystem/src/main.py`
 
 

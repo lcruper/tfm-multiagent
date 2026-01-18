@@ -1,0 +1,130 @@
+@startuml
+
+skinparam classBackgroundColor white
+
+abstract class ARobot <<(A, LightCoral)>> {
+}
+
+interface IPathPlanner {
+}
+
+enum OperationStatus <<(E , Blue)>> {
+    NOT_STARTED
+    RUNNING
+    FINISHED
+}
+
+class Thread{
+}
+
+class OperationEvents {
+    - _stop_exploration: Event
+    - _start_next_exploration: Event
+    - _inspector_done: Event
+    + trigger_stop_exploration(): void
+    + trigger_start_next_exploration(): void
+    + trigger_inspector_done(): void
+    + clear_stop_exploration(): void
+    + clear_start_next_exploration(): void
+    + clear_inspector_done(): void
+    + wait_for_stop_exploration(timeout: float): bool
+    + wait_for_start_next_exploration(timeout: float): bool
+    + wait_for_inspector_done(timeout: float): bool
+}
+
+class ExplorationController {
+    - _robot : ARobot
+    - _base_positions : List<Point2D>
+    - _n_missions : int
+    - _points_queue : Queue<Point2D>
+    - _all_points : Dict<Point2D, Tuple<int,bool,float,float>>
+    - _events : OperationEvents
+    - _points_current_mission : List<Point2D>
+    - _callback_onFinishAll : Callable<[], void>
+    + current_mission_id : int
+    + status : OperationStatus
+    + start_finish_times : List<Tuple<float,float>>
+    + ExplorationController(robot: ARobot, base_positions: List<Point2D>, points_queue: Queue<Point2D>, all_points: Dict<Point2D, Tuple<int,bool,float,float>>, events: OperationEvents)
+    + run(): void
+    + start_next_exploration(): void
+    - _on_point(point : Point2D): void
+    - _is_too_close(x : float, y : float) : bool
+}
+
+ARobot <--* ExplorationController
+OperationEvents <--* ExplorationController 
+OperationStatus <--* ExplorationController
+ExplorationController --|> Thread
+
+
+class InspectionController {
+    - _robot: ARobot
+    - _planner: IPathPlanner
+    - _n_missions : int
+    - _points_queue : Queue<Point2D>
+    - _all_points : Dict<Point2D, Tuple<int,bool,float,float>>
+    - _start_time_current_mission : float
+    - _events : OperationEvents
+    - _callback_onFinishAll : Callable<[], void>
+    + current_mission_id : int
+    + status : OperationStatus
+    + start_finish_times : List<Tuple<float,float>>
+    + points_temperature : Dict<Point2D, float>
+    + InspectionController(robot: ARobot, base_positions: List<Point2D>, points_queue: Queue<Point2D>, all_points: Dict<Point2D, Tuple<int,bool,float,float>>, events: OperationEvents)
+    + run(): void
+    - _on_point(point : Point2D): void
+    - _on_finish(): void
+}
+
+ARobot <--* InspectionController 
+IPathPlanner <---* InspectionController
+OperationStatus <--* InspectionController
+OperationEvents <--* InspectionController
+InspectionController --|> Thread
+
+class OperationController {
+    - _n_missions: int
+    - _queue: Queue<Dict<Point2D, bool>>
+    - _events: OperationEvents
+    + explorer_robot: ARobot
+    + inspector_robot: ARobot
+    + exploration_controller: ExplorationController
+    + inspection_controller: InspectionController
+    + base_positions: List<Point2D> 
+    + all_points: Dict<Point2D, Tuple<int,bool,float,float>>
+    + status: OperationStatus 
+    + start_time: float 
+    + finished_time: float 
+
+    + OperationController(explorer_robot: ARobot, inspector_robot: ARobot, planner: IPathPlanner, base_positions_path: String)
+    + start_operation(): void
+    + next_mission(): void
+    + stop_inspection(): void
+    - _load_base_positions(path: String): List<Point2D>
+    - _on_all_missions_finished(): void
+    - _save_matrics(): void
+}
+
+OperationController *----> ExplorationController
+OperationController *---> InspectionController
+
+OperationController *--> ARobot
+OperationController *--> OperationStatus
+OperationController *--> OperationEvents
+
+OperationController -> IPathPlanner
+
+class OperationVisualizer{
+    - _explorer_positions: List<Point2D>
+    - _inspector_positions: List<Point2D>
+    - _points_by_mission: Dict<int, List<Point2D>>
+    + controller: OperationController
+    + OperationVisualizer(controller: OperationController)
+    + start() : void
+    - _distance_traveled(path: List<Point2D]) : float
+}
+
+OperationVisualizer -> OperationController
+
+
+@enduml

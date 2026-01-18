@@ -51,28 +51,28 @@ class OperationController:
         self.start_time: float = None
         self.finished_time: float = None
 
-        self.explorer_worker: ExplorationController = ExplorationController(explorer_robot, self.base_positions, self._queue, self.all_points, self._events)
-        self.inspector_worker: InspectionController = InspectionController(inspector_robot, planner, len(self.base_positions), self._queue, self.all_points, self._events)
+        self.exploration_controller: ExplorationController = ExplorationController(explorer_robot, self.base_positions, self._queue, self.all_points, self._events)
+        self.inspection_controller: InspectionController = InspectionController(inspector_robot, planner, len(self.base_positions), self._queue, self.all_points, self._events)
 
         self._lock: threading.Lock = threading.Lock()
 
         self._logger: logging.Logger = logging.getLogger("OperationController")
 
-        self.explorer_worker._callback_onFinishAll = self._on_all_missions_finished
-        self.inspector_worker._callback_onFinishAll = self._on_all_missions_finished
+        self.exploration_controller._callback_onFinishAll = self._on_all_missions_finished
+        self.inspection_controller._callback_onFinishAll = self._on_all_missions_finished
 
     # -------------------------------------------
     # Public methods
     # -------------------------------------------
-    def start(self) -> None:
+    def start_operation(self) -> None:
         """
         Starts the operation by launching both exploration and inspection threads
         and triggering the first exploration mission. It also records the start time and updates the operation status.
         """
         self.start_time = time()
         self.status = OperationStatus.RUNNING
-        self.explorer_worker.start()
-        self.inspector_worker.start()
+        self.exploration_controller.start()
+        self.inspection_controller.start()
         self._logger.info("Operation started. Triggering first mission...")
         self._events.trigger_start_next_exploration()
 
@@ -81,7 +81,7 @@ class OperationController:
         Signals the ExplorationController to start the exploration of its next mission.
         """
         self._logger.info("Triggering next exploration mission...")
-        self.explorer_worker.start_next_exploration()
+        self.exploration_controller.start_next_exploration()
 
     def stop_inspection(self) -> None:
         """
@@ -113,7 +113,7 @@ class OperationController:
         have completed all missions. Updates operation status and triggers metrics saving.
         """
         with self._lock:
-            if self.explorer_worker.current_mission_id == self._n_missions-1 and self.explorer_worker.status == OperationStatus.FINISHED and self.inspector_worker.current_mission_id == self._n_missions-1 and self.inspector_worker.status == OperationStatus.FINISHED:
+            if self.exploration_controller.current_mission_id == self._n_missions-1 and self.exploration_controller.status == OperationStatus.FINISHED and self.inspection_controller.current_mission_id == self._n_missions-1 and self.inspection_controller.status == OperationStatus.FINISHED:
                 self.finished_time = time()
                 self.status = OperationStatus.FINISHED
                 self._logger.info("Operation finished.")
@@ -148,14 +148,14 @@ class OperationController:
             "operation_duration": self.finished_time - self.start_time if self.finished_time else None,
             "status": self.status.name,
             "number_of_missions": len(self.base_positions),
-            "number_of_points": len(self.explorer_worker._all_points),
+            "number_of_points": len(self.exploration_controller._all_points),
             "missions": [],
             "points": []
         }
 
         for mission_id, base_pos in enumerate(self.base_positions):
-            explorer_start, explorer_finish = self.explorer_worker.start_finish_times[mission_id]
-            inspector_start, inspector_finish = self.inspector_worker.start_finish_times[mission_id]
+            explorer_start, explorer_finish = self.exploration_controller.start_finish_times[mission_id]
+            inspector_start, inspector_finish = self.inspection_controller.start_finish_times[mission_id]
 
             operation_data["missions"].append({
                 "mission_id": mission_id,
@@ -180,7 +180,7 @@ class OperationController:
             })
 
 
-        for point, (mission_id, _, detected_time, finished_time) in self.explorer_worker._all_points.items():
+        for point, (mission_id, _, detected_time, finished_time) in self.exploration_controller._all_points.items():
             operation_data["points"].append({
                 "point": {
                     "x": point.x,
@@ -192,7 +192,7 @@ class OperationController:
                 "inspected_timestamp": ts_to_iso(finished_time),
                 "inspected_relative_time": finished_time - self.start_time,
                 "telemetry": {
-                    "temperature": self.inspector_worker.points_temperatures.get(point, None)
+                    "temperature": self.inspection_controller.points_temperatures.get(point, None)
                 },
             })
 

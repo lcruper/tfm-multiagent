@@ -1,10 +1,3 @@
-"""
-Operation Visualizer
----------------------
-
-Provides a visual interface to monitor and control the operation execution.
-"""
-
 import matplotlib.pyplot as plt
 from matplotlib import patches
 import matplotlib.animation as animation
@@ -18,48 +11,55 @@ from operation.operation_status import OperationStatus
 from operation.operation_controller import OperationController
 from structures.structures import Point2D
 
-
 class OperationVisualizer:
     """
-    Visualizer for operation execution.
+    Visualization tool for the operation, displaying the real-time
+    positions and paths of the explorer and inspector agents, base stations and detected points, and
+    detailed information of the operation and the agents.
 
-    Displays the explorer and inspector positions, 
-    detected points, and allows controlling missions with buttons.
+    It provides an interactive interface with buttons to start the operation,
+    trigger the next mission, and stop the inspector.
     """
-
     def __init__(self, controller: OperationController) -> None:
         """
         Creates an OperationVisualizer instance.
+
         Args:
-            controller (OperationController): The operation controller to visualize.
+            controller (OperationController): Reference to the operation controller to visualize.
         """
         self.controller: OperationController = controller
         self._explorer_positions: List[Point2D] = []
         self._inspector_positions: List[Point2D] = []
-
         self._points_by_mission: Dict[int, List[Point2D]] = {}
 
     def _distance_traveled(self, path: List[Point2D]) -> float:
         """
-        Computes the total distance traveled along a path.
+        Computes the total Euclidean distance traveled along a given path.
+
         Args:
             path (List[Point2D]): List of points representing the path.
         Returns:
-            float: Total distance traveled.
+            float: Total distance traveled along the path.
         """
         if len(path) < 2:
             return 0.0
         d = 0.0
         for i in range(1, len(path)):
-            dx = path[i].x - path[i - 1].x
-            dy = path[i].y - path[i - 1].y
-            d += (dx ** 2 + dy ** 2) ** 0.5
+            d += ((path[i].x - path[i - 1].x)** 2 + (path[i].y - path[i - 1].y)** 2) ** 0.5
         return d
-    
 
     def start(self) -> None:
+        """
+        Starts the visualization window, displaying:
+
+            - Operation map with base stations, explorer and inspector positions and paths, and detected points of interest.  Detected points are displayed in red when detected and turn green once inspected.
+            - Information panel showing details about the operation (elapsed time, status), the explorator agent (mission id and status, position, distance travelled), the inspector agent (mission id and status, position, distance travelled), and the detected points (number of points, mission id, position and temperature).
+            - Interactive buttons to start the operation, trigger the next mission, or stop the inspector.
+        
+        Updates are performed in real-time using Matplotlib's animation framework.
+        """
         fig = plt.figure(figsize=(12, 6))
-        fig.canvas.manager.set_window_title("Operation Visualizer - Drone & Robot Dog")
+        fig.canvas.manager.set_window_title("Operation Visualizer - Drone & Robot Dog Multi-agent System")
 
         # ----------------------------
         # Operation map
@@ -77,12 +77,12 @@ class OperationVisualizer:
         # Base stations
         base_markers = []
         for idx, bp in enumerate(base_positions):
-            color = 'lightblue' if idx == self.controller.explorer_worker.current_mission_id else 'k'
+            color = 'lightblue' if idx == self.controller.exploration_controller.current_mission_id else 'k'
             marker, = ax_map.plot(bp.x, bp.y, 's', color=color, markersize=8)
             ax_map.text(bp.x + 0.3, bp.y + 0.3, str(idx), fontsize=12)
             base_markers.append(marker)
 
-        # explorer and inspector points and paths
+        # Explorer and inspector points and paths
         explorer_point, = ax_map.plot([], [], 'bo', markersize=8, label="Drone", zorder=5)
         explorer_visibility = patches.Circle((0, 0), config.DRONE_VISIBILITY, color='blue', alpha=0.2, zorder=3)
         ax_map.add_patch(explorer_visibility)
@@ -105,12 +105,12 @@ class OperationVisualizer:
         # ----------------------------
         ax_start = plt.axes([0.45, 0.01, 0.1, 0.05])
         start_button = Button(ax_start, "Start Operation")
-        start_button.on_clicked(lambda event: self.controller.start())
+        start_button.on_clicked(lambda event: self.controller.start_operation())
         ax_start.set_visible(True)
 
         ax_stop = plt.axes([0.55, 0.01, 0.1, 0.05])
         stop_button = Button(ax_stop, "Stop Dron")
-        stop_button.on_clicked(lambda event: self.controller.stop_routine())
+        stop_button.on_clicked(lambda event: self.controller.stop_inspection())
         ax_stop.set_visible(False)
 
         ax_next = plt.axes([0.65, 0.01, 0.1, 0.05])
@@ -122,20 +122,20 @@ class OperationVisualizer:
         # Animation update
         # ----------------------------
         def update(frame):
-            mission_id = self.controller.explorer_worker.current_mission_id
+            mission_id = self.controller.exploration_controller.current_mission_id
             base_position = base_positions[mission_id]
 
             # Update base markers
             for idx, marker in enumerate(base_markers):
                 marker.set_color('lightblue' if idx == mission_id else 'k')
 
-            # explorer position
+            # Explorer position
             ins_rel = self.controller.explorer_robot.get_current_position()
             ins_abs = Point2D(base_position.x + ins_rel.x, base_position.y + ins_rel.y)
             self._explorer_positions.append(ins_abs)
             explorer_visibility.center = (ins_abs.x, ins_abs.y)
 
-            # inspector position
+            # Inspector position
             exe_rel = self.controller.inspector_robot.get_current_position()
             exe_abs = Point2D(exe_rel.x, exe_rel.y)
             self._inspector_positions.append(exe_abs)
@@ -168,9 +168,9 @@ class OperationVisualizer:
 
             # Buttons visibility
             start_button.ax.set_visible(self.controller.status == OperationStatus.NOT_STARTED)
-            stop_button.ax.set_visible(self.controller.explorer_worker.status == OperationStatus.RUNNING)
+            stop_button.ax.set_visible(self.controller.exploration_controller.status == OperationStatus.RUNNING)
             next_button.ax.set_visible(self.controller.status == OperationStatus.RUNNING and 
-                                       self.controller.explorer_worker.status == OperationStatus.FINISHED and
+                                       self.controller.exploration_controller.status == OperationStatus.FINISHED and
                                        mission_id + 1 < len(base_positions))
 
             # Info panel
@@ -190,8 +190,8 @@ class OperationVisualizer:
                 pts = self._points_by_mission.get(mid, [])
                 block = [f"Mission {mid}: {len(pts)} points"]
                 for p in pts:
-                    if p in self.controller.inspector_worker.points_temperatures:
-                        block.append(f"• ({p.x:.2f}, {p.y:.2f}) -> {self.controller.inspector_worker.points_temperatures[p]:.2f}°C")
+                    if p in self.controller.inspection_controller.points_temperatures:
+                        block.append(f"• ({p.x:.2f}, {p.y:.2f}) -> {self.controller.inspection_controller.points_temperatures[p]:.2f}°C")
                     else:
                         block.append(f"• ({p.x:.2f}, {p.y:.2f})")
                 if mid % 2 == 0:
@@ -217,13 +217,13 @@ class OperationVisualizer:
 
 DRONE:
 - Drone Mission: {mission_id}
-- Drone Mission Status: {self.controller.explorer_worker.status.name}
+- Drone Mission Status: {self.controller.exploration_controller.status.name}
 - Drone Position: x={ins_abs.x:.2f}, y={ins_abs.y:.2f}
 - Drone Distance: {ins_dist:.2f}
 
 ROBOT DOG:
-- Robot Dog Mission: {self.controller.inspector_worker.current_mission_id}
-- Robot Dog Mission Status: {self.controller.inspector_worker.status.name}
+- Robot Dog Mission: {self.controller.inspection_controller.current_mission_id}
+- Robot Dog Mission Status: {self.controller.inspection_controller.status.name}
 - Robot Dog Position: x={exe_abs.x:.2f}, y={exe_abs.y:.2f}
 - Robot Dog Distance: {exe_dist:.2f}
 

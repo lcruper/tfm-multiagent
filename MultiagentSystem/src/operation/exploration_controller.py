@@ -134,16 +134,16 @@ class ExplorationController(threading.Thread):
         """
         x_abs = self._base_positions[self.current_mission_id].x + point.x
         y_abs = self._base_positions[self.current_mission_id].y + point.y
-        self._logger.info("Detected point at (%s, %s) in mission %d. Beeping...", x_abs, y_abs, self.current_mission_id)
-        winsound.Beep(1000, 200)
 
         with self._lock:
             if not self._is_too_close(x_abs, y_abs):
                 point = Point2D(x_abs, y_abs)
+                self._logger.info("Detected point at %s in mission %d. Beeping...", point, self.current_mission_id)
+                winsound.Beep(1000, 200)
                 self._points_current_mission.append(point)
                 self._all_points[point] = (self.current_mission_id, False, time(), 0.0)
             else:
-                self._logger.info("Skipping point (too close) at (%s, %s) in mission %d", x_abs, y_abs, self.current_mission_id)
+                self._logger.debug("Skipping point (too close) at %s in mission %d", point, self.current_mission_id)
 
 
     def _is_too_close(self, x: float, y: float) -> bool:

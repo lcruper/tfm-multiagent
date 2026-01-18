@@ -1,16 +1,9 @@
-"""
-Operation Controller
------------------------
-
-Coordinates the explorer and inspector workers for an operation.
-"""
-
 import json
 import os
 from time import time
 from queue import Queue
 import logging
-from typing import List, Dict
+from typing import List, Dict, Tuple
 import threading
 from datetime import datetime
 
@@ -22,27 +15,33 @@ from interfaces.interfaces import IPathPlanner, ARobot
 from structures.structures import Point2D
 from configuration import operation as config
 
-
 class OperationController:
     """
-    Controller for coordinating explorer and inspector threads.
+    High-level controller responsible for orchestrating the execution of an operation. 
+    This includes coordinating the exploration and inspection phases, tracking operation
+    status, and saving performance metrics.
     """
 
     def __init__(self, explorer_robot: ARobot, inspector_robot: ARobot, planner: IPathPlanner, base_positions_path: str) -> None:
         """
         Creates an OperationController instance.
 
+        It loads the base positions from the specified JSON file, creates the ExplorationController and 
+        InspectionController instances, creates the queue and events for communication between the two controllers,
+        and creates the global dictionary to store all detected points and its status.
+        It also initializes the operation status and timing variables and sets the callbacks for mission completion.
+
         Args:
-            explorer_robot (IRobot): Robot for exploration phase.
-            inspector_robot (IRobot): Robot for inspection phase.
-            planner (IPathPlanner): Path planner for inspector robot.
-            base_positions (List[Point2D]): Base positions for each mission.
+            explorer_robot (ARobot): Robot responsible for the exploration phase.
+            inspector_robot (ARobot): Robot responsible for the inspection phase.
+            planner (IPathPlanner): Path planner used by the inspector robot.
+            base_positions_path (str): Path to a JSON file containing the coordinates of the base stations for each mission.
         """        
         self.base_positions: List[Point2D] = self._load_base_positions(base_positions_path)
         self._n_missions: int = len(self.base_positions)
     
         self._queue: Queue[Dict[Point2D, bool]] = Queue(maxsize=len(self.base_positions))
-        self.all_points: Dict[Point2D, (int, bool, time, time)] = {}
+        self.all_points: Dict[Point2D, Tuple[int, bool, float, float]] = {}
         self._events: OperationEvents = OperationEvents()
     
         self.explorer_robot: ARobot = explorer_robot
@@ -59,16 +58,18 @@ class OperationController:
 
         self._logger: logging.Logger = logging.getLogger("OperationController")
 
-    # -------------------
-    # Public methods
-    # -------------------
-    def start(self) -> None:
-        """
-        Starts both explorer and inspector threads and signals the first mission.
-        """
-        self.start_time = time()
         self.explorer_worker._callback_onFinishAll = self._on_all_missions_finished
         self.inspector_worker._callback_onFinishAll = self._on_all_missions_finished
+
+    # -------------------------------------------
+    # Public methods
+    # -------------------------------------------
+    def start(self) -> None:
+        """
+        Starts the operation by launching both exploration and inspection threads
+        and triggering the first exploration mission. It also records the start time and updates the operation status.
+        """
+        self.start_time = time()
         self.status = OperationStatus.RUNNING
         self.explorer_worker.start()
         self.inspector_worker.start()
@@ -77,29 +78,29 @@ class OperationController:
 
     def next_mission(self) -> None:
         """
-        Signals to start the next mission.
+        Signals the ExplorationController to start the exploration of its next mission.
         """
-        self._logger.info("Triggering next mission...")
+        self._logger.info("Triggering next exploration mission...")
         self.explorer_worker.start_next_exploration()
 
-    def stop_routine(self) -> None:
+    def stop_inspection(self) -> None:
         """
-        Signals the explorer to stop the current mission.
+        Signals the ExplorationController to stop the exploration phase of its current mission.
         """
         self._logger.info("Stopping current inspection...")
         self._events.trigger_stop_exploration()
 
-    # -------------------
+    # ----------------------------------------
     # Private methods
-    # -------------------
+    # ----------------------------------------
     def _load_base_positions(self, path: str) -> List[Point2D]:
         """
-        Loads base positions from a JSON file.
+        Loads the coordinates of all base stations of the operation from a JSON file.
 
         Args:
-            path (str): Path to the JSON file.
+            path (str): Path to the JSON file containing the coordinates of the base stations.
         Returns:
-            List[Point2D]: List of base positions.
+            List[Point2D]: List of Point2D of the base stations.
         """
         with open(path, "r") as f:
             data = json.load(f)
@@ -108,7 +109,8 @@ class OperationController:
     
     def _on_all_missions_finished(self) -> None:
         """
-        Callback triggered when all missions are finished.
+        Callback executed when both the exploration and inspection controllers
+        have completed all missions. Updates operation status and triggers metrics saving.
         """
         with self._lock:
             if self.explorer_worker.current_mission_id == self._n_missions-1 and self.explorer_worker.status == OperationStatus.FINISHED and self.inspector_worker.current_mission_id == self._n_missions-1 and self.inspector_worker.status == OperationStatus.FINISHED:
@@ -119,7 +121,23 @@ class OperationController:
 
     def _save_metrics(self) -> None:
         """
-        Saves all the collected metrics to a JSON file.
+        Saves all collected metrics for the operation to a timestamped JSON file.
+        Metrics include:
+            - Operation start and end timestamps
+            - Operation duration and status
+            - Number of missions and points
+            - For each mission:
+                - Mission ID
+                - Base station coordinates
+                - Exploration and inspection start and end timestamps
+                - Exploration and inspection durations
+                - Exploration and inspection relative start and end times with respect to operation start time
+            - For each detected point:
+                - Point coordinates
+                - Mission ID
+                - Detection and inspection timestamps
+                - Detection and inspection relative times with respect to operation start time  
+                - Telemetry data (e.g., temperature)
         """
         def ts_to_iso(ts: float) -> str:
             return datetime.fromtimestamp(ts).isoformat() if ts else None

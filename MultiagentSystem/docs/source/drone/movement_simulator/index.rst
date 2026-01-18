@@ -5,7 +5,7 @@ This subpackage contains modules that generate synthetic movement patterns on th
 All simulators start from the origin  (0,0) and compute the current position on demand.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    spiral_movement_simulator
    zigzag_movement_simulator

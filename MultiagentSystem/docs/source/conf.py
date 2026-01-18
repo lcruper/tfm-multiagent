@@ -19,8 +19,8 @@ sys.path.insert(0, str(SRC_DIR))
 # ============================================================
 
 project = "Multiagent Drone and Robot Dog System"
-author = "lidia"
-copyright = "2025, lidia"
+author = "Lidia Cruz Pérez"
+copyright = "2026, lidia"
 
 # ============================================================
 # General configuration

@@ -47,6 +47,5 @@ build/
 # ========================
 yoloModels/
 results/
-input/
 diagrams/out/
 src/__pycache__/

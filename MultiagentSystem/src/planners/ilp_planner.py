@@ -71,25 +71,15 @@ class ILPPlanner(IPathPlanner):
         """    
         n = len(points)
         nodes = list(range(n))
-
-        dist = {
-            (i, j): self._euclidean_distance(points[i], points[j])
-            for i in range(n) for j in range(i + 1, n)
-        }
+        dist = {(i, j): self._euclidean_distance(points[i], points[j]) for i in range(n) for j in range(i + 1, n)}
 
         m = gp.Model()
 
-        x = {
-            (i, j): m.addVar(vtype=gp.GRB.BINARY, obj=d, name=f"x_{i}_{j}")
-            for (i, j), d in dist.items()
-        }
+        x = {(i, j): m.addVar(vtype=gp.GRB.BINARY, obj=d, name=f"x_{i}_{j}") for (i, j), d in dist.items()}
         m.update()
 
         for i in nodes:
-            deg_expr = gp.quicksum(
-                x[(min(i, j), max(i, j))]
-                for j in nodes if j != i
-            )
+            deg_expr = gp.quicksum(x[(min(i, j), max(i, j))] for j in nodes if j != i)
             if i == 0:
                 m.addConstr(deg_expr == 1)
             else:

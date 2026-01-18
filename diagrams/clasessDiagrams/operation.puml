@@ -124,7 +124,7 @@ class OperationVisualizer{
     - _distance_traveled(path: List<Point2D]) : float
 }
 
-OperationVisualizer -> OperationController
+OperationVisualizer *-> OperationController
 
 
 @enduml

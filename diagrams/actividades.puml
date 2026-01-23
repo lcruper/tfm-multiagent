@@ -1,4 +1,10 @@
 @startuml
+skinparam defaultFontSize 20
+skinparam ActivityFontSize 20
+skinparam ArrowFontSize 18
+skinparam SwimlaneFontSize 25
+skinparam ConditionFontSize 18
+
 skinparam ConditionEndStyle hline
 
 skinparam activity {
@@ -11,7 +17,7 @@ skinparam activity {
 start
 :Iniciar operación;
 
-while (Quedan misiones por ejecutar) is (sí)
+while (Quedan misiones\npor ejecutar) is (sí)
     :Seleccionar misión;
     |Fase de exploración|
     :Iniciar fase de exploración;
@@ -27,13 +33,13 @@ while (Quedan misiones por ejecutar) is (sí)
     split
         |Fase de exploración|
         :Regresar a estación base;
-        :Finalizar misión de exploración;
+        :Finalizar fase de exploración;
     split again
         :Enviar puntos de interés;
         |Fase de inspección|
         :Recibir puntos de interés;
         while (Inspector ocupado) is (sí)
-            :Esperar a que termine misiones anteriores;
+            :Esperar a que termine\nmisiones anteriores;
         endwhile (no)
         :Iniciar fase de inspección;
         :Planificar ruta;

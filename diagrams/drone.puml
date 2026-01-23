@@ -1,4 +1,7 @@
 @startuml
+skinparam classAttributeIconSize 15
+skinparam DefaultFontSize 30
+skinparam ArrowThickness 2
 
 skinparam classBackgroundColor white
 

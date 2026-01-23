@@ -1,13 +1,9 @@
 @startuml
 
+skinparam defaultFontSize 25
+
 skinparam rectangle {
   BorderStyle solid
-  BorderColor #000000ff
-  BackgroundColor #ffffffff
-}
-
-skinparam rectangle<<NotUsed>>{
-  BorderStyle dashed
   BorderColor #000000ff
   BackgroundColor #ffffffff
 }
@@ -41,7 +37,7 @@ rectangle "crazyflie" as crazy
 core --> crazy
 
 ' Nivel 3: drivers
-rectangle "deck" <<NotUsed>> as deck
+rectangle "deck"as deck #line.dashed
 rectangle "general" as general
 rectangle "i2c_bus" as i2c_bus
 rectangle "i2c_devices" as i2c_dev
@@ -61,39 +57,39 @@ lib --> dsp_lib
 rectangle "hal" as hal
 rectangle "modules" as modules
 
-crazy --> hal
-crazy --> modules
+crazy ----> hal
+crazy ----> modules
 
 ' Nivel 4: general
 rectangle "adc" as adc
-rectangle "buzzer" <<NotUsed>> as buzzer
+rectangle "buzzer" as buzzer #line.dashed
 rectangle "led" as led 
 rectangle "motors" as motors 
 rectangle "wifi" as wifi
 
-general --> adc
+general ----> adc
 general --> buzzer
-general --> led
-general --> motors
-general --> wifi
+general ----> led
+general ----> motors
+general ----> wifi
 
 ' Nivel 4: i2c_devices
-rectangle "eeprom\n(Memoria ROM)" <<NotUsed>> as eeprom 
-rectangle "hmc5883l\n(Magnetómetro)" <<NotUsed>> as hmc 
+rectangle "eeprom\n(Memoria ROM)" as eeprom #line.dashed
+rectangle "hmc5883l\n(Magnetómetro)" as hmc #line.dashed
 rectangle "mpu6050\n(IMU)" as mpu 
-rectangle "ms5611\n(Sensor de presión)" <<NotUsed>> as ms
-rectangle "vl53l0\n(Sensor de distancia ToF)" <<NotUsed>> as vl0
-rectangle "vl53l1\n(Sensor de distancia ToF)" <<NotUsed>> as vl1
+rectangle "ms5611\n(Sensor de\npresión)" as ms #line.dashed
+rectangle "vl53l0\n(Sensor de\ndistancia ToF)" as vl0 #line.dashed
+rectangle "vl53l1\n(Sensor de\ndistancia ToF)" as vl1 #line.dashed
 
 i2c_dev --> eeprom
-i2c_dev --> hmc
-i2c_dev --> mpu
-i2c_dev --> ms
+i2c_dev ---> hmc
+i2c_dev ----> mpu
+i2c_dev ---> ms
 i2c_dev --> vl0
-i2c_dev --> vl1
+i2c_dev ---> vl1
 
 ' Nivel 4: spi_devices
-rectangle "pmw3901\n(Sensor óptico de flujo)" <<NotUsed>> as pmw
+rectangle "pmw3901\n(Sensor óptico\nde flujo)" as pmw #line.dashed
 spi_dev --> pmw
 
 @enduml

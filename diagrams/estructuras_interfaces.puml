@@ -1,5 +1,7 @@
 @startuml
-
+skinparam classAttributeIconSize 15
+skinparam DefaultFontSize 30
+skinparam ArrowThickness 3
 skinparam classBackgroundColor white
 
 dataclass Battery <<(D, lightblue)>>{
@@ -100,5 +102,5 @@ ICamera ----> Frame
 AFrameConsumer --> FrameWithTelemetry
 ARobot ---> Point2D
 ARobot ---> TelemetryData
-IPathPlanner ----> Point2D
+IPathPlanner --> Point2D
 @enduml

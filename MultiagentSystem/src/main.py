@@ -36,7 +36,7 @@ telemetry = DroneTelemetry(
     configuration.drone_telemetry.DRONE_IP, 
     configuration.drone_telemetry.DRONE_PORT, 
     configuration.drone_telemetry.LOCAL_PORT, 
-    zigzagMovement
+    spiralMovement
 )
 
 camera = CameraCapture(
